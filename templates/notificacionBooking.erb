@@ -1,0 +1,26 @@
+Se ha recibido una solicitud de reserva con la siguiente información
+
+Reserva
+-------
+ Fecha entrada: <%= date_from.strftime('%d/%m/%Y') %> 
+ Fecha salida : <%= date_to.strftime('%d/%m/%Y') %>
+ Item: <%= item_id %> 
+ Coste item: <%=item_cost.to_s('F') %> €
+ Coste extras: <%= extras_cost.to_s('F') %> €
+ Coste total: <%= total_cost.to_s('F') %> €
+ Comentarios: <%= comments %>
+
+Cliente
+-------
+ Nombre: <%= customer_name %>
+ Apellidos: <%= customer_surname %>
+ Correo electrónico: <%= customer_email %>
+ Teléfono: <%= customer_phone %>
+ Móvil: <%= customer_mobile_phone %>
+ 
+Extras
+------
+ <% booking_extras.each do |booking_extra| %>
+ Extra: <%= booking_extra.extra_id %>. Cantidad: <%= booking_extra.quantity %>. Coste: <%= booking_extra.extra_cost.to_s('F') %> €
+ <% end %>
+ 
