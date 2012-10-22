@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.files   = Dir['lib/**/*.rb','templates/**/*.erb']
   s.summary = "A DattaMapper-based model for booking"
   
-  s.add_runtime_dependency "data_mapper", "1.1.0"
+  s.add_runtime_dependency "data_mapper", "1.2.0"
   s.add_runtime_dependency "json"
   s.add_runtime_dependency "pony"
   
