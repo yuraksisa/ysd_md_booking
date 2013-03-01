@@ -1,8 +1,6 @@
-require 'ysd-md-profile' unless defined?Profile
 require 'json' unless defined?JSON
-#require 'ysd_service_template' unless defined?TemplateService
-#require 'ysd_service_postal' unless defined?PostalService
 require 'sinatra/r18n' unless defined?R18n
+require 'ysd-md-business_events' unless defined?BusinessEvents
 
 # -----------------------------------------------------------------------
 # Process a new booking
@@ -14,16 +12,12 @@ class NewBookingBusinessEventCommand < BusinessEvents::BusinessEventCommand
       
   def execute
       
-      data = JSON.parse(business_event.data)
-      
-      # Loads the booking
-      booking = BookingDataSystem::Booking.get(data['booking_id'])
-      
-      puts "booking : #{booking.to_json}"
-      
-      # Notify the booking      
-      booking.notify_new_booking if booking
-  
+    data = JSON.parse(business_event.data)
+    
+    if booking = BookingDataSystem::Booking.get(data['booking_id'])
+      booking.notify_new_booking
+    end
+
   end
 
 end
