@@ -17,7 +17,7 @@ module BookingDataSystem
         template = ERB.new File.read(file)
         message = template.result binding
       
-        ServicePostal.post(
+        PostalService.post(
           :to => notification_email,
           :subject => 'Solicitud de reserva',
           :body => message)
