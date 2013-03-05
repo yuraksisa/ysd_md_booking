@@ -9,7 +9,7 @@ module BookingDataSystem
     # 
     def notify_new_booking
     
-      if notification_email = SystemConfiguration::Variable.get('booking.notification_email')
+      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
 
         file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
           "templates", "notificacion#{self.class.name.split('::').last}.erb"))
