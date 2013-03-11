@@ -1,4 +1,5 @@
 require 'data_mapper' unless defined?DataMapper
+require 'ysd_md_payment' unless defined?Payments::Charge
 
 module BookingDataSystem
 
@@ -17,15 +18,19 @@ module BookingDataSystem
      property :source, String, :field => 'source', :length => 50   # Where does the booking come from
      
      property :date_from, DateTime, :field => 'date_from', :required => true
-     property :time_from, String, :field => 'time_from', :required => true, :length => 5
+     property :time_from, String, :field => 'time_from', :required => false, :length => 5
      property :date_to, DateTime, :field => 'date_to', :required => true 
-     property :time_to, String, :field => 'time_to', :required => true, :length => 5
+     property :time_to, String, :field => 'time_to', :required => false, :length => 5
      
      property :item_id, String, :field => 'item_id', :required => true, :length => 20
      
      property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
      property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
+     
+     property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10
+     property :payment_method_id, String, :field => 'payment_method_id', :length => 30
+     belongs_to :charge, 'Payments::Charge', :child_key => [:charge_id], :parent_key => [:id], :required => false
      
      property :quantity, Integer, :field => 'quantity'
      property :date_to_price_calculation, DateTime, :field => 'date_to_price_calculation'
@@ -41,15 +46,52 @@ module BookingDataSystem
      
      has n, :booking_extras, 'BookingExtra' 
      
+     def save
+       transaction do 
+         check_charge! if new?
+         super
+       end
+     end
+
      before :create do |booking|
        booking.creation_date = Time.now if not booking.creation_date
      end
      
-     after :create do |booking|
-       BusinessEvents::BusinessEvent.fire_event(:new_booking, 
-         {:booking_id => booking.id})
+     after :create do 
+       create_new_booking_business_event!
      end
-          
+     
+     #
+     # Gets the payment method instance
+     # 
+     def payment_method
+       if payment_method_id.nil?
+         return nil 
+       else
+         @payment_method ||= Payments::PaymentMethod.get(payment_method_id.to_sym)
+       end
+     end
+
+     private
+
+     #
+     # It creates the charge associated to the booking
+     #
+     def check_charge!
+
+       if charge.nil? and payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
+         self.charge = Payments::Charge.create({:date => Time.now,
+           :amount => booking_amount, 
+           :payment_method_id => payment_method_id }) 
+       end
+
+     end
+
+     def create_new_booking_business_event!
+       BusinessEvents::BusinessEvent.fire_event(:new_booking, 
+         {:booking_id => id})
+     end
+
   end
 
    

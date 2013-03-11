@@ -1,5 +1,5 @@
 require 'json' unless defined?JSON
-require 'sinatra/r18n' unless defined?R18n
+#require 'sinatra/r18n' unless defined?R18n
 require 'ysd-md-business_events' unless defined?BusinessEvents
 
 module Commands
@@ -7,7 +7,7 @@ module Commands
   # Notify a new booking
   #
   class NewBookingBusinessEventCommand < BusinessEvents::BusinessEventCommand
-       include R18n::Helpers 
+      # include R18n::Helpers 
       
     def execute
       data = JSON.parse(business_event.data)

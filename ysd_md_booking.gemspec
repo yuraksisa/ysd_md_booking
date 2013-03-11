@@ -12,5 +12,10 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency "ysd_service_postal"  
   s.add_runtime_dependency "ysd_md_business_events" # Business events
+  s.add_runtime_dependency "ysd_md_payment"
   
+  s.add_development_dependency "rake"
+  s.add_development_dependency "rspec"
+  s.add_development_dependency "dm-sqlite-adapter" # Model testing using sqlite
+
 end
