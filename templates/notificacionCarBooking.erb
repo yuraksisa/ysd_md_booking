@@ -7,6 +7,7 @@ Reserva
  Fecha devolución: <%= booking.date_to.strftime('%d/%m/%Y') %> <%= booking.time_to %>
  Lugar devolución: <%= return_place %>
  Coche: <%= booking.item_id %> 
+ <% unless booking.optional.empty? %>Opción: <%= booking.optional %><% end %> 
  Coste coche: <%= booking.item_cost.to_s('F') %> €
  Coste extras: <%= booking.extras_cost.to_s('F') %> €
  Coste total: <%= booking.total_cost.to_s('F') %> €

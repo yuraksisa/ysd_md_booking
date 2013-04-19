@@ -5,6 +5,7 @@ Reserva
  Fecha entrada: <%= date_from.strftime('%d/%m/%Y') %> 
  Fecha salida : <%= date_to.strftime('%d/%m/%Y') %>
  Item: <%= item_id %> 
+ <% unless booking.optional.empty? %>Opción: <%= booking.optional %><% end %>
  Coste item: <%=item_cost.to_s('F') %> €
  Coste extras: <%= extras_cost.to_s('F') %> €
  Coste total: <%= total_cost.to_s('F') %> €

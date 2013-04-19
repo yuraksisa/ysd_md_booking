@@ -1,5 +1,5 @@
 require 'data_mapper' unless defined?DataMapper
-require 'ysd_md_payment' unless defined?Payments::Charge
+require 'ysd_md_booking_charge'
 
 module BookingDataSystem
 
@@ -23,6 +23,8 @@ module BookingDataSystem
      property :time_to, String, :field => 'time_to', :required => false, :length => 5
      
      property :item_id, String, :field => 'item_id', :required => true, :length => 20
+     property :item_description, String, :field => 'item_description', :required => false, :length => 256
+     property :optional, String, :field => 'optional', :length => 40
      
      property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
@@ -30,7 +32,8 @@ module BookingDataSystem
      
      property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10
      property :payment_method_id, String, :field => 'payment_method_id', :length => 30
-     belongs_to :charge, 'Payments::Charge', :child_key => [:charge_id], :parent_key => [:id], :required => false
+     has n, :booking_charges, 'BookingCharge', :child_key => [:booking_id], :parent_key => [:id]
+     has n, :charges, 'Payments::Charge', :through => :booking_charges
      
      property :quantity, Integer, :field => 'quantity'
      property :date_to_price_calculation, DateTime, :field => 'date_to_price_calculation'
@@ -79,8 +82,8 @@ module BookingDataSystem
      #
      def check_charge!
 
-       if charge.nil? and payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
-         self.charge = Payments::Charge.create({:date => Time.now,
+       if charges.empty? and payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
+         self.charges << Payments::Charge.create({:date => Time.now,
            :amount => booking_amount, 
            :payment_method_id => payment_method_id }) 
        end
