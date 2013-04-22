@@ -74,22 +74,47 @@ module BookingDataSystem
          @payment_method ||= Payments::PaymentMethod.get(payment_method_id.to_sym)
        end
      end
+     
+     #
+     # Creates a deposit charge 
+     #
+     def create_deposit_charge!
+       if payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
+         charge = new_deposit_charge!
+         save
+         return charge
+       end 
+     end
 
      private
 
      #
-     # It creates the charge associated to the booking
+     # It checks if a deposit charge should be created
      #
      def check_charge!
 
        if charges.empty? and payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
-         self.charges << Payments::Charge.create({:date => Time.now,
-           :amount => booking_amount, 
-           :payment_method_id => payment_method_id }) 
+         new_deposit_charge!
        end
 
      end
-
+     
+     #
+     # Creates a deposit charge
+     #
+     # @return [Payments::Charge] The created charge
+     #
+     def new_deposit_charge!
+       charge = Payments::Charge.create({:date => Time.now,
+           :amount => booking_amount, 
+           :payment_method_id => payment_method_id }) 
+       self.charges << charge
+       return charge
+     end
+     
+     #
+     # Creates a new business event to notify a booking has been created
+     #
      def create_new_booking_business_event!
        BusinessEvents::BusinessEvent.fire_event(:new_booking, 
          {:booking_id => id})
