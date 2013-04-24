@@ -1,14 +1,33 @@
 require 'data_mapper' unless defined?DataMapper
+require 'dm-types'
 require 'ysd_md_booking_charge'
+require 'ysd_md_yito' unless defined?Yito::Model::Finder
 
 module BookingDataSystem
 
   # ---------------------------------------- 
   # This represents an booking for a item
+  #
+  # Booking status
+  #
+  #  - pending_confirmation. The customer make the booking but he/she doesn't
+  #    make a deposit
+  #
+  #  - confirming. A deposit is being charged
+  #
+  #  - confirmed. A deposit has been charged
+  #
+  #  - in_progress. The booking period starts. The customer is using the item.
+  #
+  #  - done. The booking period finishes
+  #
+  #  - cancelled. The booking has been canceled
+  #
   # ----------------------------------------
   class Booking 
      include DataMapper::Resource
      include BookingNotifications
+     extend Yito::Model::Finder
     
      storage_names[:default] = 'bookds_bookings' # stored in bookings table in default storage
      
@@ -49,9 +68,16 @@ module BookingDataSystem
      
      has n, :booking_extras, 'BookingExtra' 
      
+     property :status, Enum[:pending_confirmation, :confirming, :confirmed, 
+       :in_progress, :done, :cancelled], :field => 'status', :default => :pending_confirmation
+
      def save
-       transaction do 
-         check_charge! if new?
+       if new?
+         transaction do 
+           check_charge!
+           super
+         end
+       else
          super
        end
      end

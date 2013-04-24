@@ -1,0 +1,130 @@
+PATH
+  remote: .
+  specs:
+    ysd_md_booking (0.2.8)
+      data_mapper (= 1.2.0)
+      dm-observer
+      json
+      ysd_md_business_events
+      ysd_md_payment
+      ysd_md_yito
+      ysd_service_postal
+
+PATH
+  remote: ~/proyectos/biblioteca.desarrollo/ruby/models/model_payment
+  specs:
+    ysd_md_payment (0.2.13)
+      data_mapper (= 1.2.0)
+      json
+      r18n-core
+      tilt
+      ysd_md_configuration
+      ysd_md_yito
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    addressable (2.2.8)
+    bcrypt-ruby (3.0.1)
+    data_mapper (1.2.0)
+      dm-aggregates (~> 1.2.0)
+      dm-constraints (~> 1.2.0)
+      dm-core (~> 1.2.0)
+      dm-migrations (~> 1.2.0)
+      dm-serializer (~> 1.2.0)
+      dm-timestamps (~> 1.2.0)
+      dm-transactions (~> 1.2.0)
+      dm-types (~> 1.2.0)
+      dm-validations (~> 1.2.0)
+    data_objects (0.10.12)
+      addressable (~> 2.1)
+    diff-lcs (1.2.4)
+    dm-aggregates (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-constraints (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-core (1.2.0)
+      addressable (~> 2.2.6)
+    dm-do-adapter (1.2.0)
+      data_objects (~> 0.10.6)
+      dm-core (~> 1.2.0)
+    dm-migrations (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-observer (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-serializer (1.2.2)
+      dm-core (~> 1.2.0)
+      fastercsv (~> 1.5)
+      json (~> 1.6)
+      json_pure (~> 1.6)
+      multi_json (~> 1.0)
+    dm-sqlite-adapter (1.2.0)
+      dm-do-adapter (~> 1.2.0)
+      do_sqlite3 (~> 0.10.6)
+    dm-timestamps (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-transactions (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-types (1.2.2)
+      bcrypt-ruby (~> 3.0)
+      dm-core (~> 1.2.0)
+      fastercsv (~> 1.5)
+      json (~> 1.6)
+      multi_json (~> 1.0)
+      stringex (~> 1.4)
+      uuidtools (~> 2.1)
+    dm-validations (1.2.0)
+      dm-core (~> 1.2.0)
+    dm-ysd-encrypted (0.1.2)
+    do_sqlite3 (0.10.12)
+      data_objects (= 0.10.12)
+    fastercsv (1.5.5)
+    i18n (0.6.4)
+    json (1.7.7)
+    json_pure (1.7.7)
+    mail (2.5.3)
+      i18n (>= 0.4.0)
+      mime-types (~> 1.16)
+      treetop (~> 1.4.8)
+    mime-types (1.23)
+    multi_json (1.7.2)
+    polyglot (0.3.3)
+    pony (1.4)
+      mail (> 2.0)
+    r18n-core (1.1.4)
+    rake (10.0.4)
+    rspec (2.13.0)
+      rspec-core (~> 2.13.0)
+      rspec-expectations (~> 2.13.0)
+      rspec-mocks (~> 2.13.0)
+    rspec-core (2.13.1)
+    rspec-expectations (2.13.0)
+      diff-lcs (>= 1.1.3, < 2.0)
+    rspec-mocks (2.13.1)
+    stringex (1.5.1)
+    tilt (1.3.7)
+    tlsmail (0.0.1)
+    treetop (1.4.12)
+      polyglot
+      polyglot (>= 0.3.1)
+    uuidtools (2.1.3)
+    ysd_md_business_events (0.2.0)
+      data_mapper (= 1.2.0)
+    ysd_md_configuration (0.2.6)
+      data_mapper (= 1.2.0)
+      dm-ysd-encrypted
+      ysd_md_yito
+    ysd_md_yito (0.2.7)
+    ysd_service_postal (0.1.3)
+      pony (~> 1.3)
+      tlsmail (~> 0.0.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  dm-sqlite-adapter
+  rake
+  rspec
+  ysd_md_booking!
+  ysd_md_payment!

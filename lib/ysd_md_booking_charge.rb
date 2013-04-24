@@ -30,6 +30,18 @@ module BookingDataSystem
                          end
 
     end
+    
+    #
+    # Integration with charges. When the charge is going to be charged, notifies
+    # the sources
+    #
+    def charge_in_process
+
+      if booking
+        booking.update(:status => :confirming)
+      end
+
+    end
 
     private 
     
