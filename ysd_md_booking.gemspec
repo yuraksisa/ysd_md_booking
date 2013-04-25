@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "ysd_md_booking"
-  s.version = "0.2.9"
+  s.version = "0.2.11"
   s.authors = ["Yurak Sisa Dream"]
   s.date    = "2012-03-06"
   s.email   = ["yurak.sisa.dream@gmail.com"]
@@ -10,11 +10,14 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "data_mapper", "1.2.0"
   s.add_runtime_dependency "json"
   s.add_runtime_dependency "dm-observer"
+  s.add_runtime_dependency "delayed_job"
+  s.add_runtime_dependency "delayed_job_data_mapper"
   
   s.add_runtime_dependency "ysd_service_postal"  
   s.add_runtime_dependency "ysd_md_business_events" # Business events
   s.add_runtime_dependency "ysd_md_payment"
   s.add_runtime_dependency "ysd_md_yito"
+  s.add_runtime_dependency "ysd_md_cms"
     
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"

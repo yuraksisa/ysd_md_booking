@@ -27,6 +27,13 @@ describe BookingDataSystem::Booking do
       		                 'quantity' => 1}]
         }}
 
+  let(:booking_online_charge_done) {
+        {:amount => 20,
+         :currency => :EUR,
+         :payment_method_id => 'cecabank',
+         :status => :done}
+  }
+
   let(:booking_offline) {{'date_from' => Time.utc(2013, 4, 1).to_s,
       	'date_to' => Time.utc(2013, 4, 4).to_s ,
       	'item_id' => 'B',
@@ -87,22 +94,18 @@ describe BookingDataSystem::Booking do
       its("booking_charges.first.charge_detail.first") { should include(
          :item_reference => 'DEPOSIT', :item_description => 'CLASE A',
          :item_units => 1)}
-      #its("booking_charges.first.charge_detail.first") { should include( 
-      #  :item_reference => 'A', :item_description => 'CLASE A', 
-      #  :item_units => 1) }
-      #its("booking_charges.first.charge_detail.last") { should include(
-      #  :item_reference => 'cuna', :item_description => 'cuna description',
-      #  :item_units => 1)}
-
-    end
-
-    context "online payment method (full)" do
 
     end
 
     context "offline payment method" do
+      
+      subject do
+        booking = BookingDataSystem::Booking.new(booking_offline) 
+        booking.should_receive(:notify_manager)
+        booking.save
+        booking
+      end
 
-      subject { BookingDataSystem::Booking.create(booking_offline) }
       its(:charges) { should be_empty }
 
     end
@@ -111,6 +114,37 @@ describe BookingDataSystem::Booking do
 
       subject { BookingDataSystem::Booking.create(booking_no_payment_method) }
       its(:charges) { should be_empty }
+
+    end
+
+  end
+
+  describe "#confirm" do
+
+    context "booking pending confirmation" do
+
+      #before :each do
+      #   SystemConfiguration::Variable.should_receive(:get_value).any_number_of_times.
+      #     with('booking.notification_email').and_return('myemail@mydomain.com')
+      #   PostalService.should_receive(:post).with(
+      #     hash_including({:to => 'myemail@mydomain.com',
+      #      :subject => 'Solicitud de reserva'}))
+      #   PostalService.should_receive(:post).with(
+      #     hash_including({:to => 'john.smith@test.com',
+      #      :subject => 'Su reserva'}))         
+      #end
+
+      subject do
+        booking = BookingDataSystem::Booking.new(
+          booking_online.merge(:charges => [booking_online_charge_done]))
+        booking.should_not_receive(:new_deposit_charge!)
+        booking.should_receive(:notify_manager)
+        booking.should_receive(:notify_customer)
+        booking.save
+        booking.confirm
+      end
+
+      its(:status) { should == :confirmed }
 
     end
 

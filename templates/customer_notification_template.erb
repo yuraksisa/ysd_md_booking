@@ -1,0 +1,24 @@
+¡Gracias, <%customer_name%>! Su reserva está confirmada
+
+ Número de reserva: <%= id %>
+ Reserva realizada por: <%= customer_name %> <%= customer_surname %>
+ Correo electrónico: <%= customer_email %>
+ Teléfono: <%= customer_phone %>
+ Móvil: <%= customer_mobile_phone %>
+ Comentarios: <%= comments %>
+
+Reserva
+-------
+ Su reserva: <%= item_description %> <% unless optional.nil? %><%= optional %><% end %> 
+ Fecha entrada: <%= date_from.strftime('%d/%m/%Y') %> 
+ Fecha salida : <%= date_to.strftime('%d/%m/%Y') %>
+
+Precio
+------- 
+ <%= item_description %> <% unless optional.nil? %><%= optional %><% end %>: <%=item_cost.to_s('F') %> €
+ Servicios adicionales:
+ <% booking_extras.each do |booking_extra| %>
+ <%= booking_extra.extra_description %>: <%= booking_extra.extra_cost.to_s('F') %> €
+ <% end %>
+
+ Precio total: <%= total_cost.to_s('F') %> € 

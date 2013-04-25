@@ -88,19 +88,9 @@ module BookingDataSystem
      
      after :create do 
        create_new_booking_business_event!
+       notify_manager if charges.empty?
      end
-     
-     #
-     # Gets the payment method instance
-     # 
-     def payment_method
-       if payment_method_id.nil?
-         return nil 
-       else
-         @payment_method ||= Payments::PaymentMethod.get(payment_method_id.to_sym)
-       end
-     end
-     
+          
      #
      # Creates a deposit charge 
      #
@@ -110,6 +100,74 @@ module BookingDataSystem
          save
          return charge
        end 
+     end
+     
+     #
+     # Confirms the booking
+     #
+     # A booking can only be confirmed if it's pending confirmation or confirming
+     # and contains a done charge
+     #
+     def confirm
+
+       if [:pending_confirmation, :confirming].include?(status) and
+          not charges.select { |charge| charge.status == :done }.empty?
+         update(:status => :confirmed)
+         notify_manager
+         notify_customer
+       end
+       
+       self
+
+     end
+     
+     #
+     # Cancels a booking
+     #
+     # A booking can only be cancelled if it isn't already cancelled
+     # 
+     def cancel
+      
+       unless status == :cancelled
+         update(:status => :cancelled)
+       end
+
+       self
+     end
+
+     #
+     # Gets the default template used to notify the booking manager
+     #
+     def manager_notification_template
+
+       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "manager_notification_template.erb"))
+
+       File.read(file)
+
+     end
+     
+     #
+     # Gets the default template used to notify the customer
+     #
+     def customer_notification_template
+
+       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "customer_notification_template.erb"))
+
+       File.read(file)
+
+     end
+
+     #
+     # Gets the payment method instance
+     # 
+     def payment_method
+       if payment_method_id.nil?
+         return nil 
+       else
+         @payment_method ||= Payments::PaymentMethod.get(payment_method_id.to_sym)
+       end
      end
 
      private

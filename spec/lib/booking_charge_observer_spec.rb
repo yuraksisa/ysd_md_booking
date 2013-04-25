@@ -33,30 +33,29 @@ describe BookingDataSystem::BookingChargeObserver do
   describe "charge update" do
     
     context "charge done" do
-
-       subject do
+       
+       it "should confirm the booking" do
          booking = BookingDataSystem::Booking.create(booking_data) 
          charge = booking.charges.first
+         charge.should_receive(:charge_source).any_number_of_times.and_return(booking.booking_charges.first)
+         booking.should_receive(:confirm)
          booking.update({:status => :confirming})
          charge.update({:status => :done})
-         booking = BookingDataSystem::Booking.get(booking.id)
        end
-
-       its(:status) { should == :confirmed }
 
     end
 
     context "charge denied" do
-
-       subject do
+       
+       it "should not confirm the booking" do
          booking = BookingDataSystem::Booking.create(booking_data) 
          charge = booking.charges.first
+         charge.should_receive(:charge_source).any_number_of_times.and_return(booking.booking_charges.first)
+         booking.should_not_receive(:confirm)         
          booking.update({:status => :confirming})
          charge.update({:status => :denied})
-         booking = BookingDataSystem::Booking.get(booking.id)
+         booking.status.should == :pending_confirmation 
        end
-
-       its(:status) { should == :pending_confirmation }
 
     end
 

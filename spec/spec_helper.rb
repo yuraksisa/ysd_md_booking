@@ -10,6 +10,8 @@ module DataMapper
   end
 end
 
+Delayed::Worker.backend = :data_mapper
+
 DataMapper::Logger.new(STDOUT, :debug)
 DataMapper.setup :default, "sqlite3::memory:"
 DataMapper::Model.raise_on_save_failure = false

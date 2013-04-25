@@ -21,13 +21,12 @@ module BookingDataSystem
     # Updates the booking status
     #
     after :update do |charge|
-      
       if charge.charge_source.is_a?BookingDataSystem::BookingCharge 
         booking = charge.charge_source.booking
         if booking.status == :confirming
           case charge.status
             when :done
-              booking.update(:status => :confirmed)
+              booking.confirm
             when :denied
               booking.update(:status => :pending_confirmation)
           end
