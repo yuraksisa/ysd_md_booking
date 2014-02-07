@@ -1,7 +1,9 @@
 require 'data_mapper' unless defined?DataMapper
 require 'dm-types'
 require 'ysd_md_booking_charge'
+require 'ysd_md_audit' unless defined?Audit::Auditor
 require 'ysd_md_yito' unless defined?Yito::Model::Finder
+require 'digest/md5' unless defined?Digest::MD5
 
 module BookingDataSystem
 
@@ -13,13 +15,11 @@ module BookingDataSystem
   #  - pending_confirmation. The customer make the booking but he/she doesn't
   #    make a deposit
   #
-  #  - confirming. A deposit is being charged
-  #
   #  - confirmed. A deposit has been charged
   #
-  #  - in_progress. The booking period starts. The customer is using the item.
+  #  - in_progress. The customer has received the item 
   #
-  #  - done. The booking period finishes
+  #  - done. The customer has returned the item
   #
   #  - cancelled. The booking has been canceled
   #
@@ -27,6 +27,11 @@ module BookingDataSystem
   class Booking 
      include DataMapper::Resource
      include BookingNotifications
+     include Audit::Auditor
+     include BookingDataSystem::BookingGuests
+     include BookingDataSystem::BookingDriver
+     include BookingDataSystem::BookingPickupReturn
+     include BookingDataSystem::BookingFlight
      extend Yito::Model::Finder
     
      storage_names[:default] = 'bookds_bookings' # stored in bookings table in default storage
@@ -49,6 +54,10 @@ module BookingDataSystem
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
      property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
      
+     property :total_paid, Decimal, :field => 'total_paid', :scale => 2, :precision => 10, :default => 0
+     property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
+
+     property :payment, String, :field => 'payment', :length => 10
      property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10
      property :payment_method_id, String, :field => 'payment_method_id', :length => 30
      has n, :booking_charges, 'BookingCharge', :child_key => [:booking_id], :parent_key => [:id]
@@ -63,69 +72,165 @@ module BookingDataSystem
      property :customer_email, String, :field => 'customer_email', :required => true, :length => 40
      property :customer_phone, String, :field => 'customer_phone', :required => true, :length => 15 
      property :customer_mobile_phone, String, :field => 'customer_mobile_phone', :length => 15
-     
+     property :customer_language, String, :field => 'customer_language', :length => 3
+
      property :comments, String, :field => 'comments', :length => 1024
      
-     has n, :booking_extras, 'BookingExtra' 
+     property :free_access_id, String, :field => 'free_access_id', :length => 32, :unique_index => :booking_free_access_id_index
+
+     has n, :booking_extras, 'BookingExtra', :constraint => :destroy 
      
-     property :status, Enum[:pending_confirmation, :confirming, :confirmed, 
+     property :status, Enum[:pending_confirmation, :confirmed,  
        :in_progress, :done, :cancelled], :field => 'status', :default => :pending_confirmation
 
+     property :payment_status, Enum[:none, :deposit, :total], 
+       :field => 'payment_status', :default => :none
+     
+     #
+     # Get a booking by its free access id
+     #
+     # @parm [String] free access id
+     # @return [Booking] 
+     def self.get_by_free_access_id(free_id)
+        first({:free_access_id => free_id})
+     end 
+     
+     #
+     # Saving a booking
+     #
      def save
+       result = true
        if new?
          transaction do 
-           check_charge!
-           super
+           auto_create_online_charge!
+           begin
+             result = super
+           rescue DataMapper::SaveFailureError => error
+             p "Error saving booking #{error} #{self.inspect}"
+             raise error 
+           end
+           reload
+           create_new_booking_business_event!
+           if charges.empty? 
+             notify_request_to_customer
+             notify_manager
+           end 
          end
        else
-         super
+         result = super
        end
-     end
-
-     before :create do |booking|
-       booking.creation_date = Time.now if not booking.creation_date
+       return result
      end
      
-     after :create do 
-       create_new_booking_business_event!
-       notify_manager if charges.empty?
+     #
+     # Before create hook (initilize fields)
+     #
+     before :create do |booking|
+       booking.creation_date = Time.now if not booking.creation_date
+       booking.total_pending = total_cost
+       booking.free_access_id = 
+         Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{item_id}#{rand}")
      end
-          
+               
      #
-     # Creates a deposit charge 
+     # Creates an online charge 
      #
-     def create_deposit_charge!
-       if payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
-         charge = new_deposit_charge!
+     # @param [String] payment to be created : deposit, total, pending
+     # @param [String] payment method id
+     #
+     # @return [Charge] The created charge
+     #
+     def create_online_charge!(charge_payment, charge_payment_method_id)
+       
+       if total_pending > 0 and 
+          charge_payment_method = Payments::PaymentMethod.get(charge_payment_method_id.to_sym) and
+          not charge_payment_method.is_a?Payments::OfflinePaymentMethod 
+
+         amount = case charge_payment.to_sym
+                    when :deposit
+                      (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+                    when :total
+                      total_cost
+                    when :pending
+                      total_pending
+                  end
+
+         charge = new_charge!(charge_payment_method_id, amount) if amount > 0
          save
          return charge
        end 
+
      end
      
      #
      # Confirms the booking
      #
-     # A booking can only be confirmed if it's pending confirmation or confirming
+     # A booking can only be confirmed if it's pending confirmation 
      # and contains a done charge
      #
+     # @return [Booking]
+     #
      def confirm
-
-       if [:pending_confirmation, :confirming].include?(status) and
+       if status == :pending_confirmation and
           not charges.select { |charge| charge.status == :done }.empty?
-         update(:status => :confirmed)
+         self.status = :confirmed
+         save
          notify_manager
          notify_customer
+       else
+         p "Could not confirm booking #{id} #{status}"
        end
        
        self
-
      end
      
+     #
+     # Confirm the booking without checking the charges
+     #
+     # @return [Booking]
+     #
+     def confirm!
+       if status == :pending_confirmation 
+         update(:status => :confirmed)
+       end
+       self
+     end
+
+     #
+     # Deliver the item to the customer
+     #
+     # @return [Booking]
+     #
+     def pickup_item
+       if status == :confirmed 
+         update(:status => :in_progress)
+       end
+       self
+     end
+
+     alias_method :arrival, :pickup_item
+     
+     #
+     # The item is returned from the customer
+     #
+     # @return [Booking]
+     #
+     def return_item 
+       if status == :in_progress
+         update(:status => :done)
+       end
+       self
+     end
+
+     alias_method :departure, :return_item
+ 
      #
      # Cancels a booking
      #
      # A booking can only be cancelled if it isn't already cancelled
      # 
+     # @return [Booking]
+     #
      def cancel
       
        unless status == :cancelled
@@ -133,30 +238,6 @@ module BookingDataSystem
        end
 
        self
-     end
-
-     #
-     # Gets the default template used to notify the booking manager
-     #
-     def manager_notification_template
-
-       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
-          "templates", "manager_notification_template.erb"))
-
-       File.read(file)
-
-     end
-     
-     #
-     # Gets the default template used to notify the customer
-     #
-     def customer_notification_template
-
-       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
-          "templates", "customer_notification_template.erb"))
-
-       File.read(file)
-
      end
 
      #
@@ -170,28 +251,58 @@ module BookingDataSystem
        end
      end
 
+     #
+     # Exporting to json
+     #
+     def as_json(options={})
+ 
+       relationships = options[:relationships] || {}
+       relationships.store(:charges, {})
+       relationships.store(:booking_extras, {})
+
+       super(options.merge({:relationships => relationships}))
+    
+     end
+
      private
 
      #
-     # It checks if a deposit charge should be created
+     # When a new booking is created, check if a new charge should be created
+     # to process the booking payment
      #
-     def check_charge!
+     # @return [Payments::Charge]
+     #
+     def auto_create_online_charge!
 
-       if charges.empty? and payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
-         new_deposit_charge!
+       if (charges.empty? and booking_charges.empty?) and 
+         payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
+
+         case payment
+           when 'deposit'
+             self.booking_amount = (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+           when 'total'
+             self.booking_amount = total_cost
+           else
+             self.booking_amount = 0
+         end
+         new_charge!(payment_method_id, self.booking_amount) if self.booking_amount > 0
+
        end
 
      end
      
      #
-     # Creates a deposit charge
+     # Creates a new charge for the booking
+     #
+     # @param [String] payment_method_id
+     # @param [Number] amount
      #
      # @return [Payments::Charge] The created charge
      #
-     def new_deposit_charge!
+     def new_charge!(charge_payment_method_id, charge_amount)
        charge = Payments::Charge.create({:date => Time.now,
-           :amount => booking_amount, 
-           :payment_method_id => payment_method_id }) 
+           :amount => charge_amount, 
+           :payment_method_id => charge_payment_method_id }) 
        self.charges << charge
        return charge
      end

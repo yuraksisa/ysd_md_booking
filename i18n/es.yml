@@ -1,0 +1,6 @@
+notifications:
+  customer_req_email_subject: Recibida solicitud de reserva
+  customer_email_subject: Su reserva
+  manager_email_subject: Nueva solicitud de reserva
+booking_model:
+  charge_description: Reserva %1

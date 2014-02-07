@@ -37,11 +37,40 @@ module BookingDataSystem
     #
     def charge_in_process
 
-      if booking
-        booking.update(:status => :confirming)
+      # None
+
+    end
+    
+    #
+    # Integration with charges
+    #
+    def charge_source_description
+      
+      if booking and booking.id
+        BookingDataSystem.r18n.t.booking_model.charge_description(booking.id)       
       end
 
     end
+     
+    #
+    # Integration with charges
+    # 
+    def charge_source_url
+      if booking and booking.id
+        "/admin/bookings/#{booking.id}"
+      end
+    end
+
+    def as_json(opts={})
+
+      methods = opts[:methods] || []
+      methods << :charge_source_description
+      methods << :charge_source_url
+
+      super(opts.merge(:methods => methods))
+
+    end
+
 
     private 
     
@@ -85,6 +114,6 @@ end
 
 module Payments
   class Charge
-    has 1, :booking_charge_source, 'BookingDataSystem::BookingCharge'
+    has 1, :booking_charge_source, 'BookingDataSystem::BookingCharge', :constraint => :destroy
   end
 end

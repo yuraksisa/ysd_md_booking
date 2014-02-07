@@ -11,7 +11,7 @@ describe BookingDataSystem::BookingChargeObserver do
       	:item_cost => 30,
       	:extras_cost => 20,
       	:total_cost => 50,
-      	:booking_amount => 20,
+      	:payment => 'deposit',
       	:payment_method_id => :pi4b,
       	:quantity => 1,
       	:date_to_price_calculation => Time.utc(2013, 3, 3).to_s,
@@ -32,27 +32,69 @@ describe BookingDataSystem::BookingChargeObserver do
 
   describe "charge update" do
     
-    context "charge done" do
+    context "charge done : deposit" do
        
        it "should confirm the booking" do
+         SystemConfiguration::Variable.should_receive(:get_value).with('booking.deposit','0').and_return('40')
          booking = BookingDataSystem::Booking.create(booking_data) 
          charge = booking.charges.first
          charge.should_receive(:charge_source).any_number_of_times.and_return(booking.booking_charges.first)
          booking.should_receive(:confirm)
-         booking.update({:status => :confirming})
+
          charge.update({:status => :done})
+
+         booking.total_paid.should == charge.amount
+         booking.total_pending.should == booking.total_cost - booking.total_paid
+         booking.payment_status.should == :deposit
+
        end
 
     end
 
-    context "charge denied" do
+    context "two charges : deposit and pending" do
+
+       it "should process two charges" do
+         SystemConfiguration::Variable.should_receive(:get_value).with('booking.notification_email')
+         SystemConfiguration::Variable.should_receive(:get_value).with('booking.deposit','0').and_return('40')
+
+         # First charge (automatically created)
+         booking = BookingDataSystem::Booking.create(booking_data) 
+         charge = booking.charges.first
+         charge.should_receive(:charge_source).any_number_of_times.and_return(booking.booking_charges.first)
+
+         charge.update({:status => :done})
+
+         booking.total_paid.should == charge.amount
+         booking.total_pending.should == booking.total_cost - booking.total_paid
+         booking.status = :confirmed
+         booking.payment_status == :deposit
+
+         # Second charge
+         booking.create_online_charge!('pending', :pi4b)
+         charge = booking.charges.last
+         charge.should_receive(:charge_source).any_number_of_times.and_return(booking.booking_charges.last)
+
+         charge.update({:status => :done})
+
+         booking.total_paid.should == booking.total_cost
+         booking.total_pending.should == 0
+         booking.status == :confirmed
+         booking.payment_status == :total
+
+       end
+       
+
+    end
+
+    context "charge denied (deposit)" do
        
        it "should not confirm the booking" do
+         SystemConfiguration::Variable.should_receive(:get_value).with('booking.deposit','0').and_return('40')
          booking = BookingDataSystem::Booking.create(booking_data) 
          charge = booking.charges.first
          charge.should_receive(:charge_source).any_number_of_times.and_return(booking.booking_charges.first)
          booking.should_not_receive(:confirm)         
-         booking.update({:status => :confirming})
+         
          charge.update({:status => :denied})
          booking.status.should == :pending_confirmation 
        end
