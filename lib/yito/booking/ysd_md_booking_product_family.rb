@@ -3,8 +3,10 @@ require 'data_mapper' unless defined?DataMapper
 module Yito
   module Booking
     #
-    # It represents the booking product family. This class allows the configuration
-    # of the different product families
+    # It represents the booking product family. 
+    #
+    # This class allows the configuration of the different product families
+    #  
     #
     class ProductFamily
       include DataMapper::Resource

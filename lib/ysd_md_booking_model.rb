@@ -264,6 +264,41 @@ module BookingDataSystem
     
      end
 
+     #
+     # Get the reservations received grouped by month
+     #
+     def self.reservations_received
+       
+       query = <<-QUERY
+          SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
+                 count(*) as occurrences
+          FROM bookds_bookings
+          GROUP BY TO_CHAR(creation_date, 'YYYY-MM') 
+          order by period
+       QUERY
+
+       reservations=repository(:default).adapter.select(query)
+
+     end
+
+     #
+     # Get the reservations confirmed grouped by month
+     #
+     def self.reservations_confirmed
+       
+       query = <<-QUERY
+          SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
+                 count(*) as occurrences
+          FROM bookds_bookings
+          WHERE status = 1
+          GROUP BY TO_CHAR(creation_date, 'YYYY-MM') 
+          order by period
+       QUERY
+
+       reservations=repository(:default).adapter.select(query)
+
+     end
+
      private
 
      #
