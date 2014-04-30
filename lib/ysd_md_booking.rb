@@ -8,10 +8,10 @@ require 'ysd_md_booking_model'
 require 'ysd_md_booking_charge'
 require 'ysd_md_booking_charge_observer'
 require 'commands/ysd_new_booking_command'
-require 'yito/booking/ysd_md_booking_product_family'
-require 'yito/booking/ysd_md_booking_category'
-require 'yito/booking/ysd_md_booking_extra'
-require 'yito/booking/ysd_md_booking_item'
+require 'yito/model/booking/ysd_md_booking_product_family'
+require 'yito/model/booking/ysd_md_booking_category'
+require 'yito/model/booking/ysd_md_booking_extra'
+require 'yito/model/booking/ysd_md_booking_item'
 require 'ysd_md_translation' unless defined?Yito::Translation
 
 module BookingDataSystem

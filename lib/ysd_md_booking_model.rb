@@ -85,6 +85,10 @@ module BookingDataSystem
 
      property :payment_status, Enum[:none, :deposit, :total], 
        :field => 'payment_status', :default => :none
+
+     belongs_to :booking_item, 'Yito::Model::Booking::BookingItem', 
+       :child_key => [:booking_item_reference], :parent_key => [:reference], 
+       :required => false
      
      #
      # Get a booking by its free access id
@@ -269,11 +273,23 @@ module BookingDataSystem
      #
      def self.reservations_received
        
+       function = nil
+       format = nil
+
+       case repository(:default).adapter.options.symbolize_keys[:adapter]
+                    when 'mysql'
+                      function ='DATE_FORMAT'
+                      format = '%Y-%M'
+                    else
+                      function = 'TO_CHAR'
+                      format = 'YYYY-MM'
+                  end
+
        query = <<-QUERY
-          SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
+          SELECT #{function}(creation_date, '#{format}') as period, 
                  count(*) as occurrences
           FROM bookds_bookings
-          GROUP BY TO_CHAR(creation_date, 'YYYY-MM') 
+          GROUP BY #{function}(creation_date, '#{format}') 
           order by period
        QUERY
 
@@ -285,13 +301,25 @@ module BookingDataSystem
      # Get the reservations confirmed grouped by month
      #
      def self.reservations_confirmed
+
+       function = nil
+       format = nil
+
+       case repository(:default).adapter.options.symbolize_keys[:adapter]
+                    when 'mysql'
+                      function ='DATE_FORMAT'
+                      format = '%Y-%M'
+                    else
+                      function = 'TO_CHAR'
+                      format = 'YYYY-MM'
+                  end
        
        query = <<-QUERY
-          SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
+          SELECT #{function}(creation_date, '#{format}') as period, 
                  count(*) as occurrences
           FROM bookds_bookings
           WHERE status = 1
-          GROUP BY TO_CHAR(creation_date, 'YYYY-MM') 
+          GROUP BY #{function}(creation_date, '#{format}') 
           order by period
        QUERY
 
