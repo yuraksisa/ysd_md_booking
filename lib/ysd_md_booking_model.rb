@@ -289,7 +289,7 @@ module BookingDataSystem
           SELECT #{function}(creation_date, '#{format}') as period, 
                  count(*) as occurrences
           FROM bookds_bookings
-          GROUP BY #{function}(creation_date, '#{format}') 
+          GROUP BY period
           order by period
        QUERY
 
@@ -318,8 +318,8 @@ module BookingDataSystem
           SELECT #{function}(creation_date, '#{format}') as period, 
                  count(*) as occurrences
           FROM bookds_bookings
-          WHERE status = 1
-          GROUP BY #{function}(creation_date, '#{format}') 
+          WHERE status IN (2,3,4)
+          GROUP BY period 
           order by period
        QUERY
 
