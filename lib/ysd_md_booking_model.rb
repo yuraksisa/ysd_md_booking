@@ -135,7 +135,16 @@ module BookingDataSystem
        booking.free_access_id = 
          Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{item_id}#{rand}")
      end
-               
+      
+     #
+     # Get the deposit amount
+     #
+     def booking_deposit
+
+       (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+
+     end
+
      #
      # Creates an online charge 
      #
@@ -365,7 +374,8 @@ module BookingDataSystem
      def new_charge!(charge_payment_method_id, charge_amount)
        charge = Payments::Charge.create({:date => Time.now,
            :amount => charge_amount, 
-           :payment_method_id => charge_payment_method_id }) 
+           :payment_method_id => charge_payment_method_id,
+           :currency => SystemConfiguration::Variable.get_value('payments.default_currency', 'EUR') }) 
        self.charges << charge
        return charge
      end

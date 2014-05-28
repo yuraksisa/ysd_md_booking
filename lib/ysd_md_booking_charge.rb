@@ -14,6 +14,17 @@ module BookingDataSystem
     belongs_to :charge, 'Payments::Charge', :child_key => [:charge_id], :parent_key => [:id], :key => true
     
     #
+    # Retrieve the booking associated with a charge
+    # 
+    def self.booking_from_charge(charge_id)
+
+      if booking_charge = first(:charge => {:id => charge_id })
+        booking_charge.booking
+      end
+
+    end 
+
+    #
     # Integration with charges (return the charge detail)
     #
     # @return [Array]
