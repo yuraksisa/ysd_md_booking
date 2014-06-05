@@ -2,5 +2,6 @@ notifications:
   customer_req_email_subject: Solicitud de reserva rebuda
   customer_email_subject: La seva reserva
   manager_email_subject: Solicitud de reserva
+  manager_paying_email_subject: Client pagant solicitud reserva  
 booking_model:
   charge_description: Reserva %1

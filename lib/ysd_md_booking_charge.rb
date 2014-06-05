@@ -91,7 +91,7 @@ module BookingDataSystem
     def build_deposit_charge_detail
 
       charge_detail = [{:item_reference => 'DEPOSIT',
-      	                :item_description => booking.item_description,
+      	                :item_description => booking.charge_item_detail,
       	                :item_units => 1,
       	                :item_price => booking.booking_amount}]
 
@@ -105,7 +105,7 @@ module BookingDataSystem
 
       charge_detail = []
       charge_detail << {:item_reference => booking.item_id,
-                       :item_description => booking.item_description,
+                       :item_description => booking.charge_item_detail,
                        :item_units => 1,
                        :item_price => booking.item_cost}
       

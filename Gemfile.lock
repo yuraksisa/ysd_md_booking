@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ysd_md_booking (0.2.36)
+    ysd_md_booking (0.2.42)
       data_mapper (= 1.2.0)
       delayed_job
       delayed_job_data_mapper
@@ -16,26 +16,17 @@ PATH
       ysd_md_yito
       ysd_service_postal
 
-PATH
-  remote: ~/proyectos/biblioteca.desarrollo/ruby/models/model_payment
-  specs:
-    ysd_md_payment (0.2.19)
-      data_mapper (= 1.2.0)
-      json
-      tilt
-      ysd_md_configuration
-      ysd_md_translation
-      ysd_md_yito
-
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (3.2.14)
+    activesupport (3.2.18)
       i18n (~> 0.6, >= 0.6.4)
       multi_json (~> 1.0)
     addressable (2.2.8)
-    bcrypt-ruby (3.0.1)
-    bson (1.9.2)
+    bcrypt (3.1.7)
+    bcrypt-ruby (3.1.5)
+      bcrypt (>= 3.1.3)
+    bson (1.10.0)
     daemons (1.1.9)
     data_mapper (1.2.0)
       dm-aggregates (~> 1.2.0)
@@ -98,24 +89,24 @@ GEM
     do_sqlite3 (0.10.12)
       data_objects (= 0.10.12)
     fastercsv (1.5.5)
-    i18n (0.6.5)
-    json (1.8.0)
-    json_pure (1.8.0)
-    macaddr (1.6.1)
-      systemu (~> 2.5.0)
+    i18n (0.6.9)
+    json (1.8.1)
+    json_pure (1.8.1)
+    macaddr (1.7.1)
+      systemu (~> 2.6.2)
     mail (2.5.4)
       mime-types (~> 1.16)
       treetop (~> 1.4.8)
-    mime-types (1.23)
-    mongo (1.9.2)
-      bson (~> 1.9.2)
-    multi_json (1.7.4)
-    polyglot (0.3.3)
-    pony (1.5)
-      mail (> 2.0)
-    r18n-core (1.1.5)
+    mime-types (1.25.1)
+    mongo (1.10.0)
+      bson (~> 1.10.0)
+    multi_json (1.10.1)
+    polyglot (0.3.4)
+    pony (1.8)
+      mail (>= 2.0)
+    r18n-core (1.1.10)
     rack (1.5.2)
-    rack-protection (1.5.0)
+    rack-protection (1.5.3)
       rack
     rake (10.0.4)
     rspec (2.13.0)
@@ -126,12 +117,12 @@ GEM
     rspec-expectations (2.13.0)
       diff-lcs (>= 1.1.3, < 2.0)
     rspec-mocks (2.13.1)
-    sinatra (1.4.2)
-      rack (~> 1.5, >= 1.5.2)
+    sinatra (1.4.4)
+      rack (~> 1.4)
       rack-protection (~> 1.4)
       tilt (~> 1.3, >= 1.3.4)
     stringex (1.5.1)
-    systemu (2.5.2)
+    systemu (2.6.4)
     tilt (1.4.1)
     tlsmail (0.0.1)
     treetop (1.4.15)
@@ -150,18 +141,20 @@ GEM
       json
       sinatra (~> 1.3)
       ysd_md_configuration
+    ysd_data_analysis (0.1.0)
     ysd_md_audit (0.2.5)
       data_mapper (= 1.2.0)
       ysd-persistence (>= 0.2.0)
       ysd_md_profile
     ysd_md_business_events (0.2.0)
       data_mapper (= 1.2.0)
-    ysd_md_cms (0.2.41)
+    ysd_md_cms (0.2.42)
       data_mapper (= 1.2.0)
       unicode_utils
       uuid (= 2.3.5)
       ysd-persistence
       ysd_core_plugins
+      ysd_data_analysis
       ysd_md_audit
       ysd_md_comparison
       ysd_md_profile
@@ -170,14 +163,21 @@ GEM
       ysd_md_system
       ysd_md_translation
       ysd_md_yito
-    ysd_md_comparison (0.2.7)
+    ysd_md_comparison (0.2.8)
     ysd_md_configuration (0.2.6)
       data_mapper (= 1.2.0)
       dm-ysd-encrypted
       ysd_md_yito
-    ysd_md_location (0.2.5)
+    ysd_md_location (0.2.6)
       data_mapper (= 1.2.0)
       ysd_core_plugins
+    ysd_md_payment (0.2.19)
+      data_mapper (= 1.2.0)
+      json
+      tilt
+      ysd_md_configuration
+      ysd_md_translation
+      ysd_md_yito
     ysd_md_profile (0.2.30)
       data_mapper (= 1.2.0)
       ysd-persistence
@@ -208,4 +208,3 @@ DEPENDENCIES
   rake
   rspec
   ysd_md_booking!
-  ysd_md_payment!

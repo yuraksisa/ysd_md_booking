@@ -2,5 +2,6 @@ notifications:
   customer_req_email_subject: Booking request received
   customer_email_subject: Your booking
   manager_email_subject: New booking request
+  manager_paying_email_subject: Customer paying new booking request 
 booking_model:
   charge_description: Booking %1

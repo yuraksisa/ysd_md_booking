@@ -57,6 +57,7 @@ module BookingDataSystem
      property :total_paid, Decimal, :field => 'total_paid', :scale => 2, :precision => 10, :default => 0
      property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
 
+     property :pay_now, Boolean, :field => 'pay_now', :default => false
      property :payment, String, :field => 'payment', :length => 10
      property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10
      property :payment_method_id, String, :field => 'payment_method_id', :length => 30
@@ -115,9 +116,12 @@ module BookingDataSystem
            end
            reload
            create_new_booking_business_event!
-           if charges.empty? 
-             notify_request_to_customer
+           if pay_now 
+             notify_manager_pay_now
+             notify_request_to_customer_pay_now
+           else
              notify_manager
+             notify_request_to_customer
            end 
          end
        else
@@ -142,6 +146,15 @@ module BookingDataSystem
      def booking_deposit
 
        (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+
+     end
+     
+     #
+     # Get the charge item detail
+     #
+     def charge_item_detail
+    
+        "#{item_description} #{Date.strptime(date_from,'%d/%m/%Y')} - #{Date.strptime(date_to,'%d/%m/%Y')}" 
 
      end
 

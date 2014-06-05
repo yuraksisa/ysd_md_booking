@@ -19,6 +19,18 @@ module BookingDataSystem
       end
 
     end
+
+    #
+    # Notify the manager that a new request is being paid
+    #
+    def self.notify_manager_pay_now(to, subject, message, booking_id)
+
+       PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+       if (booking = BookingDataSystem::Booking.get(booking_id))
+         booking.update(:manager_notification_p_n_sent => true)
+       end
+
+    end
     
     #
     # Notifies the customer that a new request has been received
@@ -33,6 +45,19 @@ module BookingDataSystem
 
     end
     
+    #
+    # Notifies the customer that a new request has been received (payment process)
+    #
+    def self.notify_request_to_customer_pay_now(to, subject, message, booking_id)
+
+      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+
+      if booking = BookingDataSystem::Booking.get(booking_id)
+        booking.update(:customer_req_notification_p_sent => true)
+      end      
+
+    end
+
     #
     # Notifies the customer when the booking is confirmed 
     #
@@ -71,9 +96,11 @@ module BookingDataSystem
     def self.included(model)
      
      if model.respond_to?(:property)
-       model.property :customer_notification_sent, DataMapper::Property::Boolean, :field => 'customer_notification_sent'
        model.property :customer_req_notification_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_sent', :default => false
+       model.property :customer_req_notification_p_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_p_sent', :default => false
+       model.property :customer_notification_sent, DataMapper::Property::Boolean, :field => 'customer_notification_sent'
        model.property :manager_notification_sent, DataMapper::Property::Boolean, :field => 'manager_notification_sent'
+       model.property :manager_notification_p_n_sent, DataMapper::Property::Boolean, :field => 'manager_notification_p_n_sent', :default => false
      end
 
     end
@@ -106,6 +133,35 @@ module BookingDataSystem
       end
 
     end  
+
+    #
+    # Notifies by email the booking manager that a new booking have been received
+    # 
+    # The manager address can be set up on booking.notification_email variable
+    #
+    # It allows to define a custom template naming it as booking_manager_notification
+    # 
+    def notify_manager_pay_now
+
+      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
+
+        template = if bmn_template
+                     ERB.new bmn_template.text
+                   else
+                     ERB.new manager_notification_pay_now_template
+                   end
+        
+        message = template.result(binding)
+
+        Notifier.delay.notify_manager_pay_now(notification_email, 
+          BookingDataSystem.r18n.t.notifications.manager_paying_email_subject.to_s, 
+          message,
+          self.id)
+
+      end
+
+    end
     
     #
     # Notifies by email the customer the booking request
@@ -118,15 +174,13 @@ module BookingDataSystem
 
       unless customer_email.empty?
 
-        p "Entro"
-
         bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_notification_#{customer_language}") ||
                        ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
         
         if bcn_template
           template = ERB.new bcn_template.text
         else
-          template = ERB.new customer_notification_request_template
+          template = ERB.new customer_notification_booking_request_template
         end
 
         message = template.result(binding)
@@ -139,6 +193,38 @@ module BookingDataSystem
       end
 
     end
+
+    #
+    # Notifies by email the customer the booking request
+    #
+    # The email address is retrieved from the booking
+    #
+    # It allows to define a custom template naming it as booking_customer_req_notification
+    #
+    def notify_request_to_customer_pay_now
+
+      unless customer_email.empty?
+
+        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_pay_now_notification_#{customer_language}") ||
+                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
+        
+        if bcn_template
+          template = ERB.new bcn_template.text
+        else
+          template = ERB.new customer_notification_request_pay_now_template
+        end
+
+        message = template.result(binding)
+
+        Notifier.delay.notify_request_to_customer_pay_now(self.customer_email, 
+          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+          message, 
+          self.id)
+
+      end
+
+    end
+
 
     #
     # Notifies by email the customer the booking confirmation
@@ -158,7 +244,7 @@ module BookingDataSystem
         if bcn_template
           template = ERB.new bcn_template.text
         else
-          template = ERB.new customer_notification_template
+          template = ERB.new customer_notification_booking_confirmed_template
         end
 
         message = template.result(binding)
@@ -175,6 +261,19 @@ module BookingDataSystem
     private
 
     #
+    # Gets the default template used to notify the booking manager that an user is paying
+    #
+    def manager_notification_pay_now_template
+
+      file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "manager_notification_pay_now_template.erb"))
+
+      File.read(file)
+
+    end
+
+
+    #
     # Gets the default template used to notify the booking manager
     #
     def manager_notification_template
@@ -185,11 +284,36 @@ module BookingDataSystem
       File.read(file)
 
     end
-     
+
     #
     # Gets the default template used to notify the customer
     #
-    def customer_notification_template
+    def customer_notification_booking_request_template
+
+       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "customer_notification_booking_request_template.erb"))
+
+       File.read(file)
+
+    end 
+     
+    #
+    # Gets the default template used to notify customer pay now
+    #
+    def customer_notification_request_pay_now_template
+
+       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "customer_notification_pay_now_template.erb"))
+
+       File.read(file)
+
+
+    end
+
+    #
+    # Gets the default template used to notify the customer that the reservation is confirmed
+    #
+    def customer_notification_booking_confirmed_template
 
        file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
           "templates", "customer_notification_template.erb"))
@@ -197,18 +321,6 @@ module BookingDataSystem
        File.read(file)
 
     end    
-
-    #
-    # Gets the default template used to notify the customer
-    #
-    def customer_notification_request_template
-
-       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
-          "templates", "customer_notification_template.erb"))
-
-       File.read(file)
-
-    end   
 
   
   end
