@@ -39,8 +39,8 @@ module Yito
 
         def check_category!
 
-          if category and (not category.saved?) and loaded_category = Category.get(category.code)
-            category = loaded_category
+          if category and (not category.saved?) and loaded_category = BookingCategory.get(category.code)
+            self.category = loaded_category
           end
 
         end

@@ -12,6 +12,8 @@ require 'yito/model/booking/ysd_md_booking_product_family'
 require 'yito/model/booking/ysd_md_booking_category'
 require 'yito/model/booking/ysd_md_booking_extra'
 require 'yito/model/booking/ysd_md_booking_item'
+require 'yito/model/booking/ysd_md_booking_configuration'
+require 'yito/model/booking/ysd_md_booking_availability'
 require 'ysd_md_translation' unless defined?Yito::Translation
 
 module BookingDataSystem

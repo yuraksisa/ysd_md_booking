@@ -39,6 +39,7 @@ module BookingDataSystem
      property :id, Serial, :field => 'id'
      
      property :creation_date, DateTime, :field => 'creation_date'  # The creation date
+     property :created_by_manager, Boolean, :field => 'created_by_manager', :default => false
      property :source, String, :field => 'source', :length => 50   # Where does the booking come from
      
      property :date_from, DateTime, :field => 'date_from', :required => true
@@ -115,13 +116,14 @@ module BookingDataSystem
              raise error 
            end
            reload
-           create_new_booking_business_event!
-           if pay_now 
-             notify_manager_pay_now
-             notify_request_to_customer_pay_now
-           else
-             notify_manager
-             notify_request_to_customer
+           unless created_by_manager
+             if pay_now 
+               notify_manager_pay_now
+               notify_request_to_customer_pay_now
+             else
+               notify_manager
+               notify_request_to_customer
+             end
            end 
          end
        else
@@ -154,7 +156,7 @@ module BookingDataSystem
      #
      def charge_item_detail
     
-        "#{item_description} #{Date.strptime(date_from,'%d/%m/%Y')} - #{Date.strptime(date_to,'%d/%m/%Y')}" 
+        "#{item_description} #{date_from.strftime('%d/%m/%Y')} - #{date_to.strftime('%d/%m/%Y')}" 
 
      end
 
@@ -285,6 +287,7 @@ module BookingDataSystem
        relationships = options[:relationships] || {}
        relationships.store(:charges, {})
        relationships.store(:booking_extras, {})
+       relationships.store(:booking_item, {})
 
        super(options.merge({:relationships => relationships}))
     
