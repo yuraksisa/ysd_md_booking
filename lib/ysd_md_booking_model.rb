@@ -59,6 +59,7 @@ module BookingDataSystem
      property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
 
      property :pay_now, Boolean, :field => 'pay_now', :default => false
+     property :force_allow_payment, Boolean, :field => 'force_allow_payment', :default => false
      property :payment, String, :field => 'payment', :length => 10
      property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10
      property :payment_method_id, String, :field => 'payment_method_id', :length => 30
@@ -110,6 +111,7 @@ module BookingDataSystem
          transaction do 
            auto_create_online_charge!
            begin
+             self.force_allow_payment = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
              result = super
            rescue DataMapper::SaveFailureError => error
              p "Error saving booking #{error} #{self.inspect}"
