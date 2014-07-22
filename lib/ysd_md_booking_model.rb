@@ -111,10 +111,14 @@ module BookingDataSystem
          transaction do 
            auto_create_online_charge!
            begin
-             self.force_allow_payment = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+             if self.pay_now
+               self.force_allow_payment = true
+             else
+               self.force_allow_payment = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+             end
              result = super
            rescue DataMapper::SaveFailureError => error
-             p "Error saving booking #{error} #{self.inspect}"
+             p "Error saving booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
              raise error 
            end
            reload

@@ -44,6 +44,28 @@ module Yito
 
   	  	end	
 
+        #
+        # Check the categories that allow payment on a date range
+        #
+        def categories_payment_enabled(from, to)
+
+           if SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+              ::Yito::Model::Booking::BookingCategory.all.map { |item| item.code }
+           else
+
+              payment_enabled = ::Yito::Model::Calendar::EventType.first(:name => 'payment_enabled')
+
+              condition = Conditions::JoinComparison.new('$and',
+                [Conditions::Comparison.new('event_type', '$eq', payment_enabled),
+                 Conditions::Comparison.new('from', '$lte', from),
+                 Conditions::Comparison.new('to', '$gte', to)])
+
+              cat_payment_available = Set.new(condition.build_datamapper(Yito::Model::Calendar::Event).all.map {|item| item.calendar.name}).to_a
+
+           end
+
+        end
+
   	  end
   	end
   end
