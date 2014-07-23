@@ -32,7 +32,10 @@ module Yito
                Conditions::JoinComparison.new('$and',
                  [Conditions::Comparison.new('from','$eq', from),
                   Conditions::Comparison.new('to','$eq', to)
-                  ])               
+                  ]),
+               Conditions::JoinComparison.new('$and',
+                 [Conditions::Comparison.new('from', '$gte', from),
+                  Conditions::Comparison.new('to', '$lte', to)])               
               ]
             ),
             ]
