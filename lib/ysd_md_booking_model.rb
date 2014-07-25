@@ -1,5 +1,6 @@
 require 'data_mapper' unless defined?DataMapper
 require 'dm-types'
+require 'date'
 require 'ysd_md_booking_charge'
 require 'ysd_md_audit' unless defined?Audit::Auditor
 require 'ysd_md_yito' unless defined?Yito::Model::Finder
@@ -114,7 +115,8 @@ module BookingDataSystem
              if self.pay_now
                self.force_allow_payment = true
              else
-               self.force_allow_payment = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+               self.force_allow_payment = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool and
+                                          Booking.payment_cadence?(self.date_from)
              end
              result = super
            rescue DataMapper::SaveFailureError => error
@@ -147,7 +149,56 @@ module BookingDataSystem
        booking.free_access_id = 
          Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{item_id}#{rand}")
      end
-      
+     
+     #
+     # Check if the reservation has expired
+     #
+     def expired?
+         conf_item_hold_time = SystemConfiguration::Variable.get_value('booking.item_hold_time', '0').to_i
+         hold_time_diff_in_hours = (DateTime.now.to_time - self.creation_date.to_time) / 3600
+         expired = hold_time_diff_in_hours > conf_item_hold_time
+         p "#{id} status : #{status} #{hold_time_diff_in_hours} #{conf_item_hold_time} expired: #{expired}"
+         (status == :pending_confirmation) and expired
+     end
+
+     alias_method :is_expired, :expired?
+
+     #
+     # Check if the customer can pay for the reservation
+     #
+     def can_pay?
+
+       conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+       conf_allow_total_payment = SystemConfiguration::Variable.get_value('booking.allow_total_payment','false').to_bool
+       conf_deposit_percent = SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i
+
+       can_pay = (conf_payment_enabled or self.force_allow_payment) and 
+                 ((conf_allow_total_payment and self.total_pending > 0) or 
+                 (conf_deposit > 0 and self.total_paid == 0))
+
+       # Check if it has expired and it is the first payment
+       if self.total_paid == 0              
+         can_pay = (can_pay and status != :cancelled and !expired?)
+       end          
+
+       return can_pay
+
+     end
+
+     #
+     # Check if the reservation is within the cadence period
+     #
+     def self.payment_cadence?(date_from)
+
+         conf_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence', '0').to_i
+
+         cadence_from = DateTime.parse("#{date_from.strftime('%Y-%m-%d')}T00:00:00")
+         cadence_payment = (cadence_from.to_time - DateTime.now.to_time) / 3600
+         cadence_payment > conf_payment_cadence
+
+     end
+
+
      #
      # Get the deposit amount
      #
@@ -295,7 +346,10 @@ module BookingDataSystem
        relationships.store(:booking_extras, {})
        relationships.store(:booking_item, {})
 
-       super(options.merge({:relationships => relationships}))
+       methods = options[:methods] || []
+       methods << :is_expired
+
+       super(options.merge({:relationships => relationships, :methods => methods}))
     
      end
 
