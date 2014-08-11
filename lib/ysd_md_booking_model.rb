@@ -33,6 +33,7 @@ module BookingDataSystem
      include BookingDataSystem::BookingDriver
      include BookingDataSystem::BookingPickupReturn
      include BookingDataSystem::BookingFlight
+     extend Yito::Model::Booking::Queries
      extend Yito::Model::Finder
     
      storage_names[:default] = 'bookds_bookings' # stored in bookings table in default storage
@@ -351,65 +352,6 @@ module BookingDataSystem
 
        super(options.merge({:relationships => relationships, :methods => methods}))
     
-     end
-
-     #
-     # Get the reservations received grouped by month
-     #
-     def self.reservations_received
-       
-       function = nil
-       format = nil
-
-       case repository(:default).adapter.options.symbolize_keys[:adapter]
-                    when 'mysql'
-                      function ='DATE_FORMAT'
-                      format = '%Y-%M'
-                    else
-                      function = 'TO_CHAR'
-                      format = 'YYYY-MM'
-                  end
-
-       query = <<-QUERY
-          SELECT #{function}(creation_date, '#{format}') as period, 
-                 count(*) as occurrences
-          FROM bookds_bookings
-          GROUP BY period
-          order by period
-       QUERY
-
-       reservations=repository(:default).adapter.select(query)
-
-     end
-
-     #
-     # Get the reservations confirmed grouped by month
-     #
-     def self.reservations_confirmed
-
-       function = nil
-       format = nil
-
-       case repository(:default).adapter.options.symbolize_keys[:adapter]
-                    when 'mysql'
-                      function ='DATE_FORMAT'
-                      format = '%Y-%M'
-                    else
-                      function = 'TO_CHAR'
-                      format = 'YYYY-MM'
-                  end
-       
-       query = <<-QUERY
-          SELECT #{function}(creation_date, '#{format}') as period, 
-                 count(*) as occurrences
-          FROM bookds_bookings
-          WHERE status IN (2,3,4)
-          GROUP BY period 
-          order by period
-       QUERY
-
-       reservations=repository(:default).adapter.select(query)
-
      end
 
      private
