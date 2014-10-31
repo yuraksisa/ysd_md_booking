@@ -18,6 +18,10 @@ module BookingDataSystem
      property :quantity, Integer, :field => 'quantity'
      
      belongs_to :booking, 'Booking', :child_key => [:booking_id]
+
+     def save
+      super # Invokes the super class to achieve the chain of methods invoked       
+     end
      
   end
 end
