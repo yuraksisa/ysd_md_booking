@@ -22,7 +22,9 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "ysd_md_audit"
   s.add_runtime_dependency "ysd_md_location"
   s.add_runtime_dependency "ysd_md_translation"
-    
+  s.add_runtime_dependency "ysd_md_calendar"
+  s.add_runtime_dependency "ysd_md_rates"
+      
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
   s.add_development_dependency "dm-sqlite-adapter" # Model testing using sqlite
