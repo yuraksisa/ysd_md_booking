@@ -1,0 +1,119 @@
+define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
+
+  var booking = {
+
+    configuration : {
+      company                    : 'Yurak Booking',
+      min_date                   : new Date(),
+      max_date                   : new Date(),
+    },
+
+    /** Pickup place **/
+    pickup_places : {
+      <% pickup_places.each do |place| %>
+         '<%=place.name%>' : '<%=place.name%>',
+      <% end %>
+    },
+
+    allow_custom_pickup_place : true,
+
+    return_places : {
+      <% return_places.each do |place| %>
+         '<%=place.name%>' : '<%=place.name%>',
+      <% end %>
+    },
+
+    /** Define the sessions **/
+    seasons : [       
+              <% season_definition.seasons.each do |season| %>
+                new YSDRates.Season("<%=season.name%>", 
+                                    "<%=season.from_month.to_s.rjust(2, '0')%>/<%=season.from_day.to_s.rjust(2, '0')%>",
+                                    "<%=season.to_month.to_s.rjust(2,'0')%>/<%=season.to_day.to_s.rjust(2, '0')%>"),
+              <% end %>
+  	            ],   
+  
+    /** Define the families **/	              
+    families : {
+              <% booking_categories.each do |booking_category| %>
+                '<%=booking_category.code%>': { family: '<%=booking_category.code%>', 
+                   description:'<%=booking_category.name%>', 
+                   cars:'<%=booking_category.description.gsub(/\n/,"<br/>")%>',
+                   photo:'<%=booking_category.photo_url_small%>'},
+              <% end %>
+             },
+  
+    /** Defines the factors **/
+    factors : [
+              <% factor_definition.factors.each do |factor| %>
+                new YSDRates.Factor(<%=factor.from%>,<%=factor.to%>,<%='%.2f' % factor.factor%>),
+              <% end %> 
+            ],
+               
+    basePrice: {
+       <% booking_categories.each do |booking_category| %>
+         '<%=booking_category.code%>': <%='%.2f' % (booking_category.price_definition.base_price || 0)%>,
+       <% end %>
+    },
+
+    /** Define the rates (family prices) **/
+    rates : {
+  
+      <% booking_categories.each do |booking_category| %>
+        '<%=booking_category.code%>': {
+           <% if booking_category.price_definition.type == :season %>
+              <% booking_category.price_definition.prices.each do |price| %>
+                 '<%=price.season.name%>': {price: <%='%.2f' % price.price%>},
+              <% end %>
+           <% end %>
+        },
+      <% end %>
+            
+    } ,
+  
+    /** Define the Extras **/
+   
+    extras : {
+   	 
+      <% booking_extras.each do |booking_extra| %>
+        '<%=booking_extra.code%>': new YSDRates.Extra('<%=booking_extra.code%>', 
+           '<%=booking_extra.name%>', <%=booking_extra.max_quantity%>),
+      <% end %>
+   	 
+    },
+
+    extrasRates : {
+
+      <% booking_extras.each do |booking_extra| %>
+        '<%=booking_extra.code%>': { price: <%='%.2f' % booking_extra.price_definition.prices.first.price%>,
+           maxPrice: <%='%.2f' % booking_extra.price_definition.max_price%>},
+      <% end %>
+
+    }    
+
+    
+  };
+
+  booking.rateCalculation = new YSDRates.RateCalculation(new YSDRates.Calendar(booking.seasons),
+                                                  new YSDRates.RateFinder(booking.rates),
+                                                  new YSDRates.FactorFinder(booking.factors),
+                                                  null, null, booking.basePrice);
+
+  booking.extraCalculation = new YSDRates.ExtraCalculation(booking.extrasRates);
+
+  booking.calculate_items_price = function(fromDate, toDate) { 
+   	
+      return this.rateCalculation.get_price(fromDate, toDate, this.families, null, 0);
+   	                
+  };
+
+  booking.calculate_extra_price = function(fromDate, toDate, extra_id, family) { 
+  
+      return this.extraCalculation.get_price(fromDate, toDate, extra_id, family);
+  
+    }
+
+  booking.configuration.max_date.setFullYear(booking.configuration.max_date.getFullYear()+1);
+
+  return booking;
+
+});

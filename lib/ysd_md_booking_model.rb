@@ -56,7 +56,9 @@ module BookingDataSystem
      property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
      property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
-     
+     property :time_from_cost, Decimal, :scale => 2, :precision => 10
+     property :time_to_cost, Decimal, :scale => 2, :precision => 10
+
      property :total_paid, Decimal, :field => 'total_paid', :scale => 2, :precision => 10, :default => 0
      property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
 
@@ -346,12 +348,17 @@ module BookingDataSystem
        relationships.store(:charges, {})
        relationships.store(:booking_extras, {})
        relationships.store(:booking_item, {})
+       relationships.store(:driver_address, {})
 
        methods = options[:methods] || []
        methods << :is_expired
 
        super(options.merge({:relationships => relationships, :methods => methods}))
     
+     end
+
+     def item_unit_cost
+       item_cost / days
      end
 
      private

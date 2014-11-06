@@ -18,6 +18,9 @@ require 'yito/model/booking/ysd_md_booking_extra'
 require 'yito/model/booking/ysd_md_booking_item'
 require 'yito/model/booking/ysd_md_booking_configuration'
 require 'yito/model/booking/ysd_md_booking_availability'
+require 'yito/model/booking/ysd_md_booking_pickup_return_place_definition'
+require 'yito/model/booking/ysd_md_booking_pickup_return_place'
+require 'yito/model/booking/ysd_md_booking_generator'
 require 'ysd_md_translation' unless defined?Yito::Translation
 
 module BookingDataSystem
