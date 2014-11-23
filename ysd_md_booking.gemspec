@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "ysd_md_booking"
-  s.version = "0.2.60"
+  s.version = "0.2.62"
   s.authors = ["Yurak Sisa Dream"]
   s.date    = "2012-03-06"
   s.email   = ["yurak.sisa.dream@gmail.com"]
@@ -22,7 +22,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "ysd_md_audit"
   s.add_runtime_dependency "ysd_md_location"
   s.add_runtime_dependency "ysd_md_translation"
-  s.add_runtime_dependency "ysd_md_calendar"
   s.add_runtime_dependency "ysd_md_rates"
       
   s.add_development_dependency "rake"

@@ -160,7 +160,6 @@ module BookingDataSystem
          conf_item_hold_time = SystemConfiguration::Variable.get_value('booking.item_hold_time', '0').to_i
          hold_time_diff_in_hours = (DateTime.now.to_time - self.creation_date.to_time) / 3600
          expired = hold_time_diff_in_hours > conf_item_hold_time
-         p "#{id} status : #{status} #{hold_time_diff_in_hours} #{conf_item_hold_time} expired: #{expired}"
          (status == :pending_confirmation) and expired
      end
 
@@ -343,18 +342,20 @@ module BookingDataSystem
      # Exporting to json
      #
      def as_json(options={})
- 
-       relationships = options[:relationships] || {}
-       relationships.store(:charges, {})
-       relationships.store(:booking_extras, {})
-       relationships.store(:booking_item, {})
-       relationships.store(:driver_address, {})
 
-       methods = options[:methods] || []
-       methods << :is_expired
+       if options.has_key?(:only)
+         super(options)
+       else
+         relationships = options[:relationships] || {}
+         relationships.store(:charges, {})
+         relationships.store(:booking_extras, {})
+         relationships.store(:booking_item, {})
+         relationships.store(:driver_address, {})
+         methods = options[:methods] || []
+         methods << :is_expired
+         super(options.merge({:relationships => relationships, :methods => methods}))
+       end
 
-       super(options.merge({:relationships => relationships, :methods => methods}))
-    
      end
 
      def item_unit_cost
