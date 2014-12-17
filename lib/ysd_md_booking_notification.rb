@@ -88,177 +88,9 @@ module BookingDataSystem
   end
 
   #
-  # Send notifications to the booking manager and to the customer
+  # Booking Notification default templates
   #
-  #
-  module BookingNotifications
-    
-    def self.included(model)
-     
-     if model.respond_to?(:property)
-       model.property :customer_req_notification_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_sent', :default => false
-       model.property :customer_req_notification_p_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_p_sent', :default => false
-       model.property :customer_notification_sent, DataMapper::Property::Boolean, :field => 'customer_notification_sent'
-       model.property :manager_notification_sent, DataMapper::Property::Boolean, :field => 'manager_notification_sent'
-       model.property :manager_notification_p_n_sent, DataMapper::Property::Boolean, :field => 'manager_notification_p_n_sent', :default => false
-     end
-
-    end
-
-    #
-    # Notifies by email the booking manager that a new booking have been received
-    # 
-    # The manager address can be set up on booking.notification_email variable
-    #
-    # It allows to define a custom template naming it as booking_manager_notification
-    # 
-    def notify_manager
-
-      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
-        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification')
-
-        template = if bmn_template
-                     ERB.new bmn_template.text
-                   else
-                     ERB.new manager_notification_template
-                   end
-        
-        message = template.result(binding)
-
-        Notifier.delay.notify_manager(notification_email, 
-          BookingDataSystem.r18n.t.notifications.manager_email_subject.to_s, 
-          message,
-          self.id)
-
-      end
-
-    end  
-
-    #
-    # Notifies by email the booking manager that a new booking have been received
-    # 
-    # The manager address can be set up on booking.notification_email variable
-    #
-    # It allows to define a custom template naming it as booking_manager_notification
-    # 
-    def notify_manager_pay_now
-
-      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
-        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
-
-        template = if bmn_template
-                     ERB.new bmn_template.text
-                   else
-                     ERB.new manager_notification_pay_now_template
-                   end
-        
-        message = template.result(binding)
-
-        Notifier.delay.notify_manager_pay_now(notification_email, 
-          BookingDataSystem.r18n.t.notifications.manager_paying_email_subject.to_s, 
-          message,
-          self.id)
-
-      end
-
-    end
-    
-    #
-    # Notifies by email the customer the booking request
-    #
-    # The email address is retrieved from the booking
-    #
-    # It allows to define a custom template naming it as booking_customer_req_notification
-    #
-    def notify_request_to_customer
-
-      unless customer_email.empty?
-
-        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_notification_#{customer_language}") ||
-                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
-        
-        if bcn_template
-          template = ERB.new bcn_template.text
-        else
-          template = ERB.new customer_notification_booking_request_template
-        end
-
-        message = template.result(binding)
-
-        Notifier.delay.notify_request_to_customer(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
-          message, 
-          self.id)
-
-      end
-
-    end
-
-    #
-    # Notifies by email the customer the booking request
-    #
-    # The email address is retrieved from the booking
-    #
-    # It allows to define a custom template naming it as booking_customer_req_notification
-    #
-    def notify_request_to_customer_pay_now
-
-      unless customer_email.empty?
-
-        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_pay_now_notification_#{customer_language}") ||
-                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
-        
-        if bcn_template
-          template = ERB.new bcn_template.text
-        else
-          template = ERB.new customer_notification_request_pay_now_template
-        end
-
-        message = template.result(binding)
-
-        Notifier.delay.notify_request_to_customer_pay_now(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
-          message, 
-          self.id)
-
-      end
-
-    end
-
-
-    #
-    # Notifies by email the customer the booking confirmation
-    # 
-    # The email address is retrieved from the booking
-    #
-    # It allows to define a custom template naming it as booking_customer_notification
-    # 
-    #
-    def notify_customer
-
-      unless customer_email.empty?
-
-        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_notification_#{customer_language}") ||
-                       ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
-        
-        if bcn_template
-          template = ERB.new bcn_template.text
-        else
-          template = ERB.new customer_notification_booking_confirmed_template
-        end
-
-        message = template.result(binding)
-
-        Notifier.delay.notify_customer(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_email_subject.to_s, 
-          message, 
-          self.id)
-
-      end
-
-    end
-
-    private
+  module BookingNotificationTemplates
 
     #
     # Gets the default template used to notify the booking manager that an user is paying
@@ -316,12 +148,184 @@ module BookingDataSystem
     def customer_notification_booking_confirmed_template
 
        file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
-          "templates", "customer_notification_template.erb"))
+          "templates", "customer_notification_booking_confirmed_template.erb"))
 
        File.read(file)
 
     end    
 
+  end
+
+  #
+  # Send notifications to the booking manager and to the customer
+  #
+  #
+  module BookingNotifications
+    
+    def self.included(model)
+     
+     if model.respond_to?(:property)
+       model.property :customer_req_notification_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_sent', :default => false
+       model.property :customer_req_notification_p_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_p_sent', :default => false
+       model.property :customer_notification_sent, DataMapper::Property::Boolean, :field => 'customer_notification_sent'
+       model.property :manager_notification_sent, DataMapper::Property::Boolean, :field => 'manager_notification_sent'
+       model.property :manager_notification_p_n_sent, DataMapper::Property::Boolean, :field => 'manager_notification_p_n_sent', :default => false
+     end
+
+    end
+
+    #
+    # Notifies by email the booking manager that a new booking have been received
+    # 
+    # The manager address can be set up on booking.notification_email variable
+    #
+    # It allows to define a custom template naming it as booking_manager_notification
+    # 
+    def notify_manager
+
+      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification')
+
+        template = if bmn_template
+                     ERB.new bmn_template.text
+                   else
+                     ERB.new Booking.manager_notification_template
+                   end
+        
+        message = template.result(binding)
+
+        Notifier.delay.notify_manager(notification_email, 
+          BookingDataSystem.r18n.t.notifications.manager_email_subject.to_s, 
+          message,
+          self.id)
+
+      end
+
+    end  
+
+    #
+    # Notifies by email the booking manager that a new booking have been received
+    # 
+    # The manager address can be set up on booking.notification_email variable
+    #
+    # It allows to define a custom template naming it as booking_manager_notification
+    # 
+    def notify_manager_pay_now
+
+      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
+
+        template = if bmn_template
+                     ERB.new bmn_template.text
+                   else
+                     ERB.new Booking.manager_notification_pay_now_template
+                   end
+        
+        message = template.result(binding)
+
+        Notifier.delay.notify_manager_pay_now(notification_email, 
+          BookingDataSystem.r18n.t.notifications.manager_paying_email_subject.to_s, 
+          message,
+          self.id)
+
+      end
+
+    end
+    
+    #
+    # Notifies by email the customer the booking request
+    #
+    # The email address is retrieved from the booking
+    #
+    # It allows to define a custom template naming it as booking_customer_req_notification
+    #
+    def notify_request_to_customer
+
+      unless customer_email.empty?
+
+        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_notification_#{customer_language}") ||
+                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
+        
+        if bcn_template
+          template = ERB.new bcn_template.text
+        else
+          template = ERB.new Booking.customer_notification_booking_request_template
+        end
+
+        message = template.result(binding)
+
+        Notifier.delay.notify_request_to_customer(self.customer_email, 
+          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+          message, 
+          self.id)
+
+      end
+
+    end
+
+    #
+    # Notifies by email the customer the booking request
+    #
+    # The email address is retrieved from the booking
+    #
+    # It allows to define a custom template naming it as booking_customer_req_notification
+    #
+    def notify_request_to_customer_pay_now
+
+      unless customer_email.empty?
+
+        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_pay_now_notification_#{customer_language}") ||
+                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
+        
+        if bcn_template
+          template = ERB.new bcn_template.text
+        else
+          template = ERB.new Booking.customer_notification_request_pay_now_template
+        end
+
+        message = template.result(binding)
+
+        Notifier.delay.notify_request_to_customer_pay_now(self.customer_email, 
+          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+          message, 
+          self.id)
+
+      end
+
+    end
+
+
+    #
+    # Notifies by email the customer the booking confirmation
+    # 
+    # The email address is retrieved from the booking
+    #
+    # It allows to define a custom template naming it as booking_customer_notification
+    # 
+    #
+    def notify_customer
+
+      unless customer_email.empty?
+
+        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_notification_#{customer_language}") ||
+                       ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
+        
+        if bcn_template
+          template = ERB.new bcn_template.text
+        else
+          template = ERB.new Booking.customer_notification_booking_confirmed_template
+        end
+
+        message = template.result(binding)
+
+        Notifier.delay.notify_customer(self.customer_email, 
+          BookingDataSystem.r18n.t.notifications.customer_email_subject.to_s, 
+          message, 
+          self.id)
+
+      end
+
+    end
   
   end
 

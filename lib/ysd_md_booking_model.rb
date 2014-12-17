@@ -27,6 +27,7 @@ module BookingDataSystem
   # ----------------------------------------
   class Booking 
      include DataMapper::Resource
+     extend BookingNotificationTemplates
      include BookingNotifications
      include Audit::Auditor
      include BookingDataSystem::BookingGuests
