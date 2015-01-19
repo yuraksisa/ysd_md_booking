@@ -38,7 +38,8 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
                 '<%=booking_category.code%>': { family: '<%=booking_category.code%>', 
                    description:'<%=booking_category.name%>', 
                    cars:'<%=booking_category.description.gsub(/\n/,"<br/>")%>',
-                   photo:'<%=booking_category.photo_url_small%>'},
+                   photo:'<%=booking_category.photo_url_small%>',
+                   detailedPrice: <%=booking_category.price_definition and booking_category.price_definition.units_management == :detailed%>},
               <% end %>
              },
   
@@ -61,8 +62,22 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
       <% booking_categories.each do |booking_category| %>
         '<%=booking_category.code%>': {
            <% if booking_category.price_definition.type == :season %>
-              <% booking_category.price_definition.prices.each do |price| %>
-                 '<%=price.season.name%>': {price: <%='%.2f' % price.price%>},
+              <% if booking_category.price_definition.units_management == :unitary %>
+                <% booking_category.price_definition.prices.each do |price| %>
+                  '<%=price.season.name%>': {price: <%='%.2f' % price.price%>},
+                <% end %>
+              <% else %>
+                <% booking_category.price_definition.season_definition.seasons.each do |season| %>
+                '<%=season.name%>': {
+                   'upToDays': <%=booking_category.price_definition.units_management_value%>,
+                   'prices': {
+                      <% booking_category.price_definition.detailed_prices_basic_units(season).each do |price| %>
+                         '<%=price.units%>' : <%='%.2f' % price.price%>,
+                      <% end %>
+                   },
+                   'extraPrice': <%= '%.2f' % (booking_category.price_definition.detailed_prices_extra_unit(season) || 0) %>
+                },
+                <% end %>
               <% end %>
            <% end %>
         },

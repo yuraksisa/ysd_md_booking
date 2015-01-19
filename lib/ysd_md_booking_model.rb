@@ -83,6 +83,7 @@ module BookingDataSystem
      property :customer_language, String, :field => 'customer_language', :length => 3
 
      property :comments, String, :field => 'comments', :length => 1024
+     property :notes, Text
      
      property :free_access_id, String, :field => 'free_access_id', :length => 32, :unique_index => :booking_free_access_id_index
 
@@ -161,7 +162,7 @@ module BookingDataSystem
          conf_item_hold_time = SystemConfiguration::Variable.get_value('booking.item_hold_time', '0').to_i
          hold_time_diff_in_hours = (DateTime.now.to_time - self.creation_date.to_time) / 3600
          expired = hold_time_diff_in_hours > conf_item_hold_time
-         (status == :pending_confirmation) and expired
+         (not force_allow_payment) and (status == :pending_confirmation and expired)
      end
 
      alias_method :is_expired, :expired?
