@@ -14,7 +14,9 @@ module Yito
         #
   	  	def categories_available(from, to)
 
-          categories = ::Yito::Model::Booking::BookingCategory.all.map { |cat| cat.code }
+          categories_with_calendar = ::Yito::Model::Booking::BookingCategory.all.select { |cat| not cat.calendar.nil? }
+
+          calendars = categories_with_calendar.map { |cat| {:code => cat.code, :calendar => cat.calendar.id} }
 
           no_available = ::Yito::Model::Calendar::EventType.first(:name => 'not_available')
 
@@ -41,9 +43,11 @@ module Yito
             ]
           )
 
-          not_available = Set.new(condition.build_datamapper(Yito::Model::Calendar::Event).all.map { |item| item.calendar.name }).to_a
+          not_available = Set.new(condition.build_datamapper(Yito::Model::Calendar::Event).all.map { |item| item.calendar.id }).to_a
 
-          categories - not_available
+          calendars.select! { |cal| not_available.index(cal[:calendar]) == nil }
+          calendars.map { |cal| cal[:code] }
+          #calendars - not_available
 
   	  	end	
 
