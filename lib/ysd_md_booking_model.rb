@@ -98,6 +98,10 @@ module BookingDataSystem
      belongs_to :booking_item, 'Yito::Model::Booking::BookingItem', 
        :child_key => [:booking_item_reference], :parent_key => [:reference], 
        :required => false
+
+     property :planning_color, String, :length => 9
+     belongs_to :main_booking, 'Booking', :child_key => [:main_booking_id], :parent_key => [:id],
+       :required => false
      
      #
      # Get a booking by its free access id
