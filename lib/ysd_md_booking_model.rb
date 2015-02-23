@@ -34,6 +34,7 @@ module BookingDataSystem
      include BookingDataSystem::BookingDriver
      include BookingDataSystem::BookingPickupReturn
      include BookingDataSystem::BookingFlight
+     include BookingDataSystem::BookingHeightWeight
      extend Yito::Model::Booking::Queries
      extend Yito::Model::Finder
     
@@ -112,6 +113,10 @@ module BookingDataSystem
         first({:free_access_id => free_id})
      end 
      
+     def category
+       ::Yito::Model::Booking::BookingCategory.get(item_id)
+     end
+
      #
      # Saving a booking
      #

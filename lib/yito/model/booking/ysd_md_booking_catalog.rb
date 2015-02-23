@@ -1,0 +1,46 @@
+module Yito
+  module Model
+    module Booking
+      class BookingCatalog
+        include DataMapper::Resource
+        extend  Yito::Model::Finder
+
+        storage_names[:default] = 'bookds_catalogs'
+
+        property :code, String, :length => 20, :key => true 
+        property :description, String, :length => 255
+        property :selector, String, :length => 10
+        belongs_to :product_family, 'ProductFamily'
+
+        def rates_template_code
+          "booking_tmpl_cat_#{code}_js"
+        end 
+
+        def destroy
+          catalog_code = self.code
+          super
+          default_catalog_code = SystemConfiguration::Variable.get_value('booking.default_booking_catalog.code', nil)
+          if default_catalog_code == catalog_code
+            SystemConfiguration::Variable.set_value('booking.default_booking_catalog.code','')
+          end 
+        end
+
+        def save
+          check_product_family! if self.product_family
+          super # Invokes the super class to achieve the chain of methods invoked       
+        end
+
+        private
+
+        def check_product_family!
+
+          if self.product_family and (not self.product_family.saved?) and loaded = ProductFamily.get(self.product_family.code)
+            self.product_family = loaded
+          end
+
+        end        
+
+      end
+    end
+  end
+end

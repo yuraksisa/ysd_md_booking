@@ -34,6 +34,9 @@ module Yito
           if self.price_definition and (not self.price_definition.saved?) and loaded = ::Yito::Model::Rates::PriceDefinition.get(self.price_definition.id)
             self.price_definition = loaded
           end
+          if self.price_definition and self.price_definition.id.nil?
+            self.price_definition.save
+          end          
         end
 
       end

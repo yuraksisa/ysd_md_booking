@@ -5,3 +5,7 @@ notifications:
   manager_paying_email_subject: Customer paying new booking request 
 booking_model:
   charge_description: Booking %1
+booking_category_type:
+  activity: Activity or show
+  category: Resources category
+  resource: Resource  

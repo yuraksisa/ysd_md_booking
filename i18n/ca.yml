@@ -5,3 +5,7 @@ notifications:
   manager_paying_email_subject: Client pagant solicitud reserva  
 booking_model:
   charge_description: Reserva %1
+booking_category_type:
+  activity: Activitat o espectacle
+  category: Categoria de recursos en lloger
+  resource: Recurs en lloger  

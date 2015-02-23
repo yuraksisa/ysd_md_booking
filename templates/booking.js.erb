@@ -37,17 +37,20 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
               <% booking_categories.each do |booking_category| %>
                 '<%=booking_category.code%>': { family: '<%=booking_category.code%>', 
                    description:'<%=booking_category.name%>', 
-                   cars:'<%=booking_category.description.gsub(/\n/,"<br/>")%>',
-                   photo:'<%=booking_category.photo_url_small%>',
+                   fullDescription:'<%=booking_category.description.gsub(/\n/,"<br/>")%>',
+                   cars:'<%=booking_category.short_description%>',
+                   photo:'<%=booking_category.photo_url_medium%>',
                    detailedPrice: <%=booking_category.price_definition and booking_category.price_definition.units_management == :detailed%>},
               <% end %>
              },
   
     /** Defines the factors **/
     factors : [
+              <% if factor_definition and factor_definition.factors %>
               <% factor_definition.factors.each do |factor| %>
                 new YSDRates.Factor(<%=factor.from%>,<%=factor.to%>,<%='%.2f' % factor.factor%>),
               <% end %> 
+              <% end %>
             ],
                
     basePrice: {
@@ -91,7 +94,9 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
    	 
       <% booking_extras.each do |booking_extra| %>
         '<%=booking_extra.code%>': new YSDRates.Extra('<%=booking_extra.code%>', 
-           '<%=booking_extra.name%>', <%=booking_extra.max_quantity%>),
+            '<%=booking_extra.name%>', <%=booking_extra.max_quantity%>,
+            [], 
+            <%=booking_extra.price_definition and booking_extra.price_definition.units_management == :detailed%>),
       <% end %>
    	 
     },
@@ -99,8 +104,23 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
     extrasRates : {
 
       <% booking_extras.each do |booking_extra| %>
-        '<%=booking_extra.code%>': { price: <%='%.2f' % booking_extra.price_definition.prices.first.price%>,
-           maxPrice: <%='%.2f' % booking_extra.price_definition.max_price%>},
+        <% if booking_extra.price_definition %>
+        '<%=booking_extra.code%>': {
+           <% if booking_extra.price_definition.units_management == :unitary %>
+           'price': <%='%.2f' % booking_extra.price_definition.prices.first.price%>,
+           'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>
+           <% else %>
+           'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>,
+           'upToDays': <%=booking_extra.price_definition.units_management_value%>,
+           'prices': {
+                      <% booking_extra.price_definition.detailed_prices_basic_units.each do |price| %>
+                         '<%=price.units%>' : <%='%.2f' % price.price%>,
+                      <% end %>
+                   },
+           'extraPrice': <%= '%.2f' % (booking_extra.price_definition.detailed_prices_extra_unit || 0) %>
+           <% end %>
+         },
+         <% end %>
       <% end %>
 
     }    
@@ -113,7 +133,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
                                                   new YSDRates.FactorFinder(booking.factors),
                                                   null, null, booking.basePrice);
 
-  booking.extraCalculation = new YSDRates.ExtraCalculation(booking.extrasRates);
+  booking.extraCalculation = new YSDRates.ExtraCalculation(booking.extrasRates, booking.extras);
 
   booking.calculate_items_price = function(fromDate, toDate) { 
    	
