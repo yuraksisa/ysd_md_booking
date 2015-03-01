@@ -5,6 +5,7 @@ require 'ysd_md_booking_charge'
 require 'ysd_md_audit' unless defined?Audit::Auditor
 require 'ysd_md_yito' unless defined?Yito::Model::Finder
 require 'digest/md5' unless defined?Digest::MD5
+require 'ysd_md_yito' unless defined?Yito::Model::UserAgentData
 
 module BookingDataSystem
 
@@ -37,6 +38,7 @@ module BookingDataSystem
      include BookingDataSystem::BookingHeightWeight
      extend Yito::Model::Booking::Queries
      extend Yito::Model::Finder
+     include Yito::Model::UserAgentData
     
      storage_names[:default] = 'bookds_bookings' # stored in bookings table in default storage
      
