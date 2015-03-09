@@ -128,7 +128,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
     
   };
 
-  booking.rateCalculation = new YSDRates.RateCalculation(new YSDRates.Calendar(booking.seasons),
+  booking.rateCalculation = new YSDRates.RateCalculation(new YSDRates.FirstSeasonDayCalendar(booking.seasons),
                                                   new YSDRates.RateFinder(booking.rates),
                                                   new YSDRates.FactorFinder(booking.factors),
                                                   null, null, booking.basePrice);

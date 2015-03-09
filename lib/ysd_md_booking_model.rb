@@ -53,7 +53,7 @@ module BookingDataSystem
      property :date_to, DateTime, :field => 'date_to', :required => true 
      property :time_to, String, :field => 'time_to', :required => false, :length => 5
      
-     property :item_id, String, :field => 'item_id', :required => true, :length => 20
+     property :item_id, String, :field => 'item_id', :required => false, :length => 20
      property :item_description, String, :field => 'item_description', :required => false, :length => 256
      property :optional, String, :field => 'optional', :length => 40
      
@@ -90,7 +90,10 @@ module BookingDataSystem
      
      property :free_access_id, String, :field => 'free_access_id', :length => 32, :unique_index => :booking_free_access_id_index
 
-     has n, :booking_extras, 'BookingExtra', :constraint => :destroy 
+     has n, :booking_extras, 'BookingExtra', :constraint => :destroy
+     has n, :booking_lines, 'BookingLine', :constraint => :destroy
+     has n, :booking_line_resources, 'BookingLineResource', :through => :booking_lines
+     has n, :booking_items, 'Yito::Model::Booking::BookingItem', :through => :booking_line_resources 
      
      property :status, Enum[:pending_confirmation, :confirmed,  
        :in_progress, :done, :cancelled], :field => 'status', :default => :pending_confirmation
@@ -362,6 +365,8 @@ module BookingDataSystem
          relationships = options[:relationships] || {}
          relationships.store(:charges, {})
          relationships.store(:booking_extras, {})
+         relationships.store(:booking_lines, {})
+         relationships.store(:booking_items, {})
          relationships.store(:booking_item, {})
          relationships.store(:driver_address, {})
          methods = options[:methods] || []
