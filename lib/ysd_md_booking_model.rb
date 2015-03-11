@@ -93,7 +93,6 @@ module BookingDataSystem
      has n, :booking_extras, 'BookingExtra', :constraint => :destroy
      has n, :booking_lines, 'BookingLine', :constraint => :destroy
      has n, :booking_line_resources, 'BookingLineResource', :through => :booking_lines
-     has n, :booking_items, 'Yito::Model::Booking::BookingItem', :through => :booking_line_resources 
      
      property :status, Enum[:pending_confirmation, :confirmed,  
        :in_progress, :done, :cancelled], :field => 'status', :default => :pending_confirmation
@@ -366,7 +365,7 @@ module BookingDataSystem
          relationships.store(:charges, {})
          relationships.store(:booking_extras, {})
          relationships.store(:booking_lines, {})
-         relationships.store(:booking_items, {})
+         relationships.store(:booking_line_resources, {})
          relationships.store(:booking_item, {})
          relationships.store(:driver_address, {})
          methods = options[:methods] || []

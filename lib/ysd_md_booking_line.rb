@@ -18,5 +18,20 @@ module BookingDataSystem
      belongs_to :booking, 'Booking', :child_key => [:booking_id]
      has n, :booking_line_resources, 'BookingLineResource', :constraint => :destroy 
 
+     #
+     # Exporting to json
+     #
+     def as_json(options={})
+
+       if options.has_key?(:only)
+         super(options)
+       else
+         relationships = options[:relationships] || {}
+         relationships.store(:booking_line_resources, {})
+         super(options.merge({:relationships => relationships}))
+       end
+
+     end
+
   end
 end
