@@ -71,6 +71,19 @@ module BookingDataSystem
 
     end
 
+    #
+    # Notifies the customer when the payment is enabled
+    #
+    def self.notify_customer_payment_enabled(to, subject, message, booking_id)
+
+      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+
+      if booking = BookingDataSystem::Booking.get(booking_id)
+        booking.update(:customer_payment_enabled_sent => true)
+      end
+
+    end
+
     def self.build_message(message)
 
       post_message = {}
@@ -154,6 +167,18 @@ module BookingDataSystem
 
     end    
 
+    #
+    # Gets the default template used to notify the customer that the payment has been enabled
+    #
+    def customer_notification_payment_enabled_template
+
+       file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "customer_notification_payment_enabled_template.erb"))
+
+       File.read(file)
+
+    end
+
   end
 
   #
@@ -168,6 +193,7 @@ module BookingDataSystem
        model.property :customer_req_notification_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_sent', :default => false
        model.property :customer_req_notification_p_sent, DataMapper::Property::Boolean, :field => 'customer_req_notification_p_sent', :default => false
        model.property :customer_notification_sent, DataMapper::Property::Boolean, :field => 'customer_notification_sent'
+       model.property :customer_payment_enabled_sent, DataMapper::Property::Boolean, :field => 'customer_payment_enabled_sent', :default => false
        model.property :manager_notification_sent, DataMapper::Property::Boolean, :field => 'manager_notification_sent'
        model.property :manager_notification_p_n_sent, DataMapper::Property::Boolean, :field => 'manager_notification_p_n_sent', :default => false
      end
@@ -243,11 +269,10 @@ module BookingDataSystem
 
       unless customer_email.empty?
 
-        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_notification_#{customer_language}") ||
-                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
+        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
         
         if bcn_template
-          template = ERB.new bcn_template.text
+          template = ERB.new bcn_template.translate(customer_language).text
         else
           template = ERB.new Booking.customer_notification_booking_request_template
         end
@@ -274,11 +299,10 @@ module BookingDataSystem
 
       unless customer_email.empty?
 
-        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_req_pay_now_notification_#{customer_language}") ||
-                       ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
+        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
         
         if bcn_template
-          template = ERB.new bcn_template.text
+          template = ERB.new bcn_template.translate(customer_language).text
         else
           template = ERB.new Booking.customer_notification_request_pay_now_template
         end
@@ -307,11 +331,10 @@ module BookingDataSystem
 
       unless customer_email.empty?
 
-        bcn_template = ContentManagerSystem::Template.first(:name => "booking_customer_notification_#{customer_language}") ||
-                       ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
+        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
         
         if bcn_template
-          template = ERB.new bcn_template.text
+          template = ERB.new bcn_template.translate(customer_language).text
         else
           template = ERB.new Booking.customer_notification_booking_confirmed_template
         end
@@ -324,6 +347,33 @@ module BookingDataSystem
           self.id)
 
       end
+
+    end
+
+    #
+    # Notifies by email the customer that the payment has been enabled for the booking
+    #
+    def notify_customer_payment_enabled
+
+      unless customer_email.empty?
+
+        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled')
+        
+        if bcn_template
+          template = ERB.new bcn_template.translate(customer_language).text
+        else
+          template = ERB.new Booking.customer_notification_booking_confirmed_template
+        end
+
+        message = template.result(binding)
+
+        Notifier.delay.notify_customer_payment_enabled(self.customer_email, 
+          BookingDataSystem.r18n.t.notifications.customer_payment_enabled_subject.to_s, 
+          message, 
+          self.id)
+
+      end
+
 
     end
   

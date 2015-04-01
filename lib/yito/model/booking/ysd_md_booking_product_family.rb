@@ -33,6 +33,8 @@ module Yito
         property :time_end, String, :field => 'time_end', :length => 5, :default => '20:00'
         property :start_date_literal, Enum[:arrival, :pickup], :field => 'start_date_literal', :default => :arrival  
         property :driver_literal, Enum[:driver, :contact], :field => 'driver_literal', :default  => :driver
+        property :named_resources, Boolean, :field => 'named_resources', :default => false
+
       end
     end
   end

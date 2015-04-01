@@ -1,20 +1,16 @@
-Se ha recibido una solicitud de reserva con pago ahora. El cliente debe estar realizando el
-pago. Si no recibe la confirmación en breve, ponerse en contacto.
+Se ha habilitado el pago online de su reserva
 
 Reserva
 -------
+
  Número de reserva: <%= id %>
  Fecha entrada: <%= date_from.strftime('%d/%m/%Y') %> 
  Fecha salida : <%= date_to.strftime('%d/%m/%Y') %>
- Comentarios: <%= comments %>
-
-Cliente
--------
- Nombre: <%= customer_name %>
- Apellidos: <%= customer_surname %>
+ Reserva realizada por: <%= customer_name %> <%= customer_surname %>
  Correo electrónico: <%= customer_email %>
  Teléfono: <%= customer_phone %>
  Móvil: <%= customer_mobile_phone %>
+ Comentarios: <%= comments %>
  
 Productos contratados
 ---------------------
@@ -51,9 +47,4 @@ Precio
  Pendiente de pago: <%= (total_cost - booking_amount).to_s('F') %> €
  <% end %>
 
- 
-Enlace de gestión
------------------
- 
- <%= free_access_id %>
- 
+  <%= free_access_id %>

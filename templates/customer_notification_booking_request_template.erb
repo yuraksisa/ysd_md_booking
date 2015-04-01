@@ -1,24 +1,44 @@
 ¡Gracias, <%customer_name%>! Su reserva está pendiente de confirmación
 
+Reserva
+-------
  Número de reserva: <%= id %>
+ Fecha entrada: <%= date_from.strftime('%d/%m/%Y') %> 
+ Fecha salida : <%= date_to.strftime('%d/%m/%Y') %>
  Reserva realizada por: <%= customer_name %> <%= customer_surname %>
  Correo electrónico: <%= customer_email %>
  Teléfono: <%= customer_phone %>
  Móvil: <%= customer_mobile_phone %>
  Comentarios: <%= comments %>
 
-Reserva
--------
- Su reserva: <%= item_description %> <% unless optional.nil? %><%= optional %><% end %> 
- Fecha entrada: <%= date_from.strftime('%d/%m/%Y') %> 
- Fecha salida : <%= date_to.strftime('%d/%m/%Y') %>
+Productos contratados
+---------------------
+
+<% booking_lines.each do |booking_line| %>
+  producto: <%= booking_line.item_id %> <%= booking_line.item_description%> 
+  días: <%= days %>
+  cantidad: <%= booking_line.quantity %>
+  precio unidad: <%= '%.2f' % booking_line.item_unit_cost %> €
+  precio total: <%= '%.2f' % booking_line.item_cost %> €
+<% end %>
+
+<% booking_extras.each do |booking_extra| do %>
+  extra: <%= booking_extra.extra_id %> <%= booking_extra.extra_description%> 
+  días: <%= days %>
+  cantidad: <%= booking_extra.quantity %>
+  precio unidad: <%= '%.2f' % booking_extra.extra_unit_cost %> €
+  precio total: <%= '%.2f' % booking_extra.extra_cost %> €
+<% end %>
 
 Precio
-------- 
- <%= item_description %> <% unless optional.nil? %><%= optional %><% end %>: <%=item_cost.to_s('F') %> €
- 
- Servicios adicionales:
- <% booking_extras.each { |booking_extra| %><%= booking_extra.extra_description %>: <%= booking_extra.extra_cost.to_s('F') %> € <% } %>
+--------------
+ Precio productos: <%= '%.2f' % item_cost %> €
+ Precio extras: <%= '%.2f' % extras_cost %> €
+ Precio total: <%= '%.2f' % total_cost %> €
+ <% if (booking_amount) %>
+ Abono a cuenta reserva: <%= booking_amount.to_s('F') %> €
+ Pendiente de pago: <%= (total_cost - booking_amount).to_s('F') %> €
+ <% end %>
 
  Precio total: <%= total_cost.to_s('F') %> € 
  <% if (booking_amount) %>

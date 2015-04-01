@@ -35,7 +35,6 @@ module BookingDataSystem
      include BookingDataSystem::BookingDriver
      include BookingDataSystem::BookingPickupReturn
      include BookingDataSystem::BookingFlight
-     include BookingDataSystem::BookingHeightWeight
      extend Yito::Model::Booking::Queries
      extend Yito::Model::Finder
      include Yito::Model::UserAgentData
@@ -52,11 +51,7 @@ module BookingDataSystem
      property :time_from, String, :field => 'time_from', :required => false, :length => 5
      property :date_to, DateTime, :field => 'date_to', :required => true 
      property :time_to, String, :field => 'time_to', :required => false, :length => 5
-     
-     property :item_id, String, :field => 'item_id', :required => false, :length => 20
-     property :item_description, String, :field => 'item_description', :required => false, :length => 256
-     property :optional, String, :field => 'optional', :length => 40
-     
+          
      property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
      property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
@@ -74,7 +69,6 @@ module BookingDataSystem
      has n, :booking_charges, 'BookingCharge', :child_key => [:booking_id], :parent_key => [:id]
      has n, :charges, 'Payments::Charge', :through => :booking_charges
      
-     property :quantity, Integer, :field => 'quantity'
      property :date_to_price_calculation, DateTime, :field => 'date_to_price_calculation'
      property :days, Integer, :field => 'days'
      
@@ -100,10 +94,6 @@ module BookingDataSystem
      property :payment_status, Enum[:none, :deposit, :total], 
        :field => 'payment_status', :default => :none
 
-     belongs_to :booking_item, 'Yito::Model::Booking::BookingItem', 
-       :child_key => [:booking_item_reference], :parent_key => [:reference], 
-       :required => false
-
      property :planning_color, String, :length => 9
      belongs_to :main_booking, 'Booking', :child_key => [:main_booking_id], :parent_key => [:id],
        :required => false
@@ -118,7 +108,7 @@ module BookingDataSystem
      end 
      
      def category
-       ::Yito::Model::Booking::BookingCategory.get(item_id)
+       booking_lines and booking_lines.size > 0 ? ::Yito::Model::Booking::BookingCategory.get(booking_lines[0].item_id) : nil
      end
 
      #
@@ -165,7 +155,7 @@ module BookingDataSystem
        booking.creation_date = Time.now if not booking.creation_date
        booking.total_pending = total_cost
        booking.free_access_id = 
-         Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{item_id}#{rand}")
+         Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{rand}")
      end
      
      #
@@ -230,7 +220,7 @@ module BookingDataSystem
      #
      def charge_item_detail
     
-        "#{item_description} #{date_from.strftime('%d/%m/%Y')} - #{date_to.strftime('%d/%m/%Y')}" 
+        "#{date_from.strftime('%d/%m/%Y')} - #{date_to.strftime('%d/%m/%Y')}" 
 
      end
 

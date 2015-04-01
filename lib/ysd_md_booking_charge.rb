@@ -104,10 +104,12 @@ module BookingDataSystem
     def build_full_charge_detail
 
       charge_detail = []
-      charge_detail << {:item_reference => booking.item_id,
-                       :item_description => booking.charge_item_detail,
-                       :item_units => 1,
-                       :item_price => booking.item_cost}
+      booking.booking_lines.each do |booking_line|
+        charge_detail << {:item_reference => booking_line.item_id,
+                          :item_description => booking.charge_item_detail,
+                          :item_units => booking_line.quantity,
+                          :item_price => booking_line.item_cost}
+      end
       
       booking.booking_extras.each do |booking_extra|
         charge_detail << {:item_reference => booking_extra.extra_id,

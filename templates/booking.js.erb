@@ -15,6 +15,12 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
       <% end %>
     },
 
+    pickup_placesRates: {
+      <% pickup_places.each do |place| %>
+         '<%=place.name%>' : <%= "%.2f" % place.price%>,
+      <% end %>
+    },
+
     allow_custom_pickup_place : true,
 
     return_places : {
@@ -107,7 +113,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
         <% if booking_extra.price_definition %>
         '<%=booking_extra.code%>': {
            <% if booking_extra.price_definition.units_management == :unitary %>
-           'price': <%='%.2f' % booking_extra.price_definition.prices.first.price%>,
+           'price': <%='%.2f' % (booking_extra.price_definition.prices.size > 0 ? booking_extra.price_definition.prices.first.price : 0 )%>,
            'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>
            <% else %>
            'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>,
