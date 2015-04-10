@@ -23,9 +23,17 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
 
     allow_custom_pickup_place : true,
 
+    custom_pickup_return_place_price : <%= custom_pickup_return_place_price %>,
+
     return_places : {
       <% return_places.each do |place| %>
          '<%=place.name%>' : '<%=place.name%>',
+      <% end %>
+    },
+
+    return_placesRates: {
+      <% return_places.each do |place| %>
+         '<%=place.name%>' : <%= "%.2f" % place.price%>,
       <% end %>
     },
 

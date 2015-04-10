@@ -32,6 +32,7 @@ module Yito
           place_definition = PickupReturnPlaceDefinition.first
           pickup_places = PickupReturnPlace.all(:place_definition_id => place_definition.id, :is_pickup => true)
           return_places = PickupReturnPlace.all(:place_definition_id => place_definition.id, :is_return => true)          
+          custom_pickup_return_place_price = SystemConfiguration::Variable.get_value('booking.custom_pickup_return_place_price', 0).to_i
 
           template_file = File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "..", "..",
              "templates", "booking.js.erb"))
