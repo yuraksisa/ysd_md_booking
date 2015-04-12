@@ -37,6 +37,36 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
       <% end %>
     },
 
+    <% if pickup_return_timetable %>
+    pickup_return_timetable : {
+      sunday: <%= pickup_return_timetable.timetable_sunday || false %>,
+      sundayFrom: '<%= pickup_return_timetable.timetable_sunday_from || "00:00" %>', 
+      sundayTo: '<%= pickup_return_timetable.timetable_sunday_to || "00:00" %>',
+      monday: <%= pickup_return_timetable.timetable_monday || false %>,
+      mondayFrom: '<%= pickup_return_timetable.timetable_monday_from %>', 
+      mondayTo: '<%= pickup_return_timetable.timetable_monday_to %>',      
+      tuesday: <%= pickup_return_timetable.timetable_tuesday || false %>,
+      tuesdayFrom: '<%= pickup_return_timetable.timetable_tuesday_from %>', 
+      tuesdayTo: '<%= pickup_return_timetable.timetable_tuesday_to %>',      
+      wednesday: <%= pickup_return_timetable.timetable_wednesday || false %>,
+      wednesdayFrom: '<%= pickup_return_timetable.timetable_wednesday_from %>', 
+      wednesdayTo: '<%= pickup_return_timetable.timetable_wednesday_to %>',      
+      thursday: <%= pickup_return_timetable.timetable_thursday || false %>,
+      thursdayFrom: '<%= pickup_return_timetable.timetable_thursday_from %>', 
+      thursdayTo: '<%= pickup_return_timetable.timetable_thursday_to %>',      
+      friday: <%= pickup_return_timetable.timetable_friday || false %>,
+      fridayFrom: '<%= pickup_return_timetable.timetable_friday_from %>', 
+      fridayTo: '<%= pickup_return_timetable.timetable_friday_to %>',      
+      saturday: <%= pickup_return_timetable.timetable_saturday || false %>,
+      saturdayFrom: '<%= pickup_return_timetable.timetable_saturday_from || "00:00" %>', 
+      saturdayTo: '<%= pickup_return_timetable.timetable_saturday_to || "00:00" %>',      
+    },
+    pickup_return_timetable_out_price : <%=pickup_return_timetable_out_price%>,
+    <% else %>
+    pickup_return_timetable: null,
+    pickup_return_timetable_out_price: 0,
+    <% end %>
+
     /** Define the sessions **/
     seasons : [       
               <% season_definition.seasons.each do |season| %>
@@ -159,7 +189,82 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
   
       return this.extraCalculation.get_price(fromDate, toDate, extra_id, family);
   
-    }
+  };
+
+ booking.calculate_pickup_time_price = function(date, time) {
+
+     var price = 0;
+     var day = date.getDay();
+     var timeParts = time.split(":");
+     
+     if (timeParts.length == 2) {
+       for (var idx=timeParts[0].length; idx<2; idx++) {
+         time = "0" + time;
+       }
+       switch (day) {
+         case 0:
+           if (!booking.pickup_return_timetable.sunday || 
+              (time < booking.pickup_return_timetable.sundayFrom || 
+                 time > booking.pickup_return_timetable.sundayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }
+           break;
+         case 1:
+           if (!booking.pickup_return_timetable.monday ||
+              (time < booking.pickup_return_timetable.mondayFrom || 
+                 time > booking.pickup_return_timetable.mondayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }         
+           break;
+         case 2:
+           if (!booking.pickup_return_timetable.tuesday ||
+               (time < booking.pickup_return_timetable.tuesdayFrom || 
+                 time > booking.pickup_return_timetable.tuesdayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }         
+           break;
+         case 3:
+           if (!booking.pickup_return_timetable.wednesday ||
+               (time < booking.pickup_return_timetable.wednesdayFrom || 
+                 time > booking.pickup_return_timetable.wednesdayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }         
+           break;
+         case 4:
+           if (!booking.pickup_return_timetable.thursday ||
+               (time < booking.pickup_return_timetable.thursdayFrom || 
+                 time > booking.pickup_return_timetable.thursdayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }         
+           break;
+         case 5:
+           if (!booking.pickup_return_timetable.friday ||
+               (time < booking.pickup_return_timetable.fridayFrom || 
+                 time > booking.pickup_return_timetable.fridayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }         
+           break;
+         case 6:
+           if (!booking.pickup_return_timetable.saturday ||
+               (time < booking.pickup_return_timetable.saturdayFrom || 
+                 time > booking.pickup_return_timetable.saturdayTo)) {
+             price = booking.pickup_return_timetable_out_price;
+           }         
+           break;
+
+
+        }
+      }
+
+      return price;
+
+  };
+
+  booking.calculate_return_time_price = function(date, time) {
+
+      return booking.calculate_pickup_time_price(date, time);
+
+  };
 
   booking.configuration.max_date.setFullYear(booking.configuration.max_date.getFullYear()+1);
 

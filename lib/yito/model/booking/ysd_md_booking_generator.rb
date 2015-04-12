@@ -33,6 +33,9 @@ module Yito
           pickup_places = PickupReturnPlace.all(:place_definition_id => place_definition.id, :is_pickup => true)
           return_places = PickupReturnPlace.all(:place_definition_id => place_definition.id, :is_return => true)          
           custom_pickup_return_place_price = SystemConfiguration::Variable.get_value('booking.custom_pickup_return_place_price', 0).to_i
+          pickup_return_timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable',0).to_i
+          pickup_return_timetable = pickup_return_timetable_id > 0 ? ::Yito::Model::Calendar::Timetable.get(pickup_return_timetable_id) : nil
+          pickup_return_timetable_out_price = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_price', 0).to_i
 
           template_file = File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "..", "..",
              "templates", "booking.js.erb"))
@@ -51,7 +54,12 @@ module Yito
 
           if booking_js=ContentManagerSystem::Template.find_by_name(template_name)
              booking_js.text = script
-             booking_js.save
+             begin
+               booking_js.save
+             rescue DataMapper::SaveFailureError => error
+               p "Error saving template #{error} #{booking_js.inspect} #{booking_js.errors.inspect}"
+               raise error 
+             end
           else
              ContentManagerSystem::Template.create({:name => template_name, 
                 :description => description,
