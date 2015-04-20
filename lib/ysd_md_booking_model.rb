@@ -120,12 +120,6 @@ module BookingDataSystem
          transaction do 
            auto_create_online_charge!
            begin
-             if self.pay_now
-               self.force_allow_payment = true
-             else
-               self.force_allow_payment = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool and
-                                          Booking.payment_cadence?(self.date_from)
-             end
              result = super
            rescue DataMapper::SaveFailureError => error
              p "Error saving booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
@@ -164,8 +158,8 @@ module BookingDataSystem
      def expired?
          conf_item_hold_time = SystemConfiguration::Variable.get_value('booking.item_hold_time', '0').to_i
          hold_time_diff_in_hours = (DateTime.now.to_time - self.creation_date.to_time) / 3600
-         expired = hold_time_diff_in_hours > conf_item_hold_time
-         (not force_allow_payment) and (status == :pending_confirmation and expired)
+         expired = (hold_time_diff_in_hours > conf_item_hold_time)
+         expired and !force_allow_payment
      end
 
      alias_method :is_expired, :expired?
@@ -177,16 +171,16 @@ module BookingDataSystem
 
        conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
        conf_allow_total_payment = SystemConfiguration::Variable.get_value('booking.allow_total_payment','false').to_bool
-       conf_deposit_percent = SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i
 
-       can_pay = (conf_payment_enabled or self.force_allow_payment) and 
-                 ((conf_allow_total_payment and self.total_pending > 0) or 
-                 (conf_deposit > 0 and self.total_paid == 0))
+       can_pay = (total_pending > 0 and status != :cancelled and (conf_payment_enabled or force_allow_payment)) 
 
-       # Check if it has expired and it is the first payment
-       if self.total_paid == 0              
-         can_pay = (can_pay and status != :cancelled and !expired?)
-       end          
+       if can_pay
+         if self.total_paid > 0 # It's not the first payment
+           can_pay = (can_pay and conf_allow_total_payment) 
+         else  # It's the first payment (check expiration)
+           can_pay = (can_pay and !self.expired?)
+         end
+       end            
 
        return can_pay
 

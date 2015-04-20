@@ -27,7 +27,7 @@ Productos contratados
   precio total: <%= '%.2f' % booking_line.item_cost %> €
 <% end %>
 
-<% booking_extras.each do |booking_extra| do %>
+<% booking_extras.each do |booking_extra| %>
   extra: <%= booking_extra.extra_id %> <%= booking_extra.extra_description%> 
   días: <%= days %>
   cantidad: <%= booking_extra.quantity %>
