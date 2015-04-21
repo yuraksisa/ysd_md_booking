@@ -95,7 +95,7 @@ module BookingDataSystem
      property :status, Enum[:pending_confirmation, :confirmed,  
        :in_progress, :done, :cancelled], :field => 'status', :default => :pending_confirmation
 
-     property :payment_status, Enum[:none, :deposit, :total], 
+     property :payment_status, Enum[:none, :deposit, :total, :refunded], 
        :field => 'payment_status', :default => :none
 
      belongs_to :booking_item, 'Yito::Model::Booking::BookingItem', 
@@ -328,7 +328,12 @@ module BookingDataSystem
      def cancel
       
        unless status == :cancelled
-         update(:status => :cancelled)
+         transaction do 
+           update(:status => :cancelled, :payment_status => :refunded, :total_paid => 0, :total_pending => total_cost)
+           charges.each do |charge|
+             charge.refund
+           end
+         end
        end
 
        self
