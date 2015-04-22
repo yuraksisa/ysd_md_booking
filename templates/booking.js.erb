@@ -67,7 +67,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
            <% if booking_category.price_definition.type == :season %>
               <% if booking_category.price_definition.units_management == :unitary %>
                 <% booking_category.price_definition.prices.each do |price| %>
-                  '<%=price.season.name%>': {price: <%='%.2f' % price.price%>},
+                  '<%=price.season.name%>': {price: <%='%.2f' % price.price%> <% unless price.adjust_operation == ' ' %><%=price.adjust_operation%><%="%.2f" % price.adjust_amount%><%end%>},
                 <% end %>
               <% else %>
                 <% booking_category.price_definition.season_definition.seasons.each do |season| %>
@@ -75,10 +75,10 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
                    'upToDays': <%=booking_category.price_definition.units_management_value%>,
                    'prices': {
                       <% booking_category.price_definition.detailed_prices_basic_units(season).each do |price| %>
-                         '<%=price.units%>' : <%='%.2f' % price.price%>,
+                         '<%=price.units%>' : <%='%.2f' % price.price%> <% unless price.adjust_operation == ' ' %><%=price.adjust_operation%><%="%.2f" % price.adjust_amount%><%end%>,
                       <% end %>
                    },
-                   'extraPrice': <%= '%.2f' % (booking_category.price_definition.detailed_prices_extra_unit(season) || 0) %>
+                   'extraPrice': <%= '%.2f' % (booking_category.price_definition.detailed_prices_extra_unit(season) || 0) %> <%= booking_category.price_definition.detailed_adjust_extra_unit(season) %>
                 },
                 <% end %>
               <% end %>
@@ -107,17 +107,19 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
         <% if booking_extra.price_definition %>
         '<%=booking_extra.code%>': {
            <% if booking_extra.price_definition.units_management == :unitary %>
-           'price': <%='%.2f' % booking_extra.price_definition.prices.first.price%>,
+           'price': <%='%.2f' % (booking_extra.price_definition.prices.size > 0 ? booking_extra.price_definition.prices.first.price : 0 )
+%> <% if booking_extra.price_definition.prices.size > 0 and booking_extra.price_definition.prices.first.adjust_operation != ' ' %><%=booking_extra.price_definition.prices.first.adjust_operation%><%="%.2f" % booking_extra.price_definition.prices.first.adjust_amount%><%end%>
+,
            'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>
            <% else %>
            'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>,
            'upToDays': <%=booking_extra.price_definition.units_management_value%>,
            'prices': {
                       <% booking_extra.price_definition.detailed_prices_basic_units.each do |price| %>
-                         '<%=price.units%>' : <%='%.2f' % price.price%>,
+                         '<%=price.units%>' : <%='%.2f' % price.price%> <% unless price.adjust_operation == ' ' %><%=price.adjust_operation%><%="%.2f" % price.adjust_amount%><%end%>,
                       <% end %>
                    },
-           'extraPrice': <%= '%.2f' % (booking_extra.price_definition.detailed_prices_extra_unit || 0) %>
+           'extraPrice': <%= '%.2f' % (booking_extra.price_definition.detailed_prices_extra_unit || 0) %> <%= booking_extra.price_definition.detailed_adjust_extra_unit %>
            <% end %>
          },
          <% end %>
