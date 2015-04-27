@@ -118,7 +118,6 @@ module BookingDataSystem
        result = true
        if new?
          transaction do 
-           auto_create_online_charge!
            begin
              result = super
            rescue DataMapper::SaveFailureError => error
@@ -126,15 +125,15 @@ module BookingDataSystem
              raise error 
            end
            reload
-           unless created_by_manager
-             if pay_now 
-               notify_manager_pay_now
-               notify_request_to_customer_pay_now
-             else
-               notify_manager
-               notify_request_to_customer
-             end
-           end 
+           #unless created_by_manager
+           if pay_now 
+             notify_manager_pay_now
+             notify_request_to_customer_pay_now
+           else
+             notify_manager
+             notify_request_to_customer
+           end
+           #end 
          end
        else
          result = super
@@ -321,7 +320,11 @@ module BookingDataSystem
       
        unless status == :cancelled
          transaction do 
-           update(:status => :cancelled, :payment_status => :refunded, :total_paid => 0, :total_pending => total_cost)
+           if total_paid > 0
+             update(:status => :cancelled, :payment_status => :refunded, :total_paid => 0, :total_pending => total_cost)
+           else 
+             update(:status => :cancelled)
+           end
            charges.each do |charge|
              charge.refund
            end
@@ -369,31 +372,6 @@ module BookingDataSystem
      end
 
      private
-
-     #
-     # When a new booking is created, check if a new charge should be created
-     # to process the booking payment
-     #
-     # @return [Payments::Charge]
-     #
-     def auto_create_online_charge!
-
-       if (charges.empty? and booking_charges.empty?) and 
-         payment_method and not payment_method.is_a?Payments::OfflinePaymentMethod
-
-         case payment
-           when 'deposit'
-             self.booking_amount = (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
-           when 'total'
-             self.booking_amount = total_cost
-           else
-             self.booking_amount = 0
-         end
-         new_charge!(payment_method_id, self.booking_amount) if self.booking_amount > 0
-
-       end
-
-     end
      
      #
      # Creates a new charge for the booking

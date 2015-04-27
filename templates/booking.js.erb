@@ -194,6 +194,8 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
 
  booking.calculate_pickup_time_price = function(date, time) {
 
+     <% if pickup_return_timetable %>
+
      var price = 0;
      var day = date.getDay();
      var timeParts = time.split(":");
@@ -258,6 +260,12 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
       }
 
       return price;
+
+      <% else %>
+     
+      return 0;
+      
+      <% end %>
 
   };
 
