@@ -7,13 +7,13 @@ module Yito
           @repository = repository
         end
 
-        def incoming_money_summary
+        def incoming_money_summary(year)
 
           query = <<-QUERY
              SELECT TO_CHAR(date_from, 'YYYY-MM') as period, 
                  sum(total_cost) as total
              FROM bookds_bookings
-             WHERE status IN (2,3,4)
+             WHERE status IN (2,3,4) and date_part('year', date_from) = #{year.to_i}
              GROUP BY period
              ORDER by period
           QUERY
@@ -22,12 +22,13 @@ module Yito
 
         end
 
-        def reservations_received
+        def reservations_received(year)
        
           query = <<-QUERY
              SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
                  count(*) as occurrences
-             FROM bookds_bookings
+             FROM bookds_bookings 
+             WHERE date_part('year', creation_date) = #{year.to_i}
              GROUP BY period
              order by period
           QUERY
@@ -36,13 +37,13 @@ module Yito
 
         end
 
-        def reservations_confirmed
+        def reservations_confirmed(year)
        
           query = <<-QUERY
              SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
                   count(*) as occurrences
              FROM bookds_bookings
-             WHERE status IN (2,3,4)
+             WHERE status IN (2,3,4) and date_part('year', creation_date) = #{year.to_i}
              GROUP BY period 
              order by period
           QUERY

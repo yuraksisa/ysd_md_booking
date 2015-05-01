@@ -23,6 +23,8 @@ module Yito
         property :name, String, :field => 'name', :length => 80
         property :short_description, String, :field => 'short_description', :length => 80
         property :description, Text, :field => 'description'
+        property :stock, Integer
+        property :sort_order, Integer
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
         belongs_to :booking_catalog, 'BookingCatalog', :required => false

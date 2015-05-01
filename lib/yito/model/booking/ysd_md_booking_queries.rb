@@ -9,16 +9,16 @@ module Yito
 
         module ClassMethods
           
-          def incoming_money_summary
-            query_strategy.incoming_money_summary
+          def incoming_money_summary(year)
+            query_strategy.incoming_money_summary(year)
           end
 
-          def reservations_received
-            query_strategy.reservations_received
+          def reservations_received(year)
+            query_strategy.reservations_received(year)
           end
 
-          def reservations_confirmed
-            query_strategy.reservations_confirmed
+          def reservations_confirmed(year)
+            query_strategy.reservations_confirmed(year)
           end
 
           private
