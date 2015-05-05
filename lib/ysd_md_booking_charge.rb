@@ -68,7 +68,7 @@ module BookingDataSystem
     # 
     def charge_source_url
       if booking and booking.id
-        "/admin/bookings/#{booking.id}"
+        "/admin/booking/bookings/#{booking.id}"
       end
     end
 
