@@ -21,6 +21,24 @@ module Yito
             query_strategy.reservations_confirmed(year)
           end
 
+          def occupation(from, to)
+
+            query = <<-QUERY
+               SELECT l.item_id as item_id, c.stock as stock, count(*) as busy 
+               FROM bookds_bookings_lines as l
+               JOIN bookds_bookings as b on b.id = l.booking_id
+               JOIN bookds_categories as c on c.code = l.item_id
+               WHERE (b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
+                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
+                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')
+               GROUP BY l.item_id, c.stock
+            QUERY
+
+            occupation = repository.adapter.select(query)
+
+          end
+
           private
     
           def query_strategy

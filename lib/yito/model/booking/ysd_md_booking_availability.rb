@@ -8,7 +8,7 @@ module Yito
       #
   	  class Availability
         include Singleton
-        
+                
         #
         # Check the availability
         #
