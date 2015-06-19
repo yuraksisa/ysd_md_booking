@@ -15,6 +15,8 @@ module BookingDataSystem
      property :item_unit_cost, Decimal, :precision => 10, :scale => 2
      property :item_cost, Decimal, :precision => 10, :scale => 2
      property :quantity, Integer
+     property :product_deposit_unit_cost, Decimal, :precision => 10, :scale => 2, :default => 0
+     property :product_deposit_cost, Decimal, :precision => 10, :scale => 2, :default => 0
      belongs_to :booking, 'Booking', :child_key => [:booking_id]
      has n, :booking_line_resources, 'BookingLineResource', :constraint => :destroy 
 

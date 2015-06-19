@@ -84,7 +84,8 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
                    fullDescription:'<%=booking_category.description.gsub(/\n/,"<br/>")%>',
                    cars:'<%=booking_category.short_description%>',
                    photo:'<%=booking_category.photo_url_medium%>',
-                   detailedPrice: <%=booking_category.price_definition and booking_category.price_definition.units_management == :detailed%>},
+                   detailedPrice: <%=booking_category.price_definition and booking_category.price_definition.units_management == :detailed%>,
+                   deposit: <%='%.2f' % booking_category.deposit%>},
               <% end %>
              },
   

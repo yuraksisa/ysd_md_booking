@@ -54,10 +54,11 @@ module BookingDataSystem
           
      property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
-     property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
      property :time_from_cost, Decimal, :scale => 2, :precision => 10
      property :time_to_cost, Decimal, :scale => 2, :precision => 10
-
+     property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
+     property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
+     
      property :total_paid, Decimal, :field => 'total_paid', :scale => 2, :precision => 10, :default => 0
      property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
 
