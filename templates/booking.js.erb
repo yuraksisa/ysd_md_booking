@@ -152,8 +152,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
         <% if booking_extra.price_definition %>
         '<%=booking_extra.code%>': {
            <% if booking_extra.price_definition.units_management == :unitary %>
-           'price': <%='%.2f' % (booking_extra.price_definition.prices.size > 0 ? booking_extra.price_definition.prices.first.price : 0 )%> <% if booking_extra.price_definition.prices.size > 0 and booking_extra.price_definition.prices.first.adjust_operation != ' ' %><%=booking_extra.price_definition.prices.first.adjust_operation%><%="%.2f" % booking_extra.price_definition.prices.first.adjust_amount%><%end%>
-,
+           'price': <%='%.2f' % (booking_extra.price_definition.prices.size > 0 ? booking_extra.price_definition.prices.first.price : 0 )%> <% if booking_extra.price_definition.prices.size > 0 and booking_extra.price_definition.prices.first.adjust_operation != ' ' %><%=booking_extra.price_definition.prices.first.adjust_operation%><%="%.2f" % booking_extra.price_definition.prices.first.adjust_amount%><%end%>,
            'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>
            <% else %>
            'maxPrice': <%='%.2f' % booking_extra.price_definition.max_price%>,
