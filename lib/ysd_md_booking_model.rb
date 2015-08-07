@@ -14,7 +14,7 @@ module BookingDataSystem
   #
   # Booking status
   #
-  #  - pending_confirmation. The customer make the booking but he/she doesn't
+  #  - pending_confirmation. The customer make the reservation but he/she doesn't
   #    make a deposit
   #
   #  - confirmed. A deposit has been charged
@@ -23,7 +23,24 @@ module BookingDataSystem
   #
   #  - done. The customer has returned the item
   #
-  #  - cancelled. The booking has been canceled
+  #  - cancelled. The reservation has been canceled
+  #
+  # Expired
+  #
+  #   It's the number of hours between the date when the reservation was received 
+  #   and now (the current date/time)
+  #
+  #   If the number of hours exceed the configuration parameter, booking.item_hold_time, the
+  #   reservation is expired and the user won't be able to pay for it, except if the manager
+  #   force the payment (force_allow_payment)
+  #
+  # Payment cadence
+  #
+  #   It's the number of hours between the date when the reservation was received
+  #   and the reservation start date/time.
+  #
+  #   If the number of hours exceed the configuration parameter, booking.payment_cadence, the
+  #   user won't be able to pay for it, except if the manager force the payment (force_allow_payment)
   #
   # ----------------------------------------
   class Booking 
@@ -159,7 +176,19 @@ module BookingDataSystem
          conf_item_hold_time = SystemConfiguration::Variable.get_value('booking.item_hold_time', '0').to_i
          hold_time_diff_in_hours = (DateTime.now.to_time - self.creation_date.to_time) / 3600
          expired = (hold_time_diff_in_hours > conf_item_hold_time)
-         expired and !force_allow_payment
+         expired && !force_allow_payment
+     end
+
+     #
+     # Check the payment cadence is allowed
+     # 
+     def payment_cadence_allowed?
+         config_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence').to_i
+         _date_from_str = "#{self.date_from.strftime('%Y-%m-%d')}T#{self.time_from}:00#{self.date_from.strftime("%:z")}"
+         _date_from = DateTime.strptime(_date_from_str,'%Y-%m-%dT%H:%M:%S%:z')
+         diff_in_hours = (_date_from.to_time - self.creation_date.to_time) / 3600
+         allowed = diff_in_hours > 0 && (diff_in_hours >= config_payment_cadence)
+         allowed || force_allow_payment
      end
 
      alias_method :is_expired, :expired?
@@ -172,13 +201,13 @@ module BookingDataSystem
        conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
        conf_allow_total_payment = SystemConfiguration::Variable.get_value('booking.allow_total_payment','false').to_bool
 
-       can_pay = (total_pending > 0 and status != :cancelled and (conf_payment_enabled or force_allow_payment)) 
+       can_pay = (total_pending > 0 && status != :cancelled && (conf_payment_enabled || force_allow_payment)) 
 
        if can_pay
          if self.total_paid > 0 # It's not the first payment
-           can_pay = (can_pay and conf_allow_total_payment) 
+           can_pay = (can_pay && conf_allow_total_payment) 
          else  # It's the first payment (check expiration)
-           can_pay = (can_pay and !self.expired?)
+           can_pay = (can_pay && !expired? && payment_cadence_allowed?) || (total_pending > 0 && status = :confirmed)
          end
        end            
 
