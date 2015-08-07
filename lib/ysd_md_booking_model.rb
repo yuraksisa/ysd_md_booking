@@ -207,7 +207,7 @@ module BookingDataSystem
          if self.total_paid > 0 # It's not the first payment
            can_pay = (can_pay && conf_allow_total_payment) 
          else  # It's the first payment (check expiration)
-           can_pay = (can_pay && !expired? && payment_cadence_allowed?) || (total_pending > 0 && status = :confirmed)
+           can_pay = (can_pay && !expired? && payment_cadence_allowed?) || (total_pending > 0 && status == :confirmed)
          end
        end            
 
