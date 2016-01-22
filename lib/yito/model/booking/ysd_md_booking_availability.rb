@@ -14,7 +14,7 @@ module Yito
         #
   	  	def categories_available(from, to)
 
-          categories_with_calendar = ::Yito::Model::Booking::BookingCategory.all.select { |cat| not cat.calendar.nil? }
+          categories_with_calendar = ::Yito::Model::Booking::BookingCategory.all(active: true).select { |cat| not cat.calendar.nil? }
 
           calendars = categories_with_calendar.map { |cat| {:code => cat.code, :calendar => cat.calendar.id} }
 
