@@ -21,6 +21,7 @@ module Yito
         property :reference, String, :field => 'reference', :length => 50, :key => true
         property :name, String, :field => 'name', :length => 80
         property :description, Text, :field => 'description'
+        property :active, Boolean, :default => true   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
@@ -51,6 +52,10 @@ module Yito
           if self.calendar and (not self.calendar.saved?) and loaded = ::Yito::Model::Calendar::Calendar.get(self.calendar.id)
             self.calendar = loaded
           end
+          
+          if self.calendar and self.calendar.id.nil?
+            self.calendar.save
+          end          
         end
 
         def check_price_definition!
