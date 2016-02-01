@@ -12,29 +12,14 @@ module Yito
           # Search customers (and groups by surname, name, phone, email) from bookings
           #
           def customer_search(search_text, options={})
-             order = {:order => :customer_surname.asc}
-             if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
-               [query_strategy.count_customer_search(search_text),
-                query_strategy.customer_search(search_text, order)]
-             else
-              conditions = Conditions::JoinComparison.new('$or', 
-                              [Conditions::Comparison.new(:customer_surname, '$like', "%#{search_text}%"),
-                               Conditions::Comparison.new(:customer_email, '$eq', search_text),
-                               Conditions::Comparison.new(:customer_phone, '$eq', search_text),
-                               Conditions::Comparison.new(:customer_mobile_phone, '$eq', search_text)])
-            
-              total = conditions.build_datamapper(BookingDataSystem::Booking).all.count 
-              data = conditions.build_datamapper(BookingDataSystem::Booking).all(offset_order_query) 
-              [total, data]
-             end
+            [query_strategy.count_customer_search(search_text),
+             query_strategy.customer_search(search_text, options)]
           end
            
           # Get the first customer booking
           # 
           def first_customer_booking(params)
-            if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
-              query_strategy.first_customer_booking(params)
-            end
+            query_strategy.first_customer_booking(params)
           end
 
           #
