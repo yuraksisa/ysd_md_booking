@@ -55,6 +55,85 @@ module Yito
             query_strategy.reservations_confirmed(year)
           end
 
+          def count_received_reservations(year)
+            query_strategy.count_received_reservations(year)
+          end
+
+          def count_pending_confirmation_reservations(year)
+            query_strategy.count_pending_confirmation_reservations(year)
+          end
+
+          def count_confirmed_reservations(year)
+            query_strategy.count_confirmed_reservations(year)
+          end 
+
+          def count_pickup_today
+            2
+          end
+
+          def count_transit_today
+            3
+          end
+
+          def count_delivery_today
+            4
+          end
+
+          def reservations_by_weekday(year)
+            data = query_strategy.reservations_by_weekday(year)
+            result = data.inject({}) do |result, value|
+               result.store(value.day.to_i.to_s, value.count)
+               result
+            end
+            result
+          end
+
+          def reservations_by_category(year)
+
+            data = query_strategy.reservations_by_category(year)
+            result = data.inject({}) do |result, value|
+               result.store(value.item_id, {value: value.count,
+                                            color: "#%06x" % (rand * 0xffffff),
+                                            highlight: "#%06x" % (rand * 0xffffff),
+                                            label: value.item_id})
+               result
+            end
+
+            result
+
+          end
+
+          def reservations_by_status(year)
+ 
+            data = query_strategy.reservations_by_status(year)
+            result = data.inject({}) do |result, value|
+               result.store(value.status, {value: value.count,
+                                            color: "#%06x" % (rand * 0xffffff),
+                                            highlight: "#%06x" % (rand * 0xffffff),
+                                            label: value.status})
+               result
+            end
+
+          end
+
+          def last_30_days_reservations
+
+            result = {}
+            (0..29).reverse_each do |item| 
+              result.store(item, 0)
+            end
+
+            data = query_strategy.last_30_days_reservations
+            data.each do |item|
+               result.store(item.period, item.occurrences)
+               result
+            end
+
+            result
+            
+          end
+
+
           def occupation(from, to)
 
             query = <<-QUERY

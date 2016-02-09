@@ -85,6 +85,39 @@ module Yito
 
         end
 
+        def count_received_reservations(year)
+ 
+          query = <<-QUERY
+            select count(*) 
+            FROM bookds_bookings 
+            where strftime('%Y', creation_date) = #{year.to_i}= #{year.to_i}
+            QUERY
+
+          @repository.adapter.select(query).first
+        end
+
+        def count_pending_confirmation_reservations(year)
+
+          query = <<-QUERY
+            select count(*) 
+            FROM bookds_bookings 
+            where strftime('%Y', creation_date) = #{year.to_i} = #{year.to_i} and status = 0
+            QUERY
+
+          @repository.adapter.select(query).first
+        end
+
+        def count_confirmed_reservations(year)
+
+          query = <<-QUERY
+            select count(*) 
+            FROM bookds_bookings 
+            where strftime('%Y', creation_date) = #{year.to_i} = #{year.to_i} and status = 1
+            QUERY
+
+          @repository.adapter.select(query).first
+        end         
+
 
         private
 
