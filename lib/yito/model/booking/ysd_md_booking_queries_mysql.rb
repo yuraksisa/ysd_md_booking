@@ -109,7 +109,7 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where YEAR(creation_date) = #{year.to_i} and status = 0
+            where YEAR(creation_date) = #{year.to_i} and status = 1
             QUERY
 
           @repository.adapter.select(query).first
@@ -120,11 +120,68 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where YEAR(creation_date) = #{year.to_i} and status = 1
+            where YEAR(creation_date) = #{year.to_i} and status = 2
             QUERY
 
           @repository.adapter.select(query).first
         end         
+
+        def reservations_by_weekday(year)
+
+          query = <<-QUERY
+            select count(*), DAYOFWEEK(creation_date) as day 
+            FROM bookds_bookings 
+            where YEAR(creation_date) = #{year.to_i} and status <> 5
+            group by day
+            order by day
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end 
+
+        def reservations_by_category(year)
+          
+          query = <<-QUERY
+            select item_id, count(*) as count  
+            FROM bookds_bookings_lines 
+            JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
+            where YEAR(creation_date) = #{year.to_i} and status <> 5
+            group by item_id
+            order by item_id
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end        
+
+        def reservations_by_status(year)
+
+          query = <<-QUERY
+            select CAST(status as SIGNED) status, count(*) as count  
+            FROM bookds_bookings 
+            where YEAR(creation_date) = #{year.to_i}
+            group by status
+            order by status    
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end
+
+        def last_30_days_reservations
+ 
+          query = <<-QUERY
+            SELECT DATEDIFF(CURRENT_DATE(), DATE_FORMAT(creation_date,'%Y-%m-%d')) as period, 
+                   count(*) as occurrences
+            FROM bookds_bookings
+            WHERE DATEDIFF(CURRENT_DATE(), DATE_FORMAT(creation_date,'%Y-%m-%d')) <= 30
+            GROUP BY period 
+          QUERY
+
+          reservations=@repository.adapter.select(query)
+
+        end
 
         private
 

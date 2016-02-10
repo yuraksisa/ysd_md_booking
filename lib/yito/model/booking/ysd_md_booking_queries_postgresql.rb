@@ -122,7 +122,7 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where date_part('year', creation_date) = #{year.to_i} and status = 0
+            where date_part('year', creation_date) = #{year.to_i} and status = 1
             QUERY
 
           @repository.adapter.select(query).first
@@ -133,7 +133,7 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where date_part('year', creation_date) = #{year.to_i} and status = 1
+            where date_part('year', creation_date) = #{year.to_i} and status = 2
             QUERY
 
           @repository.adapter.select(query).first
@@ -144,7 +144,7 @@ module Yito
           query = <<-QUERY
             select count(*), date_part('DOW', creation_date) as day 
             FROM bookds_bookings 
-            where date_part('year', creation_date) = 2016 and status <> 4
+            where date_part('year', creation_date) = #{year.to_i} and status <> 5
             group by day
             order by day
           QUERY
@@ -159,7 +159,7 @@ module Yito
             select item_id, count(*) as count  
             FROM bookds_bookings_lines 
             JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
-            where date_part('year', creation_date) = #{year.to_i} and status <> 4
+            where date_part('year', creation_date) = #{year.to_i} and status <> 5
             group by item_id
             order by item_id
           QUERY

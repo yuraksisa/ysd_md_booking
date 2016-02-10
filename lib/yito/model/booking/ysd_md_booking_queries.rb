@@ -67,16 +67,32 @@ module Yito
             query_strategy.count_confirmed_reservations(year)
           end 
 
-          def count_pickup_today
-            2
+          def count_pickup(date)
+
+            conditions = Conditions::JoinComparison.new('$and', 
+                          [Conditions::Comparison.new(:date_from, '$eq', date),
+                           Conditions::Comparison.new(:status, '$ne', [:pending_confirmation, :cancelled])])           
+            conditions.build_datamapper(BookingDataSystem::Booking).all.count 
+
           end
 
-          def count_transit_today
-            3
+          def count_transit(date)
+
+            conditions = Conditions::JoinComparison.new('$and', 
+                          [Conditions::Comparison.new(:date_from, '$lte', date),
+                            Conditions::Comparison.new(:date_to, '$gte', date),
+                           Conditions::Comparison.new(:status, '$ne', [:pending_confirmation, :cancelled])])           
+            conditions.build_datamapper(BookingDataSystem::Booking).all.count 
+
           end
 
-          def count_delivery_today
-            4
+          def count_delivery(date)
+
+            conditions = Conditions::JoinComparison.new('$and', 
+                          [Conditions::Comparison.new(:date_to, '$eq', date),
+                           Conditions::Comparison.new(:status, '$ne', [:pending_confirmation, :cancelled])])           
+            conditions.build_datamapper(BookingDataSystem::Booking).all.count 
+
           end
 
           def reservations_by_weekday(year)
@@ -106,13 +122,30 @@ module Yito
           def reservations_by_status(year)
  
             data = query_strategy.reservations_by_status(year)
+
+
             result = data.inject({}) do |result, value|
-               result.store(value.status, {value: value.count,
-                                            color: "#%06x" % (rand * 0xffffff),
-                                            highlight: "#%06x" % (rand * 0xffffff),
-                                            label: value.status})
+               status = case value.status
+                          when 1
+                             'pending-confirmation'
+                          when 2 
+                             'confirmed'
+                          when 3 
+                             'in-progress'
+                          when 4 
+                             'done'
+                          when 5 
+                             'canceled'
+                        end
+
+               result.store(status, {value: value.count,
+                                     color: "#%06x" % (rand * 0xffffff),
+                                     highlight: "#%06x" % (rand * 0xffffff),
+                                     label: status})
                result
             end
+
+            result
 
           end
 
@@ -125,7 +158,7 @@ module Yito
 
             data = query_strategy.last_30_days_reservations
             data.each do |item|
-               result.store(item.period, item.occurrences)
+               result.store(item.period, item.occurrences) if result.has_key?(item.period)
                result
             end
 
@@ -145,7 +178,7 @@ module Yito
                    (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
                    (b.date_from = '#{from}' and b.date_to = '#{to}') or
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                   b.status <> 4
+                   b.status <> 5
                GROUP BY l.item_id, c.stock
             QUERY
 
@@ -188,7 +221,7 @@ module Yito
             query = <<-QUERY
                select bl.item_id, bl.quantity, b.date_from, b.time_from, b.date_to, b.time_to
                from bookds_bookings_lines bl join bookds_bookings b on bl.booking_id = b.id 
-               where date_from >= '#{day}' and date_from < '#{day+1}' and b.status <> 4
+               where date_from >= '#{day}' and date_from < '#{day+1}' and b.status <> 5
                order by bl.item_id, date_from
             QUERY
 
