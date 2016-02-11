@@ -156,12 +156,12 @@ module Yito
         def reservations_by_category(year)
           
           query = <<-QUERY
-            select item_id, count(*) as count  
+            select bookds_bookings_lines.item_id, count(*) as count  
             FROM bookds_bookings_lines 
             JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
             where date_part('year', creation_date) = #{year.to_i} and status <> 5
-            group by item_id
-            order by item_id
+            group by bookds_bookings_lines.item_id
+            order by bookds_bookings_lines.item_id
           QUERY
 
           @repository.adapter.select(query)
