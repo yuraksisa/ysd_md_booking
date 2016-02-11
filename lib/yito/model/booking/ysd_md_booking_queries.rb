@@ -188,13 +188,68 @@ module Yito
 
           # Get the daily percentage occupation in a period of time 
           #
-          def daily_occupation(from, to)
+          def monthly_occupation(month, year, category=nil)
+            
+            from = Date.civil(year, month, 1)
+            to = Date.civil(year, month, -1)
+            product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+
+            # Get products stocks
+            conditions = category.nil? ? {} : {code: category}
+            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: conditions, fields: [:code, :stock])
+            stocks = categories.inject({}) do |result, item|
+                       result.store(item.code, item.stock)
+                       result
+                     end
+            
+            # Build products occupation
+            cat_occupation =  categories.inject({}) do |result, item|
+                                days_hash = {}
+                                (1..(to.day)).each do |day|
+                                  days_hash.store(day, 0)
+                                end
+                                result.store(item.code, days_hash)
+                                result
+                              end
+
+            # Query bookings for the period
+            query = <<-QUERY
+               SELECT l.item_id as item_id, b.id, b.date_from as date_from,
+                      b.days as days, l.quantity as quantity 
+               FROM bookds_bookings_lines as l
+               JOIN bookds_bookings as b on b.id = l.booking_id
+               WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
+                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
+                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
+                   b.status <> 5
+            QUERY
+            reservations = repository.adapter.select(query)
+            
+            # Fill products occupation
+            reservations.each do |reservation|
+              date_from = reservation.date_from
+              calculated_to = date_from.day+reservation.days
+              calculated_to = calculated_to - 1 unless product_family.cycle_of_24_hours
+              ((date_from.day)..([calculated_to,to.day].min)).each do |index|
+                cat_occupation[reservation.item_id][index] += reservation.quantity
+              end
+            end
+            
+            # Calculate percentage 
+            cat_occupation.each do |key, value|  
+              value.each do |day, occupation| 
+                cat_occupation[key][day] = "#{cat_occupation[key][day]}/#{stocks[key].to_f}"
+              end
+            end    
+
+            cat_occupation
 
           end
           
           # Get the hourly percentage occupation in a day
           #
-          def hourly_occupation(day)
+          def daily_occupation(day)
             
             categories = ::Yito::Model::Booking::BookingCategory.all(fields: [:code, :stock])
             
