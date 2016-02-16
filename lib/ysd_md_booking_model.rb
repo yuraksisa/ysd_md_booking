@@ -115,6 +115,7 @@ module BookingDataSystem
      property :planning_color, String, :length => 9
      belongs_to :main_booking, 'Booking', :child_key => [:main_booking_id], :parent_key => [:id],
        :required => false
+     property :promotion_code, String, :length => 256
      
      #
      # Get a booking by its free access id

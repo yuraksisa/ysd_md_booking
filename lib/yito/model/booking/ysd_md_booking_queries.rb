@@ -196,7 +196,7 @@ module Yito
 
             # Get products stocks
             conditions = category.nil? ? {} : {code: category}
-            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: conditions, fields: [:code, :stock])
+            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: conditions.merge({active: true}), fields: [:code, :stock])
             stocks = categories.inject({}) do |result, item|
                        result.store(item.code, item.stock)
                        result
@@ -232,7 +232,7 @@ module Yito
               calculated_to = date_from.day+reservation.days
               calculated_to = calculated_to - 1 unless product_family.cycle_of_24_hours
               ((date_from.day)..([calculated_to,to.day].min)).each do |index|
-                cat_occupation[reservation.item_id][index] += reservation.quantity
+                cat_occupation[reservation.item_id][index] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
               end
             end
             

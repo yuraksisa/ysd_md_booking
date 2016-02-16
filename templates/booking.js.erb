@@ -81,7 +81,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
               <% booking_categories.each do |booking_category| %>
                 '<%=booking_category.code%>': { family: '<%=booking_category.code%>', 
                    description:'<%=booking_category.name%>', 
-                   fullDescription:'<%=booking_category.description.gsub(/\n/,"<br/>")%>',
+                   fullDescription:'<%=booking_category.description.nil? ? "" : booking_category.description.gsub(/\n/,"<br/>")%>',
                    cars:'<%=booking_category.short_description%>',
                    photo:'<%=booking_category.photo_url_medium%>',
                    detailedPrice: <%=booking_category.price_definition and booking_category.price_definition.units_management == :detailed%>,
@@ -275,6 +275,7 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
 
   };
 
+  //booking.configuration.roundDecimals = 2;
   booking.configuration.max_date.setFullYear(booking.configuration.max_date.getFullYear()+1);
 
   return booking;

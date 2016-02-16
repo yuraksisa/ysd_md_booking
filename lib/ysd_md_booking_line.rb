@@ -12,6 +12,7 @@ module BookingDataSystem
      property :item_id, String, :length => 20, :required => true
      property :item_description, String, :length => 256
      property :optional, String, :length => 40
+     property :item_unit_cost_base, Decimal, :precision => 10, :scale => 2
      property :item_unit_cost, Decimal, :precision => 10, :scale => 2
      property :item_cost, Decimal, :precision => 10, :scale => 2
      property :quantity, Integer
