@@ -16,7 +16,7 @@ module Yito
         property :date_to, DateTime
         property :time_to, String, :length => 5 
         property :override_capacity, Boolean, :default => false
-        property :capacity, Integer, :default => true
+        property :capacity, Integer, :default => 0
         property :description, Text
 
         belongs_to :activity, 'Yito::Model::Booking::Activity'
