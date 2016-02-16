@@ -151,17 +151,22 @@ module Yito
 
           def last_30_days_reservations
 
+            months = ['E','F','M','A','My','J','Jl','A','S','O','N','D']
+
             result = {}
-            (0..29).reverse_each do |item| 
-              result.store(item, 0)
+            (0..29).reverse_each do |item|
+              today = Date.today - item
+              key = "#{today.day}#{months[today.month-1]}"
+              result.store(key, 0)
             end
 
             data = query_strategy.last_30_days_reservations
             data.each do |item|
-               result.store(item.period, item.occurrences) if result.has_key?(item.period)
+               today = Date.today - item.period
+               key = "#{today.day}#{months[today.month-1]}"
+               result.store(key, item.occurrences) if result.has_key?(key)
                result
             end
-
             result
             
           end

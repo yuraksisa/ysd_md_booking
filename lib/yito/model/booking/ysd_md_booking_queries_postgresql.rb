@@ -159,7 +159,7 @@ module Yito
             select bookds_bookings_lines.item_id, count(*) as count  
             FROM bookds_bookings_lines 
             JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
-            where date_part('year', creation_date) = #{year.to_i} and status <> 5
+            where date_part('year', creation_date) = #{year.to_i} and status NOT IN (1,5)
             group by bookds_bookings_lines.item_id
             order by bookds_bookings_lines.item_id
           QUERY
