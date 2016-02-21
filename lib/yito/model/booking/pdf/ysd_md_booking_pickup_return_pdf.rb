@@ -29,7 +29,9 @@ module Yito
                                    :order => [:date_to.asc, :time_to.asc])
 
             pdf = Prawn::Document.new(:page_layout => :landscape)
-            #pdf.font "Courier"
+            font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
+            "fonts", "DejaVuSans.ttf"))
+            pdf.font font_file
             
             pdf.text "Entregas y recogidas del #{from.strftime('%d-%m-%Y')} al #{to.strftime('%d-%m-%Y')}", inline_format: true, size: 18
             pdf.move_down 20

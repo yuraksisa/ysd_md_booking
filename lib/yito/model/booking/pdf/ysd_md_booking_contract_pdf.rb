@@ -19,7 +19,10 @@ module Yito
           def build
 
             pdf = Prawn::Document.new
-
+            font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
+            "fonts", "DejaVuSans.ttf"))
+            pdf.font font_file
+            
             # Header =======================
 
             # ----- Logo -------------------

@@ -13,7 +13,13 @@ module Yito
 
             item_count, reservations = BookingDataSystem::Booking.customer_search(nil,{})
 
+
             pdf = Prawn::Document.new(:page_layout => :landscape)
+            font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
+            "fonts", "DejaVuSans.ttf"))
+            pdf.font font_file
+
+
             pdf.text "Clientes", inline_format: true, size: 18
             pdf.move_down 20
 
