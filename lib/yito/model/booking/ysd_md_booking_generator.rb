@@ -23,10 +23,10 @@ module Yito
 
         def build_script(booking_catalog_code)
           
-          booking_extras = BookingExtra.all
+          booking_extras = BookingExtra.all(:active => true)
           booking_categories = booking_catalog_code ? 
-                                 BookingCategory.all(:booking_catalog_code => booking_catalog_code, :active => true) :
-                                 BookingCategory.all(:active => true)
+                                 BookingCategory.all(:booking_catalog_code => booking_catalog_code, :active => true, :order => :sort_order.asc) :
+                                 BookingCategory.all(:active => true, :order => :sort_order.asc)
           season_definition = ::Yito::Model::Rates::SeasonDefinition.first
           factor_definition = ::Yito::Model::Rates::FactorDefinition.first
           place_definition = PickupReturnPlaceDefinition.first

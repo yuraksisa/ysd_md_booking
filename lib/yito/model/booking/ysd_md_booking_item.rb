@@ -21,6 +21,9 @@ module Yito
         property :reference, String, :field => 'reference', :length => 50, :key => true
         property :name, String, :field => 'name', :length => 80
         property :description, Text, :field => 'description'
+        property :stock_model, String, :length => 80
+        property :stock_plate, String, :length => 80
+        property :cost, Decimal, :scale => 2, :precision => 10 
         property :active, Boolean, :default => true   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]

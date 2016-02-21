@@ -1,0 +1,140 @@
+require 'prawn' unless defined?Prawn
+require 'prawn/table' unless defined?Prawn::Table
+module Yito
+  module Model
+    module Booking
+      module Pdf
+        class Contract
+
+          attr_reader :booking
+          attr_reader :product_family
+          attr_reader :logo_path
+
+          def initialize(booking, logo_path)
+            @booking = booking
+            @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+            @logo_path = logo_path
+          end	
+
+          def build
+
+            pdf = Prawn::Document.new
+
+            # Header =======================
+
+            # ----- Logo -------------------
+            BASE_PATH = Dir.pwd
+            pdf.image logo_path, width: 200, at: [0, 745]
+
+            # ---- Company information -----
+            pdf.draw_text "mybooking S.L - cif 000000000", at: [400, 730], size: 10
+            pdf.draw_text "reservas@mybooking.es", at: [400,715], size: 10
+            pdf.draw_text "+34 93 555 10 10", at:[400, 700], size: 10
+            pdf.draw_text "c/Bajoli 27", at: [400, 685], size: 10
+            pdf.draw_text "07701 - Mahón (España)", at: [400, 670], size: 10
+
+            # Contract information =========
+            pdf.move_down 80
+            pdf.text "Contrato de alquiler", inline_format: true, size: 20
+            pdf.move_down 10
+
+            y_position = pdf.cursor
+            pdf.bounding_box([0, y_position], :width => 280, :height => 180) do
+              pdf.text "Conductor", size: 14
+              pdf.move_down 5
+              pdf.text "<b>Nombre y apellidos:</b> #{booking.customer_name} #{booking.customer_surname}", inline_format: true, size:10
+              pdf.text "<b>Fecha de nacimiento:</b> #{booking.driver_date_of_birth.nil? ? '--/--/----' : booking.driver_date_of_birth.strftime('%d-%m-%Y')}", inline_format: true, size:10
+              pdf.text "<b>Carné de conducir:</b> #{(booking.driver_driving_license_number.nil? or booking.driver_driving_license_number.empty?) ? '---------------' : booking.driver_driving_license_number} <b>Fecha:</b>  #{booking.driver_driving_license_date.nil? ? '--/--/----' : booking.driver_driving_license_date.strftime('%d-%m-%Y')}", inline_format: true, size:10
+              pdf.text "<b>Dirección:</b> #{booking.driver_address.street} #{booking.driver_address.number} #{booking.driver_address.complement}", inline_format: true, size: 10
+              pdf.text "<b>Ciudad</b> #{booking.driver_address.city} #{booking.driver_address.state}", inline_format: true, size: 10
+              pdf.text "<b>Código postal:</b> #{booking.driver_address.zip.nil? or booking.driver_address.zip.empty? ? '        ' : booking.driver_address.zip}  <b>País:</b> #{booking.driver_address.country}", inline_format: true, size: 10
+              pdf.text "<b>Documento de identidad:</b> #{booking.driver_document_id}", inline_format: true, size: 10
+              pdf.text "<b>Teléfono:</b> #{booking.customer_phone} #{booking.customer_mobile_phone}", inline_format: true, size: 10
+              pdf.text "<b>Email:</b> #{booking.customer_email}", inline_format: true, size: 10
+              pdf.text "<b>Modelo:</b> #{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first.booking_item) ? booking.booking_lines.first.booking_line_resources.first.booking_item.stock_model : '---'} ", inline_format: true, size: 10
+              pdf.text "<b>Matrícula:</b> #{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first.booking_item) ? booking.booking_lines.first.booking_line_resources.first.booking_item.stock_plate : '---'} ", inline_format: true, size: 10
+            end
+
+            pdf.bounding_box([300, y_position], :width => 280, :height => 180) do
+              pdf.text "Conductores adicionales", size: 14
+              pdf.move_down 5
+              pdf.text "<b>Nombre y apellidos:</b> #{booking.additional_driver_1_name} #{booking.additional_driver_1_surname}", inline_format: true, size:10
+              pdf.text "<b>Fecha de nacimiento:</b> #{booking.additional_driver_1_date_of_birth.nil? ? '--/--/----' : booking.additional_driver_1_date_of_birth.strftime('%d-%m-%Y')}", inline_format: true, size:10
+              pdf.text "<b>Carné de conducir:</b> #{booking.additional_driver_1_driving_license_number.nil? ? '---------------' : booking.additional_driver_1_driving_license_number} <b>Fecha:</b>  #{booking.additional_driver_1_driving_license_date.nil? ? '--/--/----' : booking.additional_driver_1_driving_license_date.strftime('%d-%m-%Y')}", inline_format: true, size:10
+              pdf.move_down 5 
+              pdf.text "<b>Nombre y apellidos:</b> #{booking.additional_driver_2_name} #{booking.additional_driver_2_surname}", inline_format: true, size:10
+              pdf.text "<b>Fecha de nacimiento:</b> #{booking.additional_driver_2_date_of_birth.nil? ? '--/--/----' : booking.additional_driver_2_date_of_birth.strftime('%d-%m-%Y')}", inline_format: true, size:10
+              pdf.text "<b>Carné de conducir:</b> #{booking.additional_driver_2_driving_license_number.nil? ? '---------------' : booking.additional_driver_2_driving_license_number} <b>Fecha:</b>  #{booking.additional_driver_2_driving_license_date.nil? ? '--/--/----' : booking.additional_driver_2_driving_license_date.strftime('%d-%m-%Y')}", inline_format: true, size:10
+              pdf.move_down 5 
+              pdf.text "Reserva", size: 14
+              pdf.move_down 5 
+              pdf.text "<b>Fecha entrega:</b> #{booking.date_from.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_from : ''} ", inline_format: true, size: 10
+              pdf.text "<b>Lugar entrega:</b> #{booking.pickup_place} ", inline_format: true, size: 10
+              pdf.text "<b>Fecha recogida:</b> #{booking.date_to.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_to : ''}", inline_format: true, size: 10
+              pdf.text "<b>Lugar recogida:</b> #{booking.return_place} ", inline_format: true, size: 10
+            end
+
+
+            # Budget table =======================
+
+            table_data = []
+            table_data << ["Producto","Días","Cantidad","Coste unitario","Total"]
+            booking.booking_lines.each do |booking_line|
+              table_data << ["#{booking_line.item_id} #{booking_line.item_description}", booking.days, booking_line.quantity, "%.2f" % booking_line.item_unit_cost, "%.2f" % booking_line.item_cost]
+            end
+            booking.booking_extras.each do |booking_extra|
+              table_data << [booking_extra.extra_description.downcase, booking.days, booking_extra.quantity, "%.2f" % booking_extra.extra_unit_cost, "%.2f" % booking_extra.extra_cost]
+            end
+            table_data << ["Total productos","","","","%.2f" % booking.item_cost]
+            table_data << ["Total extras","","","","%.2f" % booking.extras_cost]
+            table_data << ["Precio total","","","","%.2f" % booking.total_cost]
+
+            pdf.move_down 20
+            pdf.table(table_data, position: :center) do |t|
+              t.column(1).style(:align => :center, size: 10)
+              t.column(2).style(:align => :center, size: 10)
+              t.column(3).style(:align => :right, size: 10)
+              t.column(4).style(:align => :right, size: 10)
+              t.column(5).style(:align => :right, size: 10)
+            end
+
+            pdf.move_down 30
+            pdf.text "<b>TOTAL CONTRATO</b> #{"%.2f" % booking.total_cost}€", inline_format: true, size: 10, align: :center
+ 
+            # FOOTER ================
+
+            pdf.move_down 140
+            pdf.text "Mahón, #{Date.today.strftime('%d-%m-%Y')}", inline_format: true, size: 10, align: :right
+
+            pdf.move_down 10
+            y_position = pdf.cursor
+            pdf.bounding_box([0, y_position], :width => 140, :height => 90) do
+            end
+            pdf.bounding_box([140, y_position], :width => 140, :height => 90) do
+              texto = <<-BEGIN
+                 Con la firma de este contrato autorizo a mybooking SL efectuar
+                 cualquier cargo relacionado con las condiciones generales en la 
+                 tarjeta facilitada, especialmente aquellas relativas a las excepciones
+                 de la cobertura del seguro.
+              BEGIN
+              pdf.text texto, inline_format: true, size: 8
+            end
+            pdf.bounding_box([280, y_position], :width => 140, :height => 90) do
+            end
+            pdf.bounding_box([420, y_position], :width => 140, :height => 90) do
+              texto = <<-BEGIN
+                 He recibido una copia de los términos y condiciones generales en mi
+                 idioma y declaro estar conforme con los mismos. 
+              BEGIN
+              pdf.text texto, inline_format: true, size: 8
+            end
+
+            return pdf
+
+          end
+
+        end
+      end
+    end
+  end
+end

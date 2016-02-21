@@ -4,7 +4,7 @@ module Yito
       module Templates
       	def self.contract
           file = File.expand_path(File.join(File.dirname(__FILE__), "../../../..", 
-            "templates", "contract.erb"))
+            "templates", "contract_pdf.erb"))
           File.read(file)      	  
       	end
       	def self.summary_message

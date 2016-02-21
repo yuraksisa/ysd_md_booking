@@ -17,7 +17,19 @@ module BookingDataSystem
        model.property :driver_driving_license_number, String, :field => 'driver_driving_license_number', :length => 15
        model.property :driver_driving_license_date, DateTime, :field => 'driver_driving_license_date'
        model.property :driver_driving_license_country, String, :field => 'driver_driving_license_country', :length => 50
-      
+
+       # Additional drivers
+       model.property :additional_driver_1_name, String, :length => 40
+       model.property :additional_driver_1_surname, String, :length => 40
+       model.property :additional_driver_1_date_of_birth, DateTime
+       model.property :additional_driver_1_driving_license_number, String, :length => 15
+       model.property :additional_driver_1_driving_license_date, DateTime
+       model.property :additional_driver_2_name, String, :length => 40
+       model.property :additional_driver_2_surname, String, :length => 40
+       model.property :additional_driver_2_date_of_birth, DateTime
+       model.property :additional_driver_2_driving_license_number, String, :length => 15
+       model.property :additional_driver_2_driving_license_date, DateTime
+
      end
      
      if model.respond_to?(:belongs_to)
