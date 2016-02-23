@@ -81,22 +81,77 @@ module Yito
         property :capacity, Integer, :default => 0
 
         # -- Prices
+        property :type_of_multiple_prices, Enum[:none, :duration, :ages, :accomodation], default: :none
+        property :capacities_on_multiple_prices, Boolean, :default => false
+
         property :price_1_description, String, :length => 255
-        property :price_2_description, String, :length => 255
-        property :price_3_description, String, :length => 255
+        property :price_1_total_capacity, Integer, :default => 0
+        property :price_1_affects_capacity, Boolean, :default => true
+        property :price_1_duration_days, Integer, :default => 0
+        property :price_1_duration_hours, String, :length => 5
         belongs_to :price_definition_1, 'Yito::Model::Rates::PriceDefinition', :required => false
+        
+        property :price_2_description, String, :length => 255
+        property :price_2_total_capacity, Integer, :default => 0
+        property :price_2_affects_capacity, Boolean, :default => false
+        property :price_2_duration_days, Integer, :default => 0
+        property :price_2_duration_hours, String, :length => 5
         belongs_to :price_definition_2, 'Yito::Model::Rates::PriceDefinition', :required => false
+        
+        property :price_3_description, String, :length => 255
+        property :price_3_total_capacity, Integer, :default => 0
+        property :price_3_affects_capacity, Boolean, :default => false
+        property :price_3_duration_days, Integer, :default => 0
+        property :price_3_duration_hours, String, :length => 5
         belongs_to :price_definition_3, 'Yito::Model::Rates::PriceDefinition', :required => false
 
         def save
-          p "Saving activity #{self.price_definition_1 || self.price_definition_2 || self.price_definition_3}"
-          p "#{self.price_definition_1.inspect}"
           check_calendar! if self.calendar
           check_price_definition! if self.price_definition_1 || self.price_definition_2 || self.price_definition_3
           super # Invokes the super class to achieve the chain of methods invoked       
         end
+        
+        #
+        # Get the rates for an activity in one date
+        #
+        def cyclic_rates(date)
+          
+          return nil unless mode == :partial
+
+          rates_result = {}
+
+          unless price_definition_1.nil?
+            rates_result.store(1, build_cyclic_rates(price_definition_1))
+          end
+
+          unless price_definition_2.nil?
+            rates_result.store(2, build_cyclic_rates(price_definition_2))
+          end
+
+          unless price_definition_3.nil?
+            rates_result.store(3, build_cyclic_rates(price_definition_3))
+          end
+
+        end
+        
+        # Get the occupation for a price type
+        #
+        def occupation(occupation_date, occupation_time, occupation_price_type=nil)
+          Yito::Model::Order::Order.occupation(code, 
+              occupation_date, occupation_time, occupation_price_type)
+        end
 
         private
+        
+        #
+        # Build cyclic rates for a price definition
+        #
+        def build_cyclic_rates(price_definition)
+            activity_rates = (1..capacity).inject([]) do |result, item|
+                               result << {item: {quantity: item, total_price: 25*item}}
+                               result
+                             end
+        end
 
         def check_calendar!
 
@@ -112,14 +167,11 @@ module Yito
 
 
         def check_price_definition!
-          p "checking price definition"
           if self.price_definition_1 and (not self.price_definition_1.saved?) and 
              loaded = ::Yito::Model::Rates::PriceDefinition.get(self.price_definition_1.id)
-            p "exist 1"
             self.price_definition_1 = loaded
           end
           if self.price_definition_1 and self.price_definition_1.id.nil?
-            p "new 1"
             self.price_definition_1.save
           end
 

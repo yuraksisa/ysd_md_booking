@@ -1,9 +1,16 @@
 pdf = Prawn::Document.new
 
+BASE_PATH = Dir.pwd
+font_file_regular = File.join(File.expand_path(BASE_PATH),'themes','default','static','fonts','DejaVuSans.ttf')
+font_file_bold = File.join(File.expand_path(BASE_PATH),'themes','default','static','fonts','DejaVuSans-Bold.ttf')
+
+pdf.font_families.update(
+  {'DejaVuSans' => { :normal => font_file_regular, :bold => font_file_bold}})
+pdf.font 'DejaVuSans'
+           
 # Header =======================
 
 # ----- Logo -------------------
-BASE_PATH = Dir.pwd
 image = File.join(File.expand_path(BASE_PATH),'themes','default','static','img','contract_logo.png')
 pdf.image image, width: 200, at: [0, 745]
 
