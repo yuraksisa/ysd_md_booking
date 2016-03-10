@@ -118,6 +118,124 @@ module Yito
           @repository.adapter.select(query).first
         end         
 
+        #
+        # Get the products total billing
+        #
+        def products_billing_total(year)
+          query = <<-QUERY
+            select sum(b.item_cost) as total_item_cost
+            from bookds_bookings b
+            where strftime('%Y', b.date_from) = ? and 
+                  b.status NOT IN (1,5)         
+          QUERY
+
+          @repository.adapter.select(query, [year])
+        end
+          
+        #
+        # Get the extras total billing
+        #
+        def extras_billing_total(year)
+          query = <<-QUERY
+            select sum(b.time_from_cost + b.time_to_cost + b.pickup_place_cost + b.return_place_cost) as total_extra_cost
+            from bookds_bookings b
+            where strftime('%Y', b.date_from) = ? and 
+                  b.status NOT IN (1,5) and 
+                  (b.time_from_cost > 0 or b.time_to_cost > 0 or b.pickup_place_cost > 0 or
+                   b.return_place_cost > 0)
+            union
+            select sum(e.extra_cost) as total_extra_cost
+            from bookds_bookings_extras e
+            join bookds_bookings b on e.booking_id = b.id
+            where strftime('%Y', b.date_from) = #{year.to_i} and 
+                  b.status NOT IN (1,5) and 
+                  e.extra_cost > 0 and
+                  e.extra_id in (select code from bookds_extras)     
+          QUERY
+
+          @repository.adapter.select(query, [year])
+        end        
+
+        #
+        # Get the stock total cost
+        #
+        def stock_cost_total
+          query = <<-QUERY
+            select sum(i.cost) as total
+            from bookds_items i
+            where i.active = ?         
+          QUERY
+          repository.adapter.select(query, [1])
+        end
+
+        def products_billing_summary_by_stock(year)
+          query = <<-QUERY
+            select r.booking_item_reference as reference, 
+                   TO_CHAR(creation_date, 'MM') as period,
+                   sum(b.item_cost) as total_item_cost
+            from bookds_bookings_lines_resources r 
+            join bookds_bookings_lines l on r.booking_line_id = l.id
+            join bookds_bookings b on l.booking_id = b.id 
+            where strftime('%Y', b.date_from) = ? and 
+                  b.status NOT IN (1,5)
+            group by reference, period
+            order by reference, period          
+          QUERY
+
+          @repository.adapter.select(query, [year])
+        end
+
+        def extras_billing_summary_by_extra(year)
+          query = <<-QUERY
+            select e.extra_id as extra, 
+                   TO_CHAR(creation_date, 'MM') as period,
+                   sum(e.extra_cost) as total_extra_cost
+            from bookds_bookings_extras e
+            join bookds_bookings b on e.booking_id = b.id
+            where strftime('%Y', b.date_from) = ? and 
+                  b.status NOT IN (1,5)
+            group by extra, period
+            union
+            select 'entrega_fuera_horas' as extra,
+                   TO_CHAR(b.date_from, 'MM') as period,
+                   sum(b.time_from_cost) as total_extra_cost
+            from bookds_bookings b
+            where strftime('%Y', b.date_from) = #{year.to_i} and 
+                  b.status NOT IN (1,5) and 
+                  b.time_from_cost > 0
+            group by period
+            union
+            select 'recogida_fuera_horas' as extra,
+                   TO_CHAR(b.date_from, 'MM') as period,
+                   sum(b.time_to_cost) as total_extra_cost
+            from bookds_bookings b
+            where strftime('%Y', b.date_from) = #{year.to_i} and 
+                  b.status NOT IN (1,5) and 
+                  b.time_to_cost > 0
+            group by period
+            union
+            select 'lugar_entrega' as extra,
+                   TO_CHAR(b.date_from, 'MM') as period,
+                   sum(b.pickup_place_cost) as total_extra_cost
+            from bookds_bookings b
+            where strftime('%Y', b.date_from) = #{year.to_i} and 
+                  b.status NOT IN (1,5) and 
+                  b.pickup_place_cost > 0
+            group by period
+            union
+            select 'lugar_recogida' as extra,
+                   TO_CHAR(b.date_from, 'MM') as period,
+                   sum(b.return_place_cost) as total_extra_cost
+            from bookds_bookings b
+            where strftime('%Y', b.date_from) = #{year.to_i} and 
+                  b.status NOT IN (1,5) and 
+                  b.return_place_cost > 0
+            group by period
+          QUERY
+
+          @repository.adapter.select(query, year)
+        end   
+
 
         private
 

@@ -66,6 +66,110 @@ module Yito
           def count_confirmed_reservations(year)
             query_strategy.count_confirmed_reservations(year)
           end 
+          
+          #
+          # Get the products total billing
+          #
+          def products_billing_total(year)
+            query_strategy.products_billing_total(year).first
+          end
+          
+          #
+          # Get the extras total billing
+          #
+          def extras_billing_total(year)
+            result = query_strategy.extras_billing_total(year)
+            result.first + result.last
+          end
+
+          #
+          # Get the stock total cost
+          #
+          def stock_cost_total
+            query_strategy.stock_cost_total.first || 0
+          end
+
+          #
+          # Products billing summary detailed by stock item
+          #
+          def products_billing_summary_by_stock(year)
+            # Build the result holder
+            total_cost = 0
+            stock_items = ::Yito::Model::Booking::BookingItem.all(conditions: {active: true}, fields: [:reference, :cost], order: [:category_code, :reference])
+            summary = stock_items.inject({}) do |result, item|
+              data_holder = {}
+              (1..12).each { |item| data_holder.store(item, 0) }
+              data_holder.store(:total, 0)
+              data_holder.store(:cost, item.cost || 0)
+              data_holder.store(:percentage, 0)
+              total_cost = total_cost + item.cost unless item.cost.nil?
+              result.store(item.reference, data_holder)
+              result
+            end
+            data_holder = {}
+            (1..12).each { |item| data_holder.store(item, 0) }
+            data_holder.store(:total, 0)
+            data_holder.store(:cost, 0)
+            data_holder.store(:percentage, 0)
+            summary.store(:TOTAL, data_holder)
+            # Fill the data
+            data = query_strategy.products_billing_summary_by_stock(year)     
+            data.each do |data_item|
+              if summary.has_key?(data_item.reference)
+                # stock
+                summary[data_item.reference][data_item.period.to_i] = data_item.total_item_cost
+                summary[data_item.reference][:total] += data_item.total_item_cost
+                if summary[data_item.reference][:cost] and summary[data_item.reference][:cost] > 0
+                  summary[data_item.reference][:percentage] = summary[data_item.reference][:total] /
+                                                              summary[data_item.reference][:cost] * 100 
+                end
+                # total
+                summary[:TOTAL][data_item.period.to_i] += data_item.total_item_cost
+                summary[:TOTAL][:total] += data_item.total_item_cost
+                summary[:TOTAL][:cost] = total_cost
+                if summary[:TOTAL][:cost] and summary[:TOTAL][:cost] > 0
+                  summary[:TOTAL][:percentage] = summary[:TOTAL][:total] /
+                                                 summary[:TOTAL][:cost] * 100 
+                end             
+              end  
+            end
+
+            return summary
+          end
+
+          def extras_billing_summary_by_extra(year)
+
+            # Build the result holder
+            extras = ::Yito::Model::Booking::BookingExtra.all(conditions: {active: true}, fields: [:code])
+            summary = extras.inject({}) do |result, item|
+              data_holder = {}
+              (1..12).each { |item| data_holder.store(item, 0) }
+              data_holder.store(:total, 0)
+              result.store(item.code, data_holder)
+              result
+            end
+            ['entrega_fuera_horas','recogida_fuera_horas','lugar_entrega','lugar_recogida',:TOTAL].each do |concept|
+              data_holder = {}
+              (1..12).each { |item| data_holder.store(item, 0) }
+              data_holder.store(:total, 0)
+              summary.store(concept, data_holder)   
+            end
+
+            # Fill the data
+            data = query_strategy.extras_billing_summary_by_extra(year)   
+            data.each do |data_item|
+              if summary.has_key?(data_item.extra)
+                summary[data_item.extra][data_item.period.to_i] = data_item.total_extra_cost
+                summary[data_item.extra][:total] += data_item.total_extra_cost
+                # total
+                summary[:TOTAL][data_item.period.to_i] += data_item.total_extra_cost
+                summary[:TOTAL][:total] += data_item.total_extra_cost
+              end  
+            end
+
+            return summary
+            
+          end
 
           def count_pickup(date)
 
@@ -193,7 +297,7 @@ module Yito
 
           # Get the daily percentage occupation in a period of time 
           #
-          def monthly_occupation(month, year, category=nil)
+          def monthly_occupation(month, year, category=nil, mode=nil)
             
             from = Date.civil(year, month, 1)
             to = Date.civil(year, month, -1)
@@ -218,25 +322,50 @@ module Yito
                               end
 
             # Query bookings for the period
-            query = <<-QUERY
-               SELECT l.item_id as item_id, b.id, b.date_from as date_from,
-                      b.days as days, l.quantity as quantity 
-               FROM bookds_bookings_lines as l
-               JOIN bookds_bookings as b on b.id = l.booking_id
-               WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+            
+            if mode == 'stock'
+              query = <<-QUERY
+                SELECT bi.category_code as item_id, 
+                       b.id, 
+                       b.date_from as date_from,
+                       b.date_to as date_to,
+                       b.days as days, 
+                       1 as quantity 
+                FROM bookds_bookings_lines as l
+                JOIN bookds_bookings as b on b.id = l.booking_id
+                JOIN bookds_bookings_lines_resources as lr on lr.booking_line_id = l.id
+                JOIN bookds_items as bi on lr.booking_item_reference = bi.reference
+                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
                    (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
                    (b.date_from = '#{from}' and b.date_to = '#{to}') or
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                   b.status <> 5
-            QUERY
+                   b.status NOT IN (1,5)
+              QUERY
+            else
+              query = <<-QUERY
+                SELECT l.item_id as item_id, b.id, b.date_from as date_from,
+                      b.date_to as date_to,
+                      b.days as days, l.quantity as quantity 
+                FROM bookds_bookings_lines as l
+                JOIN bookds_bookings as b on b.id = l.booking_id
+                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
+                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
+                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
+                   b.status NOT IN (1,5)
+              QUERY
+            end
+
             reservations = repository.adapter.select(query)
             
             # Fill products occupation
             reservations.each do |reservation|
               date_from = reservation.date_from
-              calculated_to = date_from.day+reservation.days
+              date_to = reservation.date_to
+              calculated_from = date_from.month < month ? 1 : date_from.day
+              calculated_to = date_to.month > month ? to.day : date_to.day 
               calculated_to = calculated_to - 1 unless product_family.cycle_of_24_hours
-              ((date_from.day)..([calculated_to,to.day].min)).each do |index|
+              (calculated_from..calculated_to).each do |index|
                 cat_occupation[reservation.item_id][index] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
               end
             end

@@ -20,13 +20,13 @@ module Yito
                                    :date_from.gte => from,
                                    :date_from.lte => to,
                                    :status => [:confirmed, :in_progress, :done],
-                                   :order => [:date_from.asc, :time_from.asc])
+                                   :order => [:date_from.asc, :time_from.asc]).sort { |x,y| x.date_from <=> y.date_from and Time.parse(x.time_from) <=> Time.parse(y.time_from)}
 
             returned_bookings = BookingDataSystem::Booking.all(
                                    :date_to.gte => from,
                                    :date_to.lte => to,
                                    :status => [:confirmed, :in_progress, :done],
-                                   :order => [:date_to.asc, :time_to.asc])
+                                   :order => [:date_to.asc, :time_to.asc]).sort { |x,y| x.date_to <=> y.date_to and Time.parse(x.time_to) <=> Time.parse(y.time_to)}
 
             pdf = Prawn::Document.new(:page_layout => :landscape)
             font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
@@ -84,7 +84,7 @@ module Yito
               stock = []
               booking.booking_lines.each do |booking_line|
                 booking_line.booking_line_resources.each do |booking_line_resource|
-                  stock << booking_line_resource.booking_item.reference
+                  stock << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
                 end 
               end
               data << stock.join(', ')
@@ -129,7 +129,7 @@ module Yito
               stock = []
               booking.booking_lines.each do |booking_line|
                 booking_line.booking_line_resources.each do |booking_line_resource|
-                  stock << booking_line_resource.booking_item.reference
+                  stock << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
                 end 
               end
               data << stock.join(', ')

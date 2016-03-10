@@ -6,18 +6,17 @@ module Yito
       module Pdf
         class Reservations
 
-          attr_reader :year, :booking_reservation_starts_with, :product_family
+          attr_reader :date_from, :date_to, :booking_reservation_starts_with, :product_family
 
-          def initialize(year)
-            @year = year
+          def initialize(date_from, date_to)
+            @date_from = date_from
+            @date_to = date_to
             @booking_reservation_starts_with =
               SystemConfiguration::Variable.get_value('booking.reservation_starts_with', :dates).to_sym         
             @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
           end
 
           def build
-            date_from = Date.civil(year,1,1)
-            date_to = Date.civil(year,12,31)
             reservations = BookingDataSystem::Booking.all(
                :conditions => {:date_from.gte => date_from,
                                :date_to.lte => date_to,
@@ -37,9 +36,11 @@ module Yito
             else
               
               last_month = nil
+              year = nil
               month_reservations = []
 
               reservations.each do |reservation|
+                year = reservation.date_from.year
                 if last_month != reservation.date_from.month
                   unless last_month.nil?
                     if month_reservations.size > 0

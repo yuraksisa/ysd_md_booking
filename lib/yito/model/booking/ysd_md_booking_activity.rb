@@ -112,26 +112,22 @@ module Yito
         end
         
         #
-        # Get the rates for an activity in one date
+        # Check if the activity has prices for different seasons 
         #
-        def cyclic_rates(date)
-          
-          return nil unless mode == :partial
+        def season_prices?
+          (!price_definition_1.nil? && price_definition_1.season?) ||
+          (!price_definition_2.nil? && price_definition_2.season?) ||
+          (!price_definition_3.nil? && price_definition_3.season?)
+        end
 
-          rates_result = {}
-
-          unless price_definition_1.nil?
-            rates_result.store(1, build_cyclic_rates(price_definition_1))
+        #
+        # Get the activity rate's detail for a date
+        #
+        def rates(date)
+          case occurence
+            when :cyclic 
+              cyclic_rates(date)
           end
-
-          unless price_definition_2.nil?
-            rates_result.store(2, build_cyclic_rates(price_definition_2))
-          end
-
-          unless price_definition_3.nil?
-            rates_result.store(3, build_cyclic_rates(price_definition_3))
-          end
-
         end
         
         # Get the occupation for a price type
@@ -142,16 +138,33 @@ module Yito
         end
 
         private
-        
+
         #
-        # Build cyclic rates for a price definition
+        # Get the rates for an activity in one date
         #
-        def build_cyclic_rates(price_definition)
-            activity_rates = (1..capacity).inject([]) do |result, item|
-                               result << {item: {quantity: item, total_price: 25*item}}
-                               result
-                             end
+        def cyclic_rates(date)
+          
+          return nil unless mode == :partial
+
+          rates_result = {}
+
+          unless price_definition_1.nil?
+            rates_result.store(1, price_definition_1.calculate_multiple_prices(date, capacity))
+          end
+
+          unless price_definition_2.nil?
+            rates_result.store(2, price_definition_2.calculate_multiple_prices(date, capacity))
+          end
+
+          unless price_definition_3.nil?
+            rates_result.store(3, price_definition_3.calculate_multiple_prices(date, capacity))
+          end
+
+          return rates_result
+
         end
+        
+        # ---------------------------------------------------------------
 
         def check_calendar!
 
