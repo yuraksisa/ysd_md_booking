@@ -117,6 +117,9 @@ module BookingDataSystem
        :required => false
      property :promotion_code, String, :length => 256
      
+     belongs_to :destination_address, 'LocationDataSystem::Address', :required => false # The driver address
+     property :comercial_agent, String, :length => 256
+
      #
      # Get a booking by its free access id
      #
@@ -391,6 +394,7 @@ module BookingDataSystem
          relationships.store(:booking_line_resources, {})
          relationships.store(:booking_item, {})
          relationships.store(:driver_address, {})
+         relationships.store(:destination_address, {})
          methods = options[:methods] || []
          methods << :is_expired
          super(options.merge({:relationships => relationships, :methods => methods}))
@@ -400,6 +404,21 @@ module BookingDataSystem
 
      def item_unit_cost
        item_cost / days
+     end
+     
+     def extras_summary
+       extras_s = booking_extras.inject({}) do |result, extra|
+         result.store(extra.id, {quantity: extra.quantity, cost: extra.extra_cost})
+         result
+       end 
+       extras_s.store('entrega_fuera_horas', {quantity: 1, cost: time_from_cost})
+       extras_s.store('recogida_fuera_horas', {quantity: 1, cost: time_to_cost})
+       extras_s.store('lugar_entrega', {quantity: 1, cost: pickup_place_cost})
+       extras_s.store('lugar_recogida', {quantity: 1, cost: return_place_cost})
+       extras_s.store('fuera_horas', {quantity: 1, cost: time_from_cost + time_to_cost})
+       extras_s.store('lugar', {quantity: 1, cost: pickup_place_cost + return_place_cost})
+
+       return extras_s
      end
 
      private

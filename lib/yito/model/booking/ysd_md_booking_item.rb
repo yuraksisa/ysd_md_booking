@@ -23,6 +23,9 @@ module Yito
         property :description, Text, :field => 'description'
         property :stock_model, String, :length => 80
         property :stock_plate, String, :length => 80
+        property :characteristic_1, String, :length => 80
+        property :characteristic_2, String, :length => 80
+        property :characteristic_3, String, :length => 80
         property :cost, Decimal, :scale => 2, :precision => 10 
         property :active, Boolean, :default => true   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 

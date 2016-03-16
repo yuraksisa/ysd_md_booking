@@ -79,7 +79,15 @@ module Yito
           #
           def extras_billing_total(year)
             result = query_strategy.extras_billing_total(year)
-            result.first + result.last
+            if result.nil?
+              value = 0
+            else
+              value = (result.first || 0)
+              if result.size == 2
+                value += (result.last || 0)
+              end
+            end
+            return value
           end
 
           #
@@ -137,6 +145,9 @@ module Yito
             return summary
           end
 
+          #
+          # Extras summary detail
+          #
           def extras_billing_summary_by_extra(year)
 
             # Build the result holder
@@ -169,6 +180,51 @@ module Yito
 
             return summary
             
+          end
+          
+          #
+          # Get the charges between two dates
+          # 
+          def charges(date_from, date_to)
+
+            if defined?(::Yito::Model::Order) 
+              sql = <<-SQL
+                select * 
+                from (
+                  select pc.id, pc.amount, pc.date, pc.payment_method_id, 
+                         'booking' as source, bc.booking_id as source_id,
+                         b.customer_name as customer_name, b.customer_surname as customer_surname
+                  from payment_charges pc
+                  join bookds_booking_charges bc on bc.charge_id = pc.id
+                  join bookds_bookings b on bc.booking_id = b.id
+                  where pc.status = 4
+                  union
+                  select pc.id, pc.amount. pc.date, pc.payment_method_id, 
+                         'order' as source, oc.order_id as source_id,
+                         o.customer_name as customer_name, o.customer_surname as customer_surname
+                  from payment_charges pc
+                  join orderds_order_charges oc on oc.charge_id = pc.id
+                  join orderds_orders o on oc.order_id = o.id
+                  where pc.status = 4
+                ) as data_charges
+                where data_charges.date >= ? and data_charges.date <= ?
+                order by data_charges.date
+              SQL
+            else
+              sql = <<-SQL
+                select pc.id, pc.amount, pc.date, pc.payment_method_id, 
+                      'booking' as source, bc.booking_id as source_id,
+                      b.customer_name as customer_name, b.customer_surname as customer_surname
+                from payment_charges pc
+                join bookds_booking_charges bc on bc.charge_id = pc.id
+                join bookds_bookings b on bc.booking_id = b.id
+                where pc.status = 4 and pc.date >= ? and pc.date <= ?
+                order by pc.date
+              SQL
+            end
+
+            charges = repository.adapter.select(sql, date_from, date_to)
+
           end
 
           def count_pickup(date)
@@ -373,7 +429,7 @@ module Yito
             # Calculate percentage 
             cat_occupation.each do |key, value|  
               value.each do |day, occupation| 
-                cat_occupation[key][day] = "#{cat_occupation[key][day]}/#{stocks[key].to_f}"
+                cat_occupation[key][day] = "#{cat_occupation[key][day]}/#{stocks[key]}"
               end
             end    
 

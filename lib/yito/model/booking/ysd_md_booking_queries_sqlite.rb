@@ -76,7 +76,7 @@ module Yito
              SELECT TO_CHAR(creation_date, 'YYYY-MM') as period, 
                   count(*) as occurrences
              FROM bookds_bookings
-             WHERE status IN (2,3,4) and strftime('%Y', creation_date) = #{year.to_i}
+             WHERE status NOT IN (1,5) and strftime('%Y', creation_date) = #{year.to_i}
              GROUP BY period 
              order by period
           QUERY
@@ -101,7 +101,7 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where strftime('%Y', creation_date) = #{year.to_i} = #{year.to_i} and status = 0
+            where strftime('%Y', creation_date) = #{year.to_i} = #{year.to_i} and status = 1
             QUERY
 
           @repository.adapter.select(query).first
@@ -112,7 +112,7 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where strftime('%Y', creation_date) = #{year.to_i} = #{year.to_i} and status = 1
+            where strftime('%Y', creation_date) = #{year.to_i} = #{year.to_i} and status IN (2,3,4)
             QUERY
 
           @repository.adapter.select(query).first
