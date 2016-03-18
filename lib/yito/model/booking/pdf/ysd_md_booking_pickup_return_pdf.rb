@@ -20,13 +20,19 @@ module Yito
                                    :date_from.gte => from,
                                    :date_from.lte => to,
                                    :status => [:confirmed, :in_progress, :done],
-                                   :order => [:date_from.asc, :time_from.asc]).sort { |x,y| x.date_from <=> y.date_from and Time.parse(x.time_from) <=> Time.parse(y.time_from)}
+                                   :order => [:date_from.asc, :time_from.asc]).sort do |x,y| 
+              comp = x.date_from <=> y.date_from 
+              comp.zero? ? Time.parse(x.time_from) <=> Time.parse(y.time_from) : comp
+            end     
 
             returned_bookings = BookingDataSystem::Booking.all(
                                    :date_to.gte => from,
                                    :date_to.lte => to,
                                    :status => [:confirmed, :in_progress, :done],
-                                   :order => [:date_to.asc, :time_to.asc]).sort { |x,y| x.date_to <=> y.date_to and Time.parse(x.time_to) <=> Time.parse(y.time_to)}
+                                   :order => [:date_to.asc, :time_to.asc]).sort do |x,y|
+              comp = x.date_to <=> y.date_to  
+              comp.zero? ? Time.parse(x.time_to) <=> Time.parse(y.time_to) : comp
+            end
 
             pdf = Prawn::Document.new(:page_layout => :landscape)
             font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
@@ -124,7 +130,7 @@ module Yito
 
             returned_bookings.each do |booking|
               data = [booking.id,
-                      "#{booking.date_from.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_from : ''}"]
+                      "#{booking.date_to.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_to : ''}"]
               data << booking.pickup_place if product_family.pickup_return_place
               stock = []
               booking.booking_lines.each do |booking_line|

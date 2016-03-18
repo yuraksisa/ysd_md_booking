@@ -195,8 +195,6 @@ module BookingDataSystem
          allowed || force_allow_payment
      end
 
-     alias_method :is_expired, :expired?
-
      #
      # Check if the customer can pay for the reservation
      #
@@ -211,7 +209,7 @@ module BookingDataSystem
          if self.total_paid > 0 # It's not the first payment
            can_pay = (can_pay && conf_allow_total_payment) 
          else  # It's the first payment (check expiration)
-           can_pay = (can_pay && !expired? && payment_cadence_allowed?) || (total_pending > 0 && status == :confirmed)
+           can_pay = (can_pay && !expired? && (payment_cadence_allowed? || force_allow_payment)) || (total_pending > 0 && status == :confirmed)
          end
        end            
 
@@ -232,6 +230,8 @@ module BookingDataSystem
 
      end
 
+     alias_method :is_expired, :expired?
+     alias_method :can_pay, :can_pay?
 
      #
      # Get the deposit amount
@@ -294,7 +294,7 @@ module BookingDataSystem
           not charges.select { |charge| charge.status == :done }.empty?
          self.status = :confirmed
          save
-         notify_manager
+         notify_manager_confirmation 
          notify_customer
        else
          p "Could not confirm booking #{id} #{status}"
@@ -397,6 +397,7 @@ module BookingDataSystem
          relationships.store(:destination_address, {})
          methods = options[:methods] || []
          methods << :is_expired
+         methods << :can_pay
          super(options.merge({:relationships => relationships, :methods => methods}))
        end
 

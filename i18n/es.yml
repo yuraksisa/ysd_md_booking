@@ -1,9 +1,10 @@
 notifications:
   customer_req_email_subject: Recibida solicitud de reserva
-  customer_email_subject: Su reserva
+  customer_email_subject: Pedido confirmado
   customer_payment_enabled_subject: Pago de solicitud de reserva habilitado
   manager_email_subject: Nueva solicitud de reserva
   manager_paying_email_subject: Cliente realizando pago solicitud reserva
+  manager_confirmation_email_subject: Reserva confirmada  
 booking_model:
   charge_description: Reserva %1
 booking_category_type:

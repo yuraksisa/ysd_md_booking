@@ -33,6 +33,18 @@ module BookingDataSystem
     end
     
     #
+    # Notifies the manager that a request has been confirmed
+    #
+    def self.notify_manager_confirmation(to, subject, message, booking_id)
+      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+  
+      if booking = BookingDataSystem::Booking.get(booking_id)
+        booking.update(:manager_confirm_notification_sent => true)
+      end
+
+    end 
+    
+    #
     # Notifies the customer that a new request has been received
     #
     def self.notify_request_to_customer(to, subject, message, booking_id)
@@ -131,6 +143,18 @@ module BookingDataSystem
     end
 
     #
+    # Gets the default template used to notify the confirmation of a booking to the manager
+    #
+    def manager_confirm_notification_template
+
+      file = File.expand_path(File.join(File.dirname(__FILE__), "..", 
+          "templates", "manager_confirm_notification_template.erb"))
+
+      File.read(file)
+
+    end
+
+    #
     # Gets the default template used to notify the customer
     #
     def customer_notification_booking_request_template
@@ -196,6 +220,7 @@ module BookingDataSystem
        model.property :customer_payment_enabled_sent, DataMapper::Property::Boolean, :field => 'customer_payment_enabled_sent', :default => false
        model.property :manager_notification_sent, DataMapper::Property::Boolean, :field => 'manager_notification_sent'
        model.property :manager_notification_p_n_sent, DataMapper::Property::Boolean, :field => 'manager_notification_p_n_sent', :default => false
+       model.property :manager_confirm_notification_sent, DataMapper::Property::Boolean, :field => 'manager_confirm_notification_sent', :default => false
      end
 
     end
@@ -258,6 +283,35 @@ module BookingDataSystem
 
     end
     
+    #
+    # Notifies by email the booking manager that a booking has been confirmed
+    # 
+    # The manager address can be set up on booking.notification_email variable
+    #
+    # It allows to define a custom template naming it as booking_manager_notification
+    # 
+    def notify_manager_confirmation
+
+      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_confirmation_manager_notification')
+
+        template = if bmn_template
+                     ERB.new bmn_template.text
+                   else
+                     ERB.new Booking.manager_confirm_notification_template
+                   end
+        
+        message = template.result(binding)
+
+        Notifier.delay.notify_manager(notification_email, 
+          BookingDataSystem.r18n.t.notifications.manager_confirmation_email_subject.to_s, 
+          message,
+          self.id)
+
+      end
+
+    end  
+
     #
     # Notifies by email the customer the booking request
     #
