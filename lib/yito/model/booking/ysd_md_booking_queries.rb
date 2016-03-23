@@ -199,7 +199,7 @@ module Yito
                   join bookds_bookings b on bc.booking_id = b.id
                   where pc.status = 4
                   union
-                  select pc.id, pc.amount. pc.date, pc.payment_method_id, 
+                  select pc.id, pc.amount, pc.date, pc.payment_method_id, 
                          'order' as source, oc.order_id as source_id,
                          o.customer_name as customer_name, o.customer_surname as customer_surname
                   from payment_charges pc

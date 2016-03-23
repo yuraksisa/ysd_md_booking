@@ -1,3 +1,4 @@
+require 'set' unless defined?Set
 module Yito
   module Model
     module Booking
@@ -112,6 +113,96 @@ module Yito
         end
         
         #
+        # Get the turns summary (taking into account all days)
+        #
+        def cyclic_turns_summary
+          result = Set.new
+          if all_days_same_turns
+            process_turns([morning_turns,afternoon_turns,night_turns], result)
+          else
+            process_turns([sunday_morning_turns,sunday_afternoon_turns,sunday_night_turns,
+                           monday_morning_turns,monday_afternoon_turns,monday_night_turns,
+                           tuesday_morning_turns,tuesday_afternoon_turns,tuesday_night_turns,
+                           wednesday_morning_turns,wednesday_afternoon_turns,wednesday_night_turns,
+                           thursday_morning_turns,thursday_afternoon_turns,thursday_night_turns,
+                           friday_morning_turns,friday_afternoon_turns,friday_night_turns,
+                           saturday_morning_turns,saturday_afternoon_turns,saturday_night_turns], result)
+          end
+          return result.to_a.sort { |x,y| Time.parse(x) <=> Time.parse(y) }
+        end
+        
+        #
+        # Check if a day has turn
+        #
+        def cyclic_has_turn?(day_of_week, turn)
+          result = Set.new
+          if all_days_same_turns
+            process_turns([morning_turns,afternoon_turns,night_turns], result)
+          else
+            case day_of_week
+              when 0 # sunday
+                process_turns([sunday_morning_turns,sunday_afternoon_turns,sunday_night_turns], result)
+              when 1 
+                process_turns([monday_morning_turns,monday_afternoon_turns,monday_night_turns], result)
+              when 2
+                process_turns([tuesday_morning_turns,tuesday_afternoon_turns,tuesday_night_turns], result)
+              when 3
+                process_turns([wednesday_morning_turns,wednesday_afternoon_turns,wednesday_night_turns], result)
+              when 4
+                process_turns([thursday_morning_turns,thursday_afternoon_turns,thursday_night_turns], result)
+              when 5
+                process_turns([friday_morning_turns,friday_afternoon_turns,friday_night_turns], result)
+              when 6
+                process_turns([saturday_morning_turns,saturday_afternoon_turns,saturday_night_turns], result)
+            end
+          end
+          result.contains?(turn)
+        end
+        
+        #
+        # Check if the activity is planned for a day of week
+        #
+        def cyclic_planned?(day_of_week)
+          return true if all_days
+          case day_of_week
+            when 0 
+              return true if sundays
+            when 1
+              return true if mondays 
+            when 2
+              return true if tuesdays
+            when 3
+              return true if wednesdays 
+            when 4
+              return true if thursdays 
+            when 5
+              return true if fridays 
+            when 6
+              return true if saturdays
+          end
+          return false 
+        end
+        
+        #
+        # Get the number of different item price
+        #
+        def number_of_item_price
+          number_of_prices = 0
+          number_of_prices += 1 unless price_definition_1.nil?
+          number_of_prices += 1 unless price_definition_2.nil?
+          number_of_prices += 1 unless price_definition_3.nil?    
+          return number_of_prices      
+        end
+
+        def price_definition_detail
+          result = {}
+          result.store(1, price_1_description) unless price_definition_1.nil?
+          result.store(2, price_2_description) unless price_definition_2.nil?
+          result.store(3, price_3_description) unless price_definition_3.nil?
+          return result
+        end
+
+        #
         # Check if the activity has prices for different seasons 
         #
         def season_prices?
@@ -125,6 +216,8 @@ module Yito
         #
         def rates(date)
           case occurence
+            when :one_time 
+              cyclic_rates(date)
             when :cyclic 
               cyclic_rates(date)
           end
@@ -137,7 +230,33 @@ module Yito
               occupation_date, occupation_time, occupation_price_type)
         end
 
+     #
+     # Exporting to json
+     #
+     def as_json(options={})
+
+       if options.has_key?(:only)
+         super(options)
+       else
+         relationships = options[:relationships] || {}
+         relationships.store(:activity_dates, {})
+         methods = options[:methods] || []
+          super(options.merge({:relationships => relationships, :methods => methods}))
+       end
+
+     end
+
         private
+
+        def process_turns(turns_group, turns_set)
+          turns_group.each do |turn_group|
+            if !turn_group.nil? and !turn_group.empty?
+              turn_group.split(',').each do |turn|
+                turns_set.add(turn) if !turn.nil? and !turn.empty?
+              end
+            end
+          end
+        end
 
         #
         # Get the rates for an activity in one date
@@ -159,6 +278,8 @@ module Yito
           unless price_definition_3.nil?
             rates_result.store(3, price_definition_3.calculate_multiple_prices(date, capacity))
           end
+
+          p "RESULT: #{rates_result.inspect}"
 
           return rates_result
 
