@@ -184,6 +184,21 @@ module Yito
         end
         
         #
+        # Check if an activity for multiple dates has active dates
+        #
+        def lives?
+          if occurence == :multiple_dates
+            today = Date.today
+            (activity_dates.select { |item| item.date_from >= today  }).size > 0
+          elsif occurence == :one_time
+            date_from >= Date.today
+          else
+            true
+          end
+
+        end
+
+        #
         # Get the number of different item price
         #
         def number_of_item_price
@@ -215,36 +230,44 @@ module Yito
         # Get the activity rate's detail for a date
         #
         def rates(date)
-          case occurence
-            when :one_time 
-              cyclic_rates(date)
-            when :cyclic 
-              cyclic_rates(date)
-          end
+          build_rates(date)
         end
         
         # Get the occupation for a price type
-        #
+        # @Return [Hash] :total_occupation holds the total occupation
+        #                :occupation_detail is a Hash where key is the item_price_type and value is the occupation
         def occupation(occupation_date, occupation_time, occupation_price_type=nil)
-          Yito::Model::Order::Order.occupation(code, 
-              occupation_date, occupation_time, occupation_price_type)
+          data = Yito::Model::Order::Order.occupation(code, 
+                   occupation_date, occupation_time, occupation_price_type)
+          
+          total_occupation = 0
+          occupation_detail = {}
+          occupation_detail.store(1, 0) unless price_definition_1.nil?
+          occupation_detail.store(2, 0) unless price_definition_2.nil?
+          occupation_detail.store(3, 0) unless price_definition_3.nil?
+
+          data.each do |item|
+            occupation_detail[item.item_price_type] = item.occupation
+            total_occupation += item.occupation
+          end          
+          {total_occupation: total_occupation, occupation_detail: occupation_detail}
         end
 
-     #
-     # Exporting to json
-     #
-     def as_json(options={})
+        #
+        # Exporting to json
+        #
+        def as_json(options={})
 
-       if options.has_key?(:only)
-         super(options)
-       else
-         relationships = options[:relationships] || {}
-         relationships.store(:activity_dates, {})
-         methods = options[:methods] || []
-          super(options.merge({:relationships => relationships, :methods => methods}))
-       end
+          if options.has_key?(:only)
+            super(options)
+          else
+            relationships = options[:relationships] || {}
+            relationships.store(:activity_dates, {})
+            methods = options[:methods] || []
+            super(options.merge({:relationships => relationships, :methods => methods}))
+          end
 
-     end
+        end
 
         private
 
@@ -261,7 +284,7 @@ module Yito
         #
         # Get the rates for an activity in one date
         #
-        def cyclic_rates(date)
+        def build_rates(date)
           
           return nil unless mode == :partial
 
@@ -278,8 +301,6 @@ module Yito
           unless price_definition_3.nil?
             rates_result.store(3, price_definition_3.calculate_multiple_prices(date, capacity))
           end
-
-          p "RESULT: #{rates_result.inspect}"
 
           return rates_result
 
