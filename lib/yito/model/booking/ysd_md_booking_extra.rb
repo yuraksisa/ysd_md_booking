@@ -29,6 +29,17 @@ module Yito
           super # Invokes the super class to achieve the chain of methods invoked       
         end
 
+        #
+        # Calculate the unit cost for a date and a number of days
+        #
+        def unit_price(date_from, ndays)
+          if price_definition
+            price_definition.calculate_price(date_from, ndays)
+          else
+            return 0
+          end
+        end
+
         private
 
         def check_price_definition!

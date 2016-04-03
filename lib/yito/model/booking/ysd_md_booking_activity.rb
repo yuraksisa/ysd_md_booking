@@ -233,6 +233,41 @@ module Yito
           build_rates(date)
         end
         
+        #
+        # Get the actitivy rate's detail
+        #
+        def rates_hash(date)
+          rates = build_rates(date)
+          result = {1 => {}, 2 => {}, 3 => {}}
+          
+          unless price_definition_1.nil?
+            rate_1 = {} 
+            rates[1].each do |quantity, price| 
+              rate_1[quantity] = price
+            end
+            result[1] = rate_1
+          end 
+
+          unless price_definition_2.nil?
+            rate_2 = {} 
+            rates[2].each do |quantity, price| 
+              rate_2[quantity] = price
+            end
+            result[2] = rate_2
+          end 
+
+          unless price_definition_3.nil?
+            rate_3 = {} 
+            rates[3].each do |quantity, price| 
+              rate_3[quantity] = price
+            end
+            result[3] = rate_3
+          end 
+
+          return result
+
+        end
+        
         # Get the occupation for a price type
         # @Return [Hash] :total_occupation holds the total occupation
         #                :occupation_detail is a Hash where key is the item_price_type and value is the occupation
