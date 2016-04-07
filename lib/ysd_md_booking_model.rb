@@ -409,7 +409,7 @@ module BookingDataSystem
      
      def extras_summary
        extras_s = booking_extras.inject({}) do |result, extra|
-         result.store(extra.id, {quantity: extra.quantity, cost: extra.extra_cost})
+         result.store(extra.extra_id, {quantity: extra.quantity, cost: extra.extra_cost})
          result
        end 
        extras_s.store('entrega_fuera_horas', {quantity: 1, cost: time_from_cost})

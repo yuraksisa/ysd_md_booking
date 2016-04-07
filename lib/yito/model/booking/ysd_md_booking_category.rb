@@ -29,10 +29,18 @@ module Yito
         property :deposit, Decimal, :scale => 2, :precision => 10, :default => 0
         property :capacity, Integer, :default => 0
         property :active, Boolean, :default => true
-
+        property :web_public, Boolean, :default => true
+        property :alias, String, :length => 80       
+ 
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
         belongs_to :booking_catalog, 'BookingCatalog', :required => false
+
+        before :create do
+          if self.alias.nil? or self.alias.empty?     
+            self.alias = File.join('/', Time.now.strftime('%Y%m%d') , UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))
+          end
+        end
 
         def self.types
  

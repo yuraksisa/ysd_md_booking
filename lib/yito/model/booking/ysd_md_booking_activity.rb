@@ -22,6 +22,9 @@ module Yito
         property :occurence, Enum[:one_time, :multiple_dates, :cyclic]
         property :mode, Enum[:full,:partial], :default => :full
         property :active, Boolean, :default => true
+        property :web_public, Boolean, :default => true
+        property :alias, String, :length => 80   
+
         property :from_price, Decimal, :scale => 2, :precision => 10, :default => 0
         property :from_price_offer, Decimal, :scale => 2, :precision => 10, :default => 0 
 
@@ -105,6 +108,12 @@ module Yito
         property :price_3_duration_days, Integer, :default => 0
         property :price_3_duration_hours, String, :length => 5
         belongs_to :price_definition_3, 'Yito::Model::Rates::PriceDefinition', :required => false
+
+        before :create do
+          if self.alias.nil? or self.alias.empty?     
+            self.alias = File.join('/', Time.now.strftime('%Y%m%d') , UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))
+          end
+        end
 
         def save
           check_calendar! if self.calendar

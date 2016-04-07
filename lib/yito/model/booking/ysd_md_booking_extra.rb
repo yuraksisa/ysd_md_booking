@@ -22,6 +22,8 @@ module Yito
         property :description, Text, :field => 'description'
         property :max_quantity, Integer, :field => 'max_quantity'
         property :active, Boolean, :default => true
+        property :web_public, Boolean, :default => true
+        
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
 
         def save
