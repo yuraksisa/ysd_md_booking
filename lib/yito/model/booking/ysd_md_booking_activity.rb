@@ -42,6 +42,13 @@ module Yito
         # -- Cyclic activities
 
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
+        
+        # To manage if the activity is offered all year or only on specific period
+        property :all_year, Boolean, :default => true
+        property :from_day, Integer
+        property :from_month, Integer
+        property :to_day, Integer
+        property :to_month, Integer
 
         # Days when the activity is performed
         property :all_days, Boolean, :default => true
