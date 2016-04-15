@@ -306,10 +306,10 @@ module Yito
         def first_customer_booking_query(b,params)
           query = <<-QUERY
             select #{b.*} FROM #{b} 
-            where #{b.customer_email} = '#{params[:customer_email]}' and 
-                  #{b.customer_phone} = '#{params[:customer_phone]}' and
-                  #{b.customer_surname} like '#{params[:customer_surname]}' and
-                  #{b.customer_name} like '#{params[:customer_name]}'
+            where TRIM(#{b.customer_email}) = '#{params[:customer_email]}' and 
+                  TRIM(#{b.customer_phone}) = '#{params[:customer_phone]}' and
+                  TRIM(#{b.customer_surname}) like '#{params[:customer_surname]}' and
+                  TRIM(#{b.customer_name}) like '#{params[:customer_name]}'
           QUERY
 
         end        

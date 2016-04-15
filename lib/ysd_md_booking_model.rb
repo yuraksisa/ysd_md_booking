@@ -174,6 +174,15 @@ module BookingDataSystem
      end
      
      #
+     # Before save hook (clear leading and trailing whitespaces)
+     #
+     before :save do |booking|
+       booking.customer_name.strip! unless booking.customer_name.nil?
+       booking.customer_surname.strip! unless booking.customer_surname.nil?
+       booking.customer_phone.strip! unless booking.customer_phone.nil?
+     end
+     
+     #
      # Check if the reservation has expired
      #
      def expired?

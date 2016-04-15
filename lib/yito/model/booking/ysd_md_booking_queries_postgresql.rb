@@ -333,10 +333,10 @@ module Yito
         def first_customer_booking_query(b,params)
           query = <<-QUERY
             select #{b.*} FROM #{b} 
-            where #{b.customer_email} = '#{params[:customer_email]}' and 
-                  #{b.customer_phone} = '#{params[:customer_phone]}' and
-                  unaccent(#{b.customer_surname}) ilike unaccent('#{params[:customer_surname]}') and
-                  unaccent(#{b.customer_name}) ilike unaccent('#{params[:customer_name]}')
+            where trim(#{b.customer_email}) = '#{params[:customer_email]}' and 
+                  trim(#{b.customer_phone}) = '#{params[:customer_phone]}' and
+                  unaccent(trim(#{b.customer_surname})) ilike unaccent('#{params[:customer_surname]}') and
+                  unaccent(trim(#{b.customer_name})) ilike unaccent('#{params[:customer_name]}')
           QUERY
 
         end 
