@@ -7,6 +7,8 @@ notifications:
   manager_confirmation_email_subject: Reserva confirmada  
 booking_model:
   charge_description: Reserva %1
+order_model:
+  charge_description: Pedido %1
 booking_category_type:
   activity: Actividad o espectáculo
   category: Categoría de recursos en alquiler

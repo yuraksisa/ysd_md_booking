@@ -7,6 +7,8 @@ notifications:
   manager_confirmation_email_subject: Booking request confirmed   
 booking_model:
   charge_description: Booking %1
+order_model:
+  charge_description: Order %1  
 booking_category_type:
   activity: Activity or show
   category: Resources category

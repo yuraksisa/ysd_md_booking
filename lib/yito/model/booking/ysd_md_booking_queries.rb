@@ -193,6 +193,7 @@ module Yito
                 from (
                   select pc.id, pc.amount, pc.date, pc.payment_method_id, 
                          'booking' as source, bc.booking_id as source_id,
+                         'booking' as source_link,
                          b.customer_name as customer_name, b.customer_surname as customer_surname
                   from payment_charges pc
                   join bookds_booking_charges bc on bc.charge_id = pc.id
@@ -201,6 +202,7 @@ module Yito
                   union
                   select pc.id, pc.amount, pc.date, pc.payment_method_id, 
                          'order' as source, oc.order_id as source_id,
+                         'order' as source_link,
                          o.customer_name as customer_name, o.customer_surname as customer_surname
                   from payment_charges pc
                   join orderds_order_charges oc on oc.charge_id = pc.id
@@ -214,6 +216,7 @@ module Yito
               sql = <<-SQL
                 select pc.id, pc.amount, pc.date, pc.payment_method_id, 
                       'booking' as source, bc.booking_id as source_id,
+                      'booking' as source_link,
                       b.customer_name as customer_name, b.customer_surname as customer_surname
                 from payment_charges pc
                 join bookds_booking_charges bc on bc.charge_id = pc.id
@@ -224,6 +227,18 @@ module Yito
             end
 
             charges = repository.adapter.select(sql, date_from, date_to)
+
+            charges.each do |charge|
+              if charge.source_link == 'booking'
+                charge.source_link = "<a href=\"/admin/booking/bookings/#{charge.source_id}\">#{BookingDataSystem.r18n.booking_model.charge_description(charge.source_id)}</a>"
+                charge.source = BookingDataSystem.r18n.booking_model.charge_description(charge.source_id)
+              elsif charge.source_link == 'order'
+                charge.source_link = "<a href=\"/admin/order/orders/#{charge.source_id}\">Pedido #{BookingDataSystem.r18n.order_model.charge_description(charge.source_id)}</a>"
+                charge.source = BookingDataSystem.r18n.order_model.charge_description(charge.source_id)
+              end
+            end
+
+            return charges
 
           end
 
