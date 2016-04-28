@@ -229,6 +229,20 @@ module Yito
             charges = repository.adapter.select(sql, date_from, date_to)
 
             charges.each do |charge|
+              charge.payment_method_id = case charge.payment_method_id
+                                           when 'redsys256'
+                                             BookingDataSystem.r18n.payment_method.payment_redsys256
+                                           when 'paypal_standard'
+                                             BookingDataSystem.r18n.payment_method.payment_paypal_standard
+                                           when 'bank_transfer' 
+                                             BookingDataSystem.r18n.payment_method.payment_bank_transfer
+                                           when 'credit_card'
+                                             BookingDataSystem.r18n.payment_method.payment_credit_card
+                                           when 'cash'
+                                             BookingDataSystem.r18n.payment_method.payment_cash
+                                           else
+                                             charge.payment_method_id
+                                         end
               if charge.source_link == 'booking'
                 charge.source_link = "<a href=\"/admin/booking/bookings/#{charge.source_id}\">#{BookingDataSystem.r18n.booking_model.charge_description(charge.source_id)}</a>"
                 charge.source = BookingDataSystem.r18n.booking_model.charge_description(charge.source_id)
@@ -345,24 +359,83 @@ module Yito
             result
             
           end
-
-
+          
+          #
+          # Check the occupation of renting items for a period
+          #
           def occupation(from, to)
+          
+            data = max_period_occupation(from, to).first
 
-            query = <<-QUERY
-               SELECT l.item_id as item_id, c.stock as stock, count(*) as busy 
-               FROM bookds_bookings_lines as l
-               JOIN bookds_bookings as b on b.id = l.booking_id
-               JOIN bookds_categories as c on c.code = l.item_id
-               WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
-                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
-                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
-                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                   b.status <> 5
-               GROUP BY l.item_id, c.stock
-            QUERY
+            result = []
+            data.each do |key, value|
+              result << OpenStruct.new(item_id: key, stock: value[:stock], busy: value[:occupation])
+            end
 
-            occupation = repository.adapter.select(query)
+            return result
+
+          end
+          
+          #
+          # Detailed occupation of products in a period (depending on reservations)
+          #
+          def period_occupation(from, to, mode=nil)
+
+            # Prepare the structure
+            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: {active: true}, fields: [:code, :stock])           
+            occupation = {}
+            (0..(to-from)).each do |d|
+              stocks = categories.inject({}) do |result, item|
+                         result.store(item.code, {occupation: 0, stock: item.stock})
+                         result
+                       end          
+              occupation.store(from+d, stocks) 
+            end
+            
+            # Query for reservations
+            query = occupation_query(from, to, mode)
+            reservations = repository.adapter.select(query)
+
+            reservations.each do |reservation|
+              days = (reservation.date_to - reservation.date_from).to_i
+              #p "#{reservation.item_id} #{reservation.date_from.to_date} #{reservation.date_to.to_date} #{days} #{reservation.quantity}"
+              (0..(days)).each do |day|
+                idx = reservation.date_from.to_date + day
+                if occupation[idx]
+                  if occ = occupation[idx][reservation.item_id]
+                    #p "occupation: #{idx} #{occ.inspect} #{reservation.item_id}"
+                    occ[:occupation] += reservation.quantity
+                    #p "#{reservation.item_id} * #{idx} * #{reservation.quantity} * #{occ[:occupation]}"
+                  end
+                end
+              end  
+            end
+         
+            return occupation
+          end
+          
+          #
+          # Get the max period occupation
+          #
+          def max_period_occupation(from, to, mode=nil)
+            
+            result = {}
+
+            occupation = period_occupation(from, to, mode)
+
+            occupation.each do |date, value|
+              value.each do |product, data|
+                if result.has_key?(product)
+                  if result[product][:occupation] < data[:occupation]
+                    result[product][:occupation] = data[:occupation]
+                  end
+                else
+                  result.store(product, data.clone)  
+                end
+              end
+            end
+
+            [result, occupation]
 
           end
 
@@ -393,39 +466,7 @@ module Yito
                               end
 
             # Query bookings for the period
-            
-            if mode == 'stock'
-              query = <<-QUERY
-                SELECT bi.category_code as item_id, 
-                       b.id, 
-                       b.date_from as date_from,
-                       b.date_to as date_to,
-                       b.days as days, 
-                       1 as quantity 
-                FROM bookds_bookings_lines as l
-                JOIN bookds_bookings as b on b.id = l.booking_id
-                JOIN bookds_bookings_lines_resources as lr on lr.booking_line_id = l.id
-                JOIN bookds_items as bi on lr.booking_item_reference = bi.reference
-                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
-                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
-                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
-                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                   b.status NOT IN (1,5)
-              QUERY
-            else
-              query = <<-QUERY
-                SELECT l.item_id as item_id, b.id, b.date_from as date_from,
-                      b.date_to as date_to,
-                      b.days as days, l.quantity as quantity 
-                FROM bookds_bookings_lines as l
-                JOIN bookds_bookings as b on b.id = l.booking_id
-                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
-                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
-                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
-                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                   b.status NOT IN (1,5)
-              QUERY
-            end
+            query = occupation_query(from, to, mode)
 
             reservations = repository.adapter.select(query)
             
@@ -528,6 +569,49 @@ module Yito
               index = 0 if index > steps.size-1
             end
             return result
+          end
+          
+          #
+          # Get the occupation query SQL
+          #
+          def occupation_query(from, to, mode=nil)
+
+            if mode == 'stock'
+              query = <<-QUERY
+                SELECT bi.category_code as item_id, 
+                       b.id, 
+                       b.date_from as date_from,
+                       b.date_to as date_to,
+                       b.days as days, 
+                       1 as quantity 
+                FROM bookds_bookings_lines as l
+                JOIN bookds_bookings as b on b.id = l.booking_id
+                JOIN bookds_bookings_lines_resources as lr on lr.booking_line_id = l.id
+                JOIN bookds_items as bi on lr.booking_item_reference = bi.reference
+                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
+                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
+                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
+                   b.status NOT IN (1,5)
+                ORDER BY bi.category_code, b.date_from
+              QUERY
+            else
+              query = <<-QUERY
+                SELECT l.item_id as item_id, b.id, b.date_from as date_from,
+                      b.date_to as date_to,
+                      b.days as days, l.quantity as quantity 
+                FROM bookds_bookings_lines as l
+                JOIN bookds_bookings as b on b.id = l.booking_id
+                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
+                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
+                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
+                   b.status NOT IN (1,5)
+                ORDER BY l.item_id, b.date_from
+              QUERY
+            end
+
+
           end
 
           def query_strategy

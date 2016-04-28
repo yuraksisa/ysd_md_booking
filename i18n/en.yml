@@ -8,7 +8,13 @@ notifications:
 booking_model:
   charge_description: Booking %1
 order_model:
-  charge_description: Order %1  
+  charge_description: Order %1
+payment_method:
+  payment_bank_transfer: Bank transfer
+  payment_redsys256: Virtual TPV
+  payment_credit_card: Credit or debit card
+  payment_paypal_standard: Paypal
+  payment_cash: Cash    
 booking_category_type:
   activity: Activity or show
   category: Resources category

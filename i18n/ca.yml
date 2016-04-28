@@ -8,7 +8,13 @@ notifications:
 booking_model:
   charge_description: Reserva %1
 order_model:
-  charge_description: Comanda %1  
+  charge_description: Comanda %1
+payment_method:
+  payment_bank_transfer: Transferència bancaria
+  payment_redsys256: TPV Virtual
+  payment_credit_card: Tarjeta crèdit/dèbit
+  payment_paypal_standard: Paypal
+  payment_cash: Efectiu    
 booking_category_type:
   activity: Activitat o espectacle
   category: Categoria de recursos en lloger

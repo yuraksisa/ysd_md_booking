@@ -55,13 +55,13 @@ module Yito
             end
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
-              t.column(0).style(size: 8, width: 70)	
-              t.column(1).style(size: 8, width: 100)
-              t.column(2).style(size: 8)
-              t.column(3).style(size: 8, width: 70)
-              t.column(4).style(size: 8)              
-              t.column(5).style(size: 8)
-              t.column(6).style(size: 8)
+              t.column(0).style(size: 8, width: 60)	
+              t.column(1).style(size: 8, width: 110)
+              t.column(2).style(size: 8, width: 115)
+              t.column(3).style(size: 8, width: 60)
+              t.column(4).style(size: 8, width: 65)              
+              t.column(5).style(size: 8, width: 65)
+              t.column(6).style(size: 8, width: 65)
             end   
 
           end	
