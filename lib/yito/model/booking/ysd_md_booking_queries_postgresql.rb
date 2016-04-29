@@ -111,7 +111,7 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where date_part('year', creation_date) = #{year.to_i}
+            where date_part('year', creation_date) = #{year.to_i} 
             QUERY
 
           @repository.adapter.select(query).first
@@ -122,10 +122,11 @@ module Yito
           query = <<-QUERY
             select count(*) 
             FROM bookds_bookings 
-            where date_part('year', creation_date) = #{year.to_i} and status = 1
+            where date_part('year', creation_date) = #{year.to_i} and status = 1 and 
+                  date_from > ?
             QUERY
 
-          @repository.adapter.select(query).first
+          @repository.adapter.select(query, [Date.today.to_date]).first
         end
 
         def count_confirmed_reservations(year)

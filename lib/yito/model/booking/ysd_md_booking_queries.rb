@@ -377,6 +377,29 @@ module Yito
           end
           
           #
+          # Occupation detail
+          #
+          def occupation_detail(date, product, mode=nil)
+
+            query = <<-QUERY
+               SELECT l.item_id as item_id, b.id, b.customer_name, b.customer_surname, 
+                      b.date_from, b.time_from, b.date_to, b.time_to, 
+                      b.customer_email, b.customer_phone, b.customer_mobile_phone,
+                      r.booking_item_reference 
+               FROM bookds_bookings_lines as l
+               JOIN bookds_bookings as b on b.id = l.booking_id
+               LEFT JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
+               WHERE ((b.date_from <= '#{date}' and b.date_to >= '#{date}') or 
+                   (b.date_from <= '#{date}' and b.date_to >= '#{date}') or 
+                   (b.date_from = '#{date}' and b.date_to = '#{date}') or
+                   (b.date_from >= '#{date}' and b.date_to <= '#{date}')) and
+                   b.status NOT IN (1, 5) and l.item_id = '#{product}'
+            QUERY
+            occupation = repository.adapter.select(query)
+
+          end
+
+          #
           # Detailed occupation of products in a period (depending on reservations)
           #
           def period_occupation(from, to, mode=nil)
