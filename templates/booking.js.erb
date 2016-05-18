@@ -173,10 +173,15 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
     
   };
 
-  booking.rateCalculation = new YSDRates.RateCalculation(new YSDRates.FirstSeasonDayCalendar(booking.seasons),
-                                                  new YSDRates.RateFinder(booking.rates),
-                                                  new YSDRates.FactorFinder(booking.factors),
-                                                  null, null, booking.basePrice);
+  booking.rateCalculation = new YSDRates.RateCalculation(
+        <% if calendar_mode == 'default' %> 
+            new YSDRates.Calendar(booking.seasons),
+        <% else %>
+            new YSDRates.FirstSeasonDayCalendar(booking.seasons),      
+        <% end %>
+            new YSDRates.RateFinder(booking.rates),
+            new YSDRates.FactorFinder(booking.factors),
+            null, null, booking.basePrice);
 
   booking.extraCalculation = new YSDRates.ExtraCalculation(booking.extrasRates, booking.extras);
 

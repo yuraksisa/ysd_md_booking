@@ -12,7 +12,7 @@ module Yito
             select trim(upper(customer_surname)) as customer_surname, trim(upper(customer_name)) as customer_name, 
                    lower(customer_email) as customer_email, customer_phone, count(*) as num_of_reservations
             FROM bookds_bookings 
-            where customer_email = '#{search_text}' or 
+            where lower(customer_email) = '#{search_text}' or 
                   customer_phone = '#{search_text}' or 
                   customer_mobile_phone = '#{search_text}' or
                   customer_surname like '#{search_text}%'
@@ -306,7 +306,7 @@ module Yito
         def first_customer_booking_query(b,params)
           query = <<-QUERY
             select #{b.*} FROM #{b} 
-            where TRIM(#{b.customer_email}) = '#{params[:customer_email]}' and 
+            where TRIM(LOWER((#{b.customer_email})) = '#{params[:customer_email]}' and 
                   TRIM(#{b.customer_phone}) = '#{params[:customer_phone]}' and
                   TRIM(#{b.customer_surname}) like '#{params[:customer_surname]}' and
                   TRIM(#{b.customer_name}) like '#{params[:customer_name]}'
