@@ -26,8 +26,10 @@ module Yito
         property :characteristic_1, String, :length => 80
         property :characteristic_2, String, :length => 80
         property :characteristic_3, String, :length => 80
+        property :characteristic_4, String, :length => 80
         property :cost, Decimal, :scale => 2, :precision => 10 
-        property :active, Boolean, :default => true   
+        property :active, Boolean, :default => true
+        property :planning_order, Integer, :default => 0   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
