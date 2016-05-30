@@ -13,12 +13,14 @@ module BookingDataSystem
      property :resource_user_surname, String, :length => 80
      belongs_to :booking_line, 'BookingLine', :child_key => [:booking_line_id]
 
+     property :booking_item_category, String, :length => 20
      property :booking_item_reference, String, :length => 50
      property :booking_item_stock_model, String, :length => 80
      property :booking_item_stock_plate, String, :length => 80
      property :booking_item_characteristic_1, String, :length => 80
      property :booking_item_characteristic_2, String, :length => 80
      property :booking_item_characteristic_3, String, :length => 80
+     property :booking_item_characteristic_4, String, :length => 80
 
      def booking_item
        if !booking_item_reference.nil? and !booking_item_reference.empty?

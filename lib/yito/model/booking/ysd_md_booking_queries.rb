@@ -365,7 +365,8 @@ module Yito
           #
           def occupation(from, to)
           
-            data = max_period_occupation(from, to).first
+            availability_mode = SystemConfiguration::Variable.get_value('booking.renting_availability_mode','product')            
+            data = max_period_occupation(from, to, availability_mode ).first
 
             result = []
             data.each do |key, value|
@@ -379,24 +380,30 @@ module Yito
           #
           # Occupation detail
           #
-          def occupation_detail(date, product, mode=nil)
+          # Get the resources of a product (category) that are busy in a date
+          #
+          # Take into account reservations that have not been assigned
+          #
+          def occupation_detail(date, product)
 
             query = <<-QUERY
                SELECT l.item_id as item_id, b.id, b.customer_name, b.customer_surname, 
                       b.date_from, b.time_from, b.date_to, b.time_to, 
                       b.customer_email, b.customer_phone, b.customer_mobile_phone,
-                      r.booking_item_reference 
+                      r.booking_item_reference, r.booking_item_category
                FROM bookds_bookings_lines as l
                JOIN bookds_bookings as b on b.id = l.booking_id
-               LEFT JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
+               JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
                WHERE ((b.date_from <= '#{date}' and b.date_to >= '#{date}') or 
                    (b.date_from <= '#{date}' and b.date_to >= '#{date}') or 
                    (b.date_from = '#{date}' and b.date_to = '#{date}') or
                    (b.date_from >= '#{date}' and b.date_to <= '#{date}')) and
-                   b.status NOT IN (1, 5) and l.item_id = '#{product}'
+                   b.status NOT IN (1, 5) and 
+                   ((l.item_id = '#{product}' and r.booking_item_category IS NULL) or
+                    (r.booking_item_category = '#{product}') )                    
             QUERY
             occupation = repository.adapter.select(query)
-
+            
           end
 
           #
@@ -601,7 +608,7 @@ module Yito
 
             if mode == 'stock'
               query = <<-QUERY
-                SELECT bi.category_code as item_id, 
+                SELECT coalesce(lr.booking_item_category, l.item_id) as item_id, 
                        b.id, 
                        b.date_from as date_from,
                        b.date_to as date_to,
@@ -610,13 +617,12 @@ module Yito
                 FROM bookds_bookings_lines as l
                 JOIN bookds_bookings as b on b.id = l.booking_id
                 JOIN bookds_bookings_lines_resources as lr on lr.booking_line_id = l.id
-                JOIN bookds_items as bi on lr.booking_item_reference = bi.reference
                 WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
                    (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
                    (b.date_from = '#{from}' and b.date_to = '#{to}') or
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
                    b.status NOT IN (1,5)
-                ORDER BY bi.category_code, b.date_from
+                ORDER BY item_id, b.date_from
               QUERY
             else
               query = <<-QUERY
