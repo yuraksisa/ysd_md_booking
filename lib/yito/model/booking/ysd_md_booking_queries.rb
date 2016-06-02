@@ -387,10 +387,21 @@ module Yito
           def occupation_detail(date, product)
 
             query = <<-QUERY
-               SELECT l.item_id as item_id, b.id, b.customer_name, b.customer_surname, 
-                      b.date_from, b.time_from, b.date_to, b.time_to, 
-                      b.customer_email, b.customer_phone, b.customer_mobile_phone,
-                      r.booking_item_reference, r.booking_item_category
+              SELECT * FROM (
+               SELECT l.item_id as item_id, 
+                      b.id, 
+                      b.customer_name, 
+                      b.customer_surname, 
+                      b.date_from, 
+                      b.time_from, 
+                      b.date_to, 
+                      b.time_to, 
+                      b.customer_email, 
+                      b.customer_phone, 
+                      b.customer_mobile_phone,
+                      r.booking_item_reference, 
+                      r.booking_item_category,
+                      'booking' as origin
                FROM bookds_bookings_lines as l
                JOIN bookds_bookings as b on b.id = l.booking_id
                JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
@@ -400,7 +411,30 @@ module Yito
                    (b.date_from >= '#{date}' and b.date_to <= '#{date}')) and
                    b.status NOT IN (1, 5) and 
                    ((l.item_id = '#{product}' and r.booking_item_category IS NULL) or
-                    (r.booking_item_category = '#{product}') )                    
+                    (r.booking_item_category = '#{product}') )
+               UNION
+               SELECT pr.booking_item_category as item_id,
+                      pr.id,
+                      pr.title as customer_name,
+                      '' as customer_surname,
+                      pr.date_from as date_from,
+                      pr.time_from as time_from,
+                      pr.date_to as date_to,
+                      pr.time_to as time_to,
+                      '' as customer_email,
+                      '' as customer_phone,
+                      '' as customer_mobile_phone,
+                      pr.booking_item_reference,
+                      pr.booking_item_category,
+                      'prereservation' as origin
+               FROM bookds_prereservations pr
+               WHERE ((pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
+                   (pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
+                   (pr.date_from = '#{date}' and pr.date_to = '#{date}') or
+                   (pr.date_from >= '#{date}' and pr.date_to <= '#{date}')) and
+                   (pr.booking_item_category = '#{product}')
+               ) AS d
+               ORDER BY booking_item_reference, date_from asc                                     
             QUERY
             occupation = repository.adapter.select(query)
             
@@ -416,7 +450,7 @@ module Yito
             occupation = {}
             (0..(to-from)).each do |d|
               stocks = categories.inject({}) do |result, item|
-                         result.store(item.code, {occupation: 0, stock: item.stock})
+                         result.store(item.code, {items:[], occupation: 0, stock: item.stock})
                          result
                        end          
               occupation.store(from+d, stocks) 
@@ -428,14 +462,18 @@ module Yito
 
             reservations.each do |reservation|
               days = (reservation.date_to - reservation.date_from).to_i
-              #p "#{reservation.item_id} #{reservation.date_from.to_date} #{reservation.date_to.to_date} #{days} #{reservation.quantity}"
               (0..(days)).each do |day|
                 idx = reservation.date_from.to_date + day
                 if occupation[idx]
                   if occ = occupation[idx][reservation.item_id]
-                    #p "occupation: #{idx} #{occ.inspect} #{reservation.item_id}"
-                    occ[:occupation] += reservation.quantity
-                    #p "#{reservation.item_id} * #{idx} * #{reservation.quantity} * #{occ[:occupation]}"
+                    if mode == 'stock'
+                      unless occ[:items].include?(reservation.booking_item_reference)
+                        occ[:items] << reservation.booking_item_reference
+                        occ[:occupation] += reservation.quantity
+                      end
+                    else
+                      occ[:occupation] += reservation.quantity 
+                    end
                   end
                 end
               end  
@@ -489,7 +527,7 @@ module Yito
             cat_occupation =  categories.inject({}) do |result, item|
                                 days_hash = {}
                                 (1..(to.day)).each do |day|
-                                  days_hash.store(day, 0)
+                                  days_hash.store(day, {items:[],occupation:0})
                                 end
                                 result.store(item.code, days_hash)
                                 result
@@ -508,17 +546,24 @@ module Yito
               calculated_to = date_to.month > month ? to.day : date_to.day 
               calculated_to = calculated_to - 1 unless product_family.cycle_of_24_hours
               (calculated_from..calculated_to).each do |index|
-                cat_occupation[reservation.item_id][index] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
+                if mode == 'stock'
+                  unless cat_occupation[reservation.item_id][index][:items].include?(reservation.booking_item_reference)
+                    cat_occupation[reservation.item_id][index][:items] << reservation.booking_item_reference
+                    cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
+                  end
+                else
+                  cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id) 
+                end
               end
             end
             
             # Calculate percentage 
             cat_occupation.each do |key, value|  
               value.each do |day, occupation| 
-                cat_occupation[key][day] = "#{cat_occupation[key][day]}/#{stocks[key]}"
+                cat_occupation[key][day][:occupation] = "#{cat_occupation[key][day][:occupation]}/#{stocks[key]}"
               end
-            end    
-
+            end
+   
             cat_occupation
 
           end
@@ -612,7 +657,8 @@ module Yito
                        b.id, 
                        b.date_from as date_from,
                        b.date_to as date_to,
-                       b.days as days, 
+                       b.days as days,
+                       lr.booking_item_reference, 
                        1 as quantity 
                 FROM bookds_bookings_lines as l
                 JOIN bookds_bookings as b on b.id = l.booking_id
@@ -622,13 +668,29 @@ module Yito
                    (b.date_from = '#{from}' and b.date_to = '#{to}') or
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
                    b.status NOT IN (1,5)
-                ORDER BY item_id, b.date_from
+                UNION
+                SELECT pr.booking_item_category as item_id,
+                       pr.id,
+                       pr.date_from as date_from,
+                       pr.date_to as date_to,
+                       pr.days as days,
+                       pr.booking_item_reference,
+                       1 as quantity
+                FROM bookds_prereservations pr
+                WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
+                   (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
+                   (pr.date_from = '#{from}' and pr.date_to = '#{to}') or
+                   (pr.date_from >= '#{from}' and pr.date_to <= '#{to}'))
+                ORDER BY item_id, date_from              
               QUERY
             else
               query = <<-QUERY
-                SELECT l.item_id as item_id, b.id, b.date_from as date_from,
-                      b.date_to as date_to,
-                      b.days as days, l.quantity as quantity 
+                SELECT l.item_id as item_id,
+                       b.id,
+                       b.date_from as date_from,
+                       b.date_to as date_to,
+                       b.days as days 
+                       l.quantity as quantity 
                 FROM bookds_bookings_lines as l
                 JOIN bookds_bookings as b on b.id = l.booking_id
                 WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
@@ -636,7 +698,19 @@ module Yito
                    (b.date_from = '#{from}' and b.date_to = '#{to}') or
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
                    b.status NOT IN (1,5)
-                ORDER BY l.item_id, b.date_from
+                UNION
+                SELECT pr.booking_item_category as item_id,
+                       pr.id,
+                       pr.date_from as date_from,
+                       pr.date_to as date_to,
+                       pr.days as days,
+                       1 as quantity
+                FROM bookds_prereservations pr
+                WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
+                   (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
+                   (pr.date_from = '#{from}' and pr.date_to = '#{to}') or
+                   (pr.date_from >= '#{from}' and pr.date_to <= '#{to}'))                
+                ORDER BY item_id, date_from
               QUERY
             end
 
