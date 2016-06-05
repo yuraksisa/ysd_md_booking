@@ -364,12 +364,11 @@ module Yito
           # Check the occupation of renting items for a period
           #
           def occupation(from, to)
-          
-            availability_mode = SystemConfiguration::Variable.get_value('booking.renting_availability_mode','product')            
-            data = max_period_occupation(from, to, availability_mode ).first
-
+                      
             result = []
-            data.each do |key, value|
+
+            data, detail = resources_occupation(from, to)
+            detail.each do |key, value|
               result << OpenStruct.new(item_id: key, stock: value[:stock], busy: value[:occupation])
             end
 
@@ -439,77 +438,10 @@ module Yito
             occupation = repository.adapter.select(query)
             
           end
-
-          #
-          # Detailed occupation of products in a period (depending on reservations)
-          #
-          def period_occupation(from, to, mode=nil)
-
-            # Prepare the structure
-            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: {active: true}, fields: [:code, :stock])           
-            occupation = {}
-            (0..(to-from)).each do |d|
-              stocks = categories.inject({}) do |result, item|
-                         result.store(item.code, {items:[], occupation: 0, stock: item.stock})
-                         result
-                       end          
-              occupation.store(from+d, stocks) 
-            end
-            
-            # Query for reservations
-            query = occupation_query(from, to, mode)
-            reservations = repository.adapter.select(query)
-
-            reservations.each do |reservation|
-              days = (reservation.date_to - reservation.date_from).to_i
-              (0..(days)).each do |day|
-                idx = reservation.date_from.to_date + day
-                if occupation[idx]
-                  if occ = occupation[idx][reservation.item_id]
-                    if mode == 'stock'
-                      unless occ[:items].include?(reservation.booking_item_reference)
-                        occ[:items] << reservation.booking_item_reference
-                        occ[:occupation] += reservation.quantity
-                      end
-                    else
-                      occ[:occupation] += reservation.quantity 
-                    end
-                  end
-                end
-              end  
-            end
-         
-            return occupation
-          end
           
-          #
-          # Get the max period occupation
-          #
-          def max_period_occupation(from, to, mode=nil)
-            
-            result = {}
-
-            occupation = period_occupation(from, to, mode)
-
-            occupation.each do |date, value|
-              value.each do |product, data|
-                if result.has_key?(product)
-                  if result[product][:occupation] < data[:occupation]
-                    result[product][:occupation] = data[:occupation]
-                  end
-                else
-                  result.store(product, data.clone)  
-                end
-              end
-            end
-
-            [result, occupation]
-
-          end
-
           # Get the daily percentage occupation in a period of time 
           #
-          def monthly_occupation(month, year, category=nil, mode=nil)
+          def monthly_occupation(month, year, category=nil)
             
             from = Date.civil(year, month, 1)
             to = Date.civil(year, month, -1)
@@ -534,7 +466,7 @@ module Yito
                               end
 
             # Query bookings for the period
-            query = occupation_query(from, to, mode)
+            query = occupation_query(from, to)
 
             reservations = repository.adapter.select(query)
             
@@ -546,14 +478,20 @@ module Yito
               calculated_to = date_to.month > month ? to.day : date_to.day 
               calculated_to = calculated_to - 1 unless product_family.cycle_of_24_hours
               (calculated_from..calculated_to).each do |index|
-                if mode == 'stock'
+                unless reservation.booking_item_reference.nil?
                   unless cat_occupation[reservation.item_id][index][:items].include?(reservation.booking_item_reference)
                     cat_occupation[reservation.item_id][index][:items] << reservation.booking_item_reference
-                    cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
                   end
-                else
-                  cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id) 
                 end
+                cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
+                #if mode == 'stock'
+                #  unless cat_occupation[reservation.item_id][index][:items].include?(reservation.booking_item_reference)
+                #    cat_occupation[reservation.item_id][index][:items] << reservation.booking_item_reference
+                #    cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
+                #  end
+                #else
+                #  cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id) 
+                #end
               end
             end
             
@@ -565,6 +503,97 @@ module Yito
             end
    
             cat_occupation
+
+          end
+          
+          #
+          # Get the resources occupation to assign stock
+          #
+          # Return an array with two elements
+          #
+          #  - First  : The resources occupation detail for the dates
+          #  - Second : The categories availability
+          #
+          def resources_occupation(date_from, date_to, category=nil)
+            
+            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: {active: true}, fields: [:code, :stock], order: [:code])            
+  
+            # 1. Build the result structure
+            #    
+            items = if category 
+                      ::Yito::Model::Booking::BookingItem.all(:conditions => {category_code: 
+                        category },
+                        :order => [:planning_order, :category_code, :reference])
+                    else
+                      ::Yito::Model::Booking::BookingItem.all(
+                        :order => [:planning_order, :category_code, :reference])
+                    end
+
+            result = {}
+            items.each do |b_item|
+              result.store(b_item.reference, {category: b_item.category_code, 
+                                              available: true, 
+                                              detail: []})
+            end
+
+            # 2. Build the not assigned summary
+            #    It holds the confirmed reservations that have not been already assigned
+            #    to a resource (stock), so they can be taken into account
+            not_assigned_reservations = categories.inject({}) do |result, cat|
+              result.store(cat.code, {total: 0, detail: []})
+              result
+            end
+
+            # 3. Fill with reservations information
+            query = resources_occupation_query(date_from, date_to)
+            resource_occupations = repository.adapter.select(query)
+          
+            resource_occupations.each do |resource_occupation|
+              if resource_occupation.booking_item_reference
+                if item = result[resource_occupation.booking_item_reference]
+                  item[:available] = false
+                  item[:detail] << resource_occupation
+                end
+              else
+                if not_assigned_reservations.has_key?(resource_occupation.item_id)
+                  not_assigned_reservations[resource_occupation.item_id][:total] += 1
+                  not_assigned_reservations[resource_occupation.item_id][:detail] << resource_occupation
+                end
+              end
+            end
+            
+            # 4. Build category occupation
+            stocks = categories.inject({}) do |result, item|
+                       result.store(item.code, item.stock)
+                       result
+                     end
+            category_occupation = {}
+            
+            # 4.1 Fill with stock assignation
+            result.each do |key, value|
+              if category_occupation.has_key?(value[:category])
+                category_occupation[value[:category]][:occupation] += 1 unless value[:available]
+                category_occupation[value[:category]][:occupation_assigned] += 1 unless value[:available]
+              else
+                category_occupation.store(value[:category], {
+                        stock: stocks[value[:category]],
+                        occupation: value[:available] ? 0 : 1,
+                        occupation_assigned: value[:available] ? 0 : 1,
+                        available_stock: [],
+                        assignation_pending: []})
+              end
+              category_occupation[value[:category]][:available_stock] << key if value[:available]
+            end
+            
+            # 4.2 Fill with not assigned
+            not_assigned_reservations.each do |key, value|
+              if category_occupation.has_key?(key)
+                category_occupation[key][:occupation] += 1 unless value[:detail].empty?
+                category_occupation[key][:assignation_pending].concat(value[:detail]) unless value[:detail].empty? 
+              end
+            end
+
+            return [result, category_occupation]
 
           end
           
@@ -647,11 +676,52 @@ module Yito
           end
           
           #
+          # Check the resources that are assigned for day
+          #
+          def resources_occupation_query(from, to)
+
+            query = <<-QUERY
+              SELECT * 
+              FROM (
+                SELECT r.booking_item_reference,
+                     coalesce(r.booking_item_category, l.item_id) as item_id,
+                     b.id,
+                     'booking' as origin,
+                     b.date_from, b.time_from,
+                     b.date_to, b.time_to,
+                     CONCAT(b.customer_name, ' ', b.customer_surname) as title
+                FROM bookds_bookings b
+                JOIN bookds_bookings_lines l on l.booking_id = b.id
+                JOIN bookds_bookings_lines_resources r on r.booking_line_id = l.id
+                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
+                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
+                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
+                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
+                    b.status NOT IN (1,5)
+                UNION
+                SELECT pr.booking_item_reference,
+                     pr.booking_item_category,
+                     pr.id,
+                     'prereservation' as origin,
+                     pr.date_from, pr.time_from,
+                     pr.date_to, pr.time_to,
+                     pr.title
+                FROM bookds_prereservations pr
+                WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
+                   (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
+                   (pr.date_from = '#{from}' and pr.date_to = '#{to}') or
+                   (pr.date_from >= '#{from}' and pr.date_to <= '#{to}')) 
+              ) AS D
+              ORDER BY booking_item_reference, date_from
+            QUERY
+
+          end
+
+          #
           # Get the occupation query SQL
           #
-          def occupation_query(from, to, mode=nil)
+          def occupation_query(from, to)
 
-            if mode == 'stock'
               query = <<-QUERY
                 SELECT coalesce(lr.booking_item_category, l.item_id) as item_id, 
                        b.id, 
@@ -683,37 +753,6 @@ module Yito
                    (pr.date_from >= '#{from}' and pr.date_to <= '#{to}'))
                 ORDER BY item_id, date_from              
               QUERY
-            else
-              query = <<-QUERY
-                SELECT l.item_id as item_id,
-                       b.id,
-                       b.date_from as date_from,
-                       b.date_to as date_to,
-                       b.days as days 
-                       l.quantity as quantity 
-                FROM bookds_bookings_lines as l
-                JOIN bookds_bookings as b on b.id = l.booking_id
-                WHERE ((b.date_from <= '#{from}' and b.date_to >= '#{from}') or 
-                   (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
-                   (b.date_from = '#{from}' and b.date_to = '#{to}') or
-                   (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                   b.status NOT IN (1,5)
-                UNION
-                SELECT pr.booking_item_category as item_id,
-                       pr.id,
-                       pr.date_from as date_from,
-                       pr.date_to as date_to,
-                       pr.days as days,
-                       1 as quantity
-                FROM bookds_prereservations pr
-                WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
-                   (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
-                   (pr.date_from = '#{from}' and pr.date_to = '#{to}') or
-                   (pr.date_from >= '#{from}' and pr.date_to <= '#{to}'))                
-                ORDER BY item_id, date_from
-              QUERY
-            end
-
 
           end
 
