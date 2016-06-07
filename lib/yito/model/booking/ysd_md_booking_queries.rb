@@ -548,6 +548,8 @@ module Yito
             query = resources_occupation_query(date_from, date_to)
             resource_occupations = repository.adapter.select(query)
           
+            p "resources occupations: #{resource_occupations.inspect}"
+
             resource_occupations.each do |resource_occupation|
               if resource_occupation.booking_item_reference
                 if item = result[resource_occupation.booking_item_reference]
@@ -564,10 +566,13 @@ module Yito
             
             # 4. Build category occupation
             stocks = categories.inject({}) do |result, item|
-                       result.store(item.code, item.stock)
+                       result.store(item.code, item.stock || 0)
                        result
                      end
             category_occupation = {}
+
+            p "result: #{result.inspect}"
+            p "not assigned: #{not_assigned_reservations.inspect}"
             
             # 4.1 Fill with stock assignation
             result.each do |key, value|
@@ -576,7 +581,7 @@ module Yito
                 category_occupation[value[:category]][:occupation_assigned] += 1 unless value[:available]
               else
                 category_occupation.store(value[:category], {
-                        stock: stocks[value[:category]],
+                        stock: stocks[value[:category]] || 0,
                         occupation: value[:available] ? 0 : 1,
                         occupation_assigned: value[:available] ? 0 : 1,
                         available_stock: [],
@@ -588,7 +593,7 @@ module Yito
             # 4.2 Fill with not assigned
             not_assigned_reservations.each do |key, value|
               if category_occupation.has_key?(key)
-                category_occupation[key][:occupation] += 1 unless value[:detail].empty?
+                category_occupation[key][:occupation] += value[:detail].size unless value[:detail].empty?
                 category_occupation[key][:assignation_pending].concat(value[:detail]) unless value[:detail].empty? 
               end
             end
@@ -690,7 +695,11 @@ module Yito
                      b.date_from, b.time_from,
                      b.date_to, b.time_to,
                      b.days,
-                     CONCAT(b.customer_name, ' ', b.customer_surname) as title
+                     CONCAT(b.customer_name, ' ', b.customer_surname) as title,
+                     CONCAT(coalesce(r.resource_user_name,''), ' ', 
+                            coalesce(r.resource_user_surname, ''), ' ', r.customer_height,
+                            ' ', r.customer_weight) as detail,
+                     r.id as id2
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines l on l.booking_id = b.id
                 JOIN bookds_bookings_lines_resources r on r.booking_line_id = l.id
@@ -707,7 +716,9 @@ module Yito
                      pr.date_from, pr.time_from,
                      pr.date_to, pr.time_to,
                      pr.days,
-                     pr.title
+                     pr.title,
+                     pr.notes as detail,
+                     pr.id as id2
                 FROM bookds_prereservations pr
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
                    (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
