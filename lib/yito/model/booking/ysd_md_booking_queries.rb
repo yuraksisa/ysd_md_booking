@@ -689,6 +689,7 @@ module Yito
                      'booking' as origin,
                      b.date_from, b.time_from,
                      b.date_to, b.time_to,
+                     b.days,
                      CONCAT(b.customer_name, ' ', b.customer_surname) as title
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines l on l.booking_id = b.id
@@ -705,6 +706,7 @@ module Yito
                      'prereservation' as origin,
                      pr.date_from, pr.time_from,
                      pr.date_to, pr.time_to,
+                     pr.days,
                      pr.title
                 FROM bookds_prereservations pr
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
