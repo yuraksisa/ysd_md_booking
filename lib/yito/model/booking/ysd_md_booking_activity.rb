@@ -87,6 +87,8 @@ module Yito
         property :saturday_afternoon_turns, String, :length => 255
         property :saturday_night_turns, String, :length => 255
 
+        property :notify_customer_if_empty, Boolean, :default => false
+
         # -- Other attributes
 
         property :capacity, Integer, :default => 0

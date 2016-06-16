@@ -484,14 +484,6 @@ module Yito
                   end
                 end
                 cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
-                #if mode == 'stock'
-                #  unless cat_occupation[reservation.item_id][index][:items].include?(reservation.booking_item_reference)
-                #    cat_occupation[reservation.item_id][index][:items] << reservation.booking_item_reference
-                #    cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
-                #  end
-                #else
-                #  cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id) 
-                #end
               end
             end
             
@@ -547,8 +539,6 @@ module Yito
             # 3. Fill with reservations information
             query = resources_occupation_query(date_from, date_to)
             resource_occupations = repository.adapter.select(query)
-          
-            p "resources occupations: #{resource_occupations.inspect}"
 
             resource_occupations.each do |resource_occupation|
               if resource_occupation.booking_item_reference
@@ -570,9 +560,6 @@ module Yito
                        result
                      end
             category_occupation = {}
-
-            p "result: #{result.inspect}"
-            p "not assigned: #{not_assigned_reservations.inspect}"
             
             # 4.1 Fill with stock assignation
             result.each do |key, value|
@@ -602,6 +589,63 @@ module Yito
 
           end
           
+          #
+          # Get the planning detail
+          #
+          def planning(date_from, date_to, options=nil)
+            
+            # 1. Get the stock 
+
+            references = if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+              [options[:reference]]
+            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+              ::Yito::Model::Booking::BookingItem.all(
+                             :conditions => {category_code: options[:product]},
+                             :fields => [:reference],
+                             :order =>  [:planning_order, :category_code, :reference]).map do |item| 
+                               item.reference
+                             end
+            else
+              ::Yito::Model::Booking::BookingItem.all(
+                             :fields => [:reference],
+                             :order =>  [:planning_order, :category_code, :reference]).map do |item| 
+                               item.reference
+                             end
+            end
+            
+            # 2. Build the result structure
+            result = {}
+            days = (date_to - date_from).to_i
+            (0..days).each do |d|
+              date = date_from + d 
+              detail = {}
+              references.each do |reference|
+                detail.store(reference, {total: 0, detail: []})
+              end              
+              result.store(date.strftime('%Y-%m-%d'), detail)
+            end         
+
+            # 3. Fill the result with reservations
+            query = resources_occupation_query(date_from, date_to)
+            resource_occupations = repository.adapter.select(query)
+
+            resource_occupations.each do |resource_occupation|
+              (0..resource_occupation.days).each do |day|
+                key = (resource_occupation.date_from + day).strftime('%Y-%m-%d')
+                reference = resource_occupation.booking_item_reference
+                if result.has_key?(key) and result[key].has_key?(reference)
+                  item = result[key][reference]
+                  item[:total] += 1
+                  item[:detail] << resource_occupation
+                end
+              end 
+            end
+            
+            # 4. Prepare the response
+            return {references: references, result: result}
+
+          end
+
           # Get the hourly percentage occupation in a day
           #
           def daily_occupation(day)
@@ -683,7 +727,22 @@ module Yito
           #
           # Check the resources that are assigned for day
           #
-          def resources_occupation_query(from, to)
+          def resources_occupation_query(from, to, options=nil)
+
+            extra_condition = ''
+            extra_pr_condition = ''
+
+            unless options.nil?
+              if options.has_key?(:mode)
+                if options[:mode] == 'stock' and options.has_key?(:reference)
+                  extra_condition = "and r.booking_item_reference = #{options[:reference]}"
+                  extra_pr_condition = "and pr.booking_item_reference = #{options[:reference]}"
+                elsif options[:mode] == 'product' and options.has_key(:product)
+                  extra_condition = "and item_id = #{options[:product]}"
+                  extra_condition = "and pr.booking_item_category = #{options[:product]}"
+                end
+              end
+            end
 
             query = <<-QUERY
               SELECT * 
@@ -707,7 +766,7 @@ module Yito
                    (b.date_from <= '#{to}' and b.date_to >= '#{to}') or 
                    (b.date_from = '#{from}' and b.date_to = '#{to}') or
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
-                    b.status NOT IN (1,5)
+                    b.status NOT IN (1,5) #{extra_condition}
                 UNION
                 SELECT pr.booking_item_reference,
                      pr.booking_item_category,
@@ -723,7 +782,7 @@ module Yito
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
                    (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
                    (pr.date_from = '#{from}' and pr.date_to = '#{to}') or
-                   (pr.date_from >= '#{from}' and pr.date_to <= '#{to}')) 
+                   (pr.date_from >= '#{from}' and pr.date_to <= '#{to}')) #{extra_pr_condition}
               ) AS D
               ORDER BY booking_item_reference, date_from
             QUERY
