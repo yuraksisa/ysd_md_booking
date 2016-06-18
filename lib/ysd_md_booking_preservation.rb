@@ -23,8 +23,8 @@ module BookingDataSystem
      property :days, Integer
 
      before :save do |b|
-       b.days = (date_from - date_to).to_i
-       hours_of_difference = (date_from - date_to).to_f.modulo(1) * 24
+       b.days = (date_to - date_from).to_i
+       hours_of_difference = (date_to - date_from).to_f.modulo(1) * 24
        b.days = b.days + 1 if hours_of_difference > 2
      end
 

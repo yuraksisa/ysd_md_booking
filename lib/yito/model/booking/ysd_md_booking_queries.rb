@@ -620,7 +620,7 @@ module Yito
               date = date_from + d 
               detail = {}
               references.each do |reference|
-                detail.store(reference, {total: 0, detail: []})
+                detail.store(reference, {total: 0, detail: [], summary: nil})
               end              
               result.store(date.strftime('%Y-%m-%d'), detail)
             end         
@@ -637,6 +637,25 @@ module Yito
                   item = result[key][reference]
                   item[:total] += 1
                   item[:detail] << resource_occupation.to_h
+                  summary = resource_occupation.origin == 'booking' ? 'R:' : 'PR:'
+                  summary << ' '
+                  summary << resource_occupation.id.to_s
+                  summary << ' '
+                  summary << resource_occupation.date_from.strftime('%d-%m-%Y')
+                  summary << ' '
+                  summary << resource_occupation.time_from
+                  summary << ' '
+                  summary << resource_occupation.date_to.strftime('%d-%m-%Y')
+                  summary << ' '
+                  summary << resource_occupation.time_to
+                  summary << ' '
+                  summary << resource_occupation.title
+                  if item[:summary] != nil
+                    item[:summary] << '&#013;'
+                    item[:summary] << summary
+                  else
+                    item[:summary] = summary
+                  end
                 end
               end 
             end
@@ -744,6 +763,9 @@ module Yito
               end
             end
 
+            date_diff_reservations = query_strategy.date_diff('b.date_from', 'b.date_to', 'days')
+            date_diff_prereservations = query_strategy.date_diff('pr.date_from', 'pr.date_to', 'days')
+
             query = <<-QUERY
               SELECT * 
               FROM (
@@ -753,11 +775,11 @@ module Yito
                      'booking' as origin,
                      b.date_from, b.time_from,
                      b.date_to, b.time_to,
-                     b.days,
+                     #{date_diff_reservations},
                      CONCAT(b.customer_name, ' ', b.customer_surname) as title,
                      CONCAT(coalesce(r.resource_user_name,''), ' ', 
                             coalesce(r.resource_user_surname, ''), ' ', r.customer_height,
-                            ' ', r.customer_weight) as detail,
+                            ' ', r.customer_weight) as detail,                     
                      r.id as id2,
                      b.planning_color
                 FROM bookds_bookings b
@@ -775,11 +797,11 @@ module Yito
                      'prereservation' as origin,
                      pr.date_from, pr.time_from,
                      pr.date_to, pr.time_to,
-                     pr.days,
+                     #{date_diff_prereservations},
                      pr.title,
                      pr.notes as detail,
                      pr.id as id2,
-                     pr.planning_color
+                     pr.planning_color              
                 FROM bookds_prereservations pr
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
                    (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 

@@ -7,6 +7,10 @@ module Yito
           @repository = repository
         end
 
+        def date_diff(from_field, to_field, alias_name)
+          "DATEDIFF(#{to_field}, #{from_field}) as #{alias_name}"
+        end    
+
         def customer_search(search_text, offset_order_query)
           query = <<-QUERY
             select trim(upper(customer_surname)) as customer_surname, trim(upper(customer_name)) as customer_name, 
