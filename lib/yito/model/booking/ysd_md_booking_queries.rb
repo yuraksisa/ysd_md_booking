@@ -636,7 +636,7 @@ module Yito
                 if result.has_key?(key) and result[key].has_key?(reference)
                   item = result[key][reference]
                   item[:total] += 1
-                  item[:detail] << resource_occupation
+                  item[:detail] << resource_occupation.to_h
                 end
               end 
             end
@@ -758,7 +758,8 @@ module Yito
                      CONCAT(coalesce(r.resource_user_name,''), ' ', 
                             coalesce(r.resource_user_surname, ''), ' ', r.customer_height,
                             ' ', r.customer_weight) as detail,
-                     r.id as id2
+                     r.id as id2,
+                     b.planning_color
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines l on l.booking_id = b.id
                 JOIN bookds_bookings_lines_resources r on r.booking_line_id = l.id
@@ -777,7 +778,8 @@ module Yito
                      pr.days,
                      pr.title,
                      pr.notes as detail,
-                     pr.id as id2
+                     pr.id as id2,
+                     pr.planning_color
                 FROM bookds_prereservations pr
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
                    (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
