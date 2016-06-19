@@ -438,6 +438,68 @@ module Yito
             occupation = repository.adapter.select(query)
             
           end
+
+          #
+          # Resource occupation detail
+          #
+          # Get the resources of a reference that are busy in a date
+          #
+          def resource_occupation_detail(date, reference)
+
+            query = <<-QUERY
+              SELECT * FROM (
+               SELECT l.item_id as item_id, 
+                      b.id, 
+                      b.customer_name, 
+                      b.customer_surname, 
+                      b.date_from, 
+                      b.time_from, 
+                      b.date_to, 
+                      b.time_to, 
+                      b.customer_email, 
+                      b.customer_phone, 
+                      b.customer_mobile_phone,
+                      r.booking_item_reference, 
+                      r.booking_item_category,
+                      'booking' as origin,
+                      r.id as id2
+               FROM bookds_bookings_lines as l
+               JOIN bookds_bookings as b on b.id = l.booking_id
+               JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
+               WHERE ((b.date_from <= '#{date}' and b.date_to >= '#{date}') or 
+                   (b.date_from <= '#{date}' and b.date_to >= '#{date}') or 
+                   (b.date_from = '#{date}' and b.date_to = '#{date}') or
+                   (b.date_from >= '#{date}' and b.date_to <= '#{date}')) and
+                   b.status NOT IN (1, 5) and 
+                   r.booking_item_reference = '#{reference}'
+               UNION
+               SELECT pr.booking_item_category as item_id,
+                      pr.id,
+                      pr.title as customer_name,
+                      '' as customer_surname,
+                      pr.date_from as date_from,
+                      pr.time_from as time_from,
+                      pr.date_to as date_to,
+                      pr.time_to as time_to,
+                      '' as customer_email,
+                      '' as customer_phone,
+                      '' as customer_mobile_phone,
+                      pr.booking_item_reference,
+                      pr.booking_item_category,
+                      'prereservation' as origin,
+                      pr.id as id2
+               FROM bookds_prereservations pr
+               WHERE ((pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
+                   (pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
+                   (pr.date_from = '#{date}' and pr.date_to = '#{date}') or
+                   (pr.date_from >= '#{date}' and pr.date_to <= '#{date}')) and
+                   pr.booking_item_reference = '#{reference}'
+               ) AS d
+               ORDER BY booking_item_reference, date_from asc                                     
+            QUERY
+            occupation = repository.adapter.select(query)
+            
+          end          
           
           # Get the daily percentage occupation in a period of time 
           #
@@ -596,21 +658,31 @@ module Yito
             
             # 1. Get the stock 
 
-            references = if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
-              [options[:reference]]
+            references = []
+            references_hash = {}
+
+            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+              references << options[:reference]
+              if item = ::Yito::Model::Booking::BookingItem.get(options[:reference])
+                references_hash.store(item.reference, item.category_code)
+              else
+                references_hash.store(options[:reference], nil)
+              end
             elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
               ::Yito::Model::Booking::BookingItem.all(
-                             :conditions => {category_code: options[:product]},
-                             :fields => [:reference],
-                             :order =>  [:planning_order, :category_code, :reference]).map do |item| 
-                               item.reference
-                             end
+                :conditions => {category_code: options[:product]},
+                :fields => [:reference, :category_code],
+                :order =>  [:planning_order, :category_code, :reference]).each do |item| 
+                  references << item.reference
+                  references_hash.store(item.reference, item.category_code)
+              end
             else
               ::Yito::Model::Booking::BookingItem.all(
-                             :fields => [:reference],
-                             :order =>  [:planning_order, :category_code, :reference]).map do |item| 
-                               item.reference
-                             end
+                :fields => [:reference, :category_code],
+                :order =>  [:planning_order, :category_code, :reference]).each do |item| 
+                  references << item.reference
+                  references_hash.store(item.reference, item.category_code)
+              end
             end
             
             # 2. Build the result structure
@@ -661,7 +733,7 @@ module Yito
             end
             
             # 4. Prepare the response
-            return {references: references, result: result}
+            return {references: references_hash, result: result}
 
           end
 
