@@ -9,8 +9,21 @@ module BookingDataSystem
      include BookingDataSystem::BookingHeightWeight     
      storage_names[:default] = 'bookds_bookings_lines_resources' 
      property :id, Serial
+
      property :resource_user_name, String, :length => 80
      property :resource_user_surname, String, :length => 80
+     property :resource_user_document_id, String, :length => 50
+     property :resource_user_phone, String, :length => 15
+     property :resource_user_email, String, :length => 40
+
+     property :resource_user_2_name, String, :length => 80
+     property :resource_user_2_surname, String, :length => 80
+     property :resource_user_2_document_id, String, :length => 50
+     property :resource_user_2_phone, String, :length => 15
+     property :resource_user_2_email, String, :length => 40
+
+     property :pax, Integer, :default => 1 # Number of people responsible of the resource
+
      belongs_to :booking_line, 'BookingLine', :child_key => [:booking_line_id]
 
      property :booking_item_category, String, :length => 20

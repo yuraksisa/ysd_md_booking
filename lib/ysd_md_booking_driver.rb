@@ -25,12 +25,26 @@ module BookingDataSystem
        model.property :additional_driver_1_driving_license_number, String, :length => 50
        model.property :additional_driver_1_driving_license_date, DateTime
        model.property :additional_driver_1_document_id, String, :length => 50
+       model.property :additional_driver_1_phone, String, :length => 15
+       model.property :additional_driver_1_email, String, :length => 40
+
        model.property :additional_driver_2_name, String, :length => 40
        model.property :additional_driver_2_surname, String, :length => 40
        model.property :additional_driver_2_date_of_birth, DateTime
        model.property :additional_driver_2_driving_license_number, String, :length => 50
        model.property :additional_driver_2_document_id, String, :length => 50
        model.property :additional_driver_2_driving_license_date, DateTime
+       model.property :additional_driver_2_phone, String, :length => 15
+       model.property :additional_driver_2_email, String, :length => 40
+
+       model.property :additional_driver_3_name, String, :length => 40
+       model.property :additional_driver_3_surname, String, :length => 40
+       model.property :additional_driver_3_date_of_birth, DateTime
+       model.property :additional_driver_3_driving_license_number, String, :length => 50
+       model.property :additional_driver_3_document_id, String, :length => 50
+       model.property :additional_driver_3_driving_license_date, DateTime
+       model.property :additional_driver_3_phone, String, :length => 15
+       model.property :additional_driver_3_email, String, :length => 40
 
      end
      

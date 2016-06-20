@@ -252,6 +252,32 @@ module BookingDataSystem
      end
      
      #
+     # Get a list of the other people involved in the contract (extracted from resources)
+     #
+     def contract_other_people
+       result = []
+       booking_line_resources.each do |resource|
+         result << { :name => resource.resource_user_name,
+                     :surname => resource.resource_user_surname,
+                     :document_id => resource.resource_user_document_id,
+                     :phone => resource.resource_user_phone,
+                     :email => resource.resource_user_email } if resource.resource_user_name != customer_name and 
+                                                                 resource.resource_user_surname != customer_surname
+         if resource.pax == 2
+           result << { :name => resource.resource_user_2_name,
+                       :surname => resource.resource_user_2_surname,
+                       :document_id => resource.resource_user_2_document_id,
+                       :phone => resource.resource_user_2_phone,
+                       :email => resource.resource_user_2_email } if resource.resource_user_2_name != customer_name and 
+                                                                     resource.resource_user_2_surname != customer_surname
+      
+         end
+       end
+
+       return result
+     end
+     
+     #
      # Get the charge item detail
      #
      def charge_item_detail
