@@ -692,7 +692,7 @@ module Yito
               date = date_from + d 
               detail = {}
               references.each do |reference|
-                detail.store(reference, {total: 0, detail: [], summary: nil})
+                detail.store(reference, {total: 0, detail: [], summary: nil, reservation_ids: nil, prereservation_ids: nil})
               end              
               result.store(date.strftime('%Y-%m-%d'), detail)
             end         
@@ -727,6 +727,21 @@ module Yito
                     item[:summary] << summary
                   else
                     item[:summary] = summary
+                  end
+                  if resource_occupation.origin == 'booking'
+                    if item[:reservation_ids] != nil
+                      item[:reservation_ids] << ' '
+                      item[:reservation_ids] << resource_occupation.id2.to_s
+                    else
+                      item[:reservation_ids] = resource_occupation.id2.to_s 
+                    end                  
+                  else
+                    if item[:prereservation_ids] != nil
+                      item[:prereservation_ids] << ' '
+                      item[:prereservation_ids] << resource_occupation.id2.to_s
+                    else
+                      item[:prereservation_ids] = resource_occupation.id2.to_s 
+                    end
                   end
                 end
               end 
