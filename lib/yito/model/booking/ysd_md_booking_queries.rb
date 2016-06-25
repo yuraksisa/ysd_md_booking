@@ -459,10 +459,18 @@ module Yito
                       b.customer_email, 
                       b.customer_phone, 
                       b.customer_mobile_phone,
+                      b.planning_color,
                       r.booking_item_reference, 
                       r.booking_item_category,
                       'booking' as origin,
-                      r.id as id2
+                      r.id as id2,
+                      CONCAT(r.resource_user_name, ' ', r.resource_user_surname) as resource_1_name,
+                      r.customer_height, 
+                      r.customer_weight,
+                      CONCAT(r.resource_user_name, ' ', r.resource_user_surname) as resource_2_name,
+                      r.customer_2_height,
+                      r.customer_2_weight,
+                      r.pax
                FROM bookds_bookings_lines as l
                JOIN bookds_bookings as b on b.id = l.booking_id
                JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
@@ -484,10 +492,18 @@ module Yito
                       '' as customer_email,
                       '' as customer_phone,
                       '' as customer_mobile_phone,
+                      pr.planning_color,
                       pr.booking_item_reference,
                       pr.booking_item_category,
                       'prereservation' as origin,
-                      pr.id as id2
+                      pr.id as id2,
+                      '' as resource_1_name,
+                      '' as customer_height,
+                      '' as customer_weight,
+                      '' as resource_2_name,
+                      '' as customer_2_height,
+                      '' as customer_2_weight,
+                      1 as pax
                FROM bookds_prereservations pr
                WHERE ((pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
                    (pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
