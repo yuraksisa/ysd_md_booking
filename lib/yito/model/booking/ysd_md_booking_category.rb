@@ -19,7 +19,7 @@ module Yito
         storage_names[:default] = 'bookds_categories'
 
         property :code, String, :field => 'code', :length => 20, :key => true      
-        property :type, Enum[:category_of_resources, :activity_or_show, :resource], :default => :category_of_resources
+        property :type, Enum[:category_of_resources, :resource], :default => :category_of_resources
         property :name, String, :field => 'name', :length => 80
         property :short_description, String, :field => 'short_description', :length => 80
         property :description, Text, :field => 'description'
@@ -45,8 +45,7 @@ module Yito
         def self.types
  
           [{:id => 1, :description => BookingDataSystem.r18n.t.booking_category_type.category},
-           {:id => 2, :description => BookingDataSystem.r18n.t.booking_category_type.activity},
-           {:id => 3, :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
+           {:id => 2, :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
 
         end
 

@@ -120,6 +120,11 @@ module BookingDataSystem
      belongs_to :destination_address, 'LocationDataSystem::Address', :required => false # The driver address
      property :comercial_agent, String, :length => 256
 
+     property :pickup_time, String, :length => 5
+     property :pickup_agent, String, :length => 256
+     property :return_time, String, :length => 5
+     property :return_agent, String, :length => 256
+
      #
      # Get a booking by its free access id
      #
