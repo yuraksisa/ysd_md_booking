@@ -303,7 +303,17 @@ module Yito
             occupation_detail[item.item_price_type] = item.occupation
             total_occupation += item.occupation
           end          
-          {total_occupation: total_occupation, occupation_detail: occupation_detail}
+          
+          # Get the planned activity
+          planned_activity = ::Yito::Model::Booking::PlannedActivity.first(date: occupation_date,
+                                                                           time: occupation_time,
+                                                                           activity_code: self.code)
+          occupation_capacity = planned_activity.nil? ? self.capacity : planned_activity.capacity
+
+          result = {total_occupation: total_occupation, occupation_detail: occupation_detail, occupation_capacity: occupation_capacity}
+        
+          return result
+
         end
 
         #

@@ -31,8 +31,6 @@ module Yito
 
             orders = repository.adapter.select(sql, date, time, item_id)
             
-            p "orders: #{orders.inspect}"
-
             return orders
 
           end
@@ -127,6 +125,15 @@ module Yito
             date_to = Date.civil(year, month, -1)
             result = {}
 
+            # Get planned activities
+            condition = Conditions::JoinComparison.new('$and', 
+                 [Conditions::Comparison.new(:date,'$gte', date_from),
+                  Conditions::Comparison.new(:date,'$lte', date_to)
+                  ])             
+            planned_activities = condition.build_datamapper(::Yito::Model::Booking::PlannedActivity).all(
+              :order => [:date, :time, :activity_code]
+            )  
+
             # Build the structure
             activities = ::Yito::Model::Booking::Activity.all(active: true, occurence: :cyclic)
 
@@ -148,14 +155,25 @@ module Yito
                 days = {}
                 (1..(date_to.day)).each do |day| 
                   date = Date.civil(year, month, day)
+                  modified_capacity = planned_activities.select do |item|
+                                        item.date.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') and 
+                                        item.time == turn and
+                                        item.activity_code == activity.code
+                                      end
+                  real_capacity = modified_capacity.size > 0 ? modified_capacity.first.capacity : activity.capacity
+
                   if activity.cyclic_planned?(date.wday)
-                    days.store(day, item_prices.empty? ? 0 : item_prices.clone)
+                    days.store(day, {quantity: (item_prices.empty? ? 0 : item_prices.clone),
+                                     capacity: real_capacity})
                   else
-                    days.store(day, '-')
+                    days.store(day, {quantity: '-',
+                                     capacity: real_capacity})
                   end 
                 end
                 activity_detail.store(turn, days) 
               end
+
+              p "activity_detail: #{activity_detail.inspect}"
 
               # Store the item
               result.store(activity.code, {name: activity.name,
