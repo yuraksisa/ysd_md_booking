@@ -173,8 +173,6 @@ module Yito
                 activity_detail.store(turn, days) 
               end
 
-              p "activity_detail: #{activity_detail.inspect}"
-
               # Store the item
               result.store(activity.code, {name: activity.name,
                                            capacity: activity.capacity,
@@ -201,8 +199,8 @@ module Yito
               if result[order.item_id] and result[order.item_id][:occupation] and
                  result[order.item_id][:occupation][order.time] and 
                  result[order.item_id][:occupation][order.time][order.date.day] and
-                 result[order.item_id][:occupation][order.time][order.date.day][order.item_price_type]
-                result[order.item_id][:occupation][order.time][order.date.day][order.item_price_type] += order.quantity
+                 result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type]
+                result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity
               end
             end
 
