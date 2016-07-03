@@ -68,11 +68,13 @@ module Yito
 
             sql = <<-SQL
                    select oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, 
-                          oi.item_description, sum(oi.quantity) as occupation
+                          oi.item_description, sum(oi.quantity) as occupation,
+                          a.schedule_color, a.duration_days, a.duration_hours
                    from orderds_orders o
                    join orderds_order_items oi on oi.order_id = o.id
+                   join bookds_activities a on a.code = oi.item_id
                    where o.status in (2) and oi.date >= ? and oi.date <= ?
-                   group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, oi.item_description
+                   group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, oi.item_description, a.schedule_color, a.duration_days, a.duration_hours
                    order by oi.date desc, oi.time desc, oi.item_id            
                   SQL
 

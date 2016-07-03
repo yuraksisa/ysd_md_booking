@@ -470,6 +470,7 @@ module Yito
                       CONCAT(r.resource_user_name, ' ', r.resource_user_surname) as resource_2_name,
                       r.customer_2_height,
                       r.customer_2_weight,
+                      b.comments as comments,
                       r.pax
                FROM bookds_bookings_lines as l
                JOIN bookds_bookings as b on b.id = l.booking_id
@@ -503,6 +504,7 @@ module Yito
                       '' as resource_2_name,
                       '' as customer_2_height,
                       '' as customer_2_weight,
+                      pr.notes as comments,
                       1 as pax
                FROM bookds_prereservations pr
                WHERE ((pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 

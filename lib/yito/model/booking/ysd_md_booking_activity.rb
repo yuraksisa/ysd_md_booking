@@ -28,6 +28,10 @@ module Yito
         property :from_price, Decimal, :scale => 2, :precision => 10, :default => 0
         property :from_price_offer, Decimal, :scale => 2, :precision => 10, :default => 0 
 
+        property :schedule_color, String, :length => 9
+        property :duration_days, Integer, :default => 0
+        property :duration_hours, String, :length => 5
+
         # -- One time 
 
         property :date_from, DateTime
