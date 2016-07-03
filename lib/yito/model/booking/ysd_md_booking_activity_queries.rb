@@ -21,7 +21,12 @@ module Yito
                      o_i.comments,
                      o.id as order_id, o.customer_name, o.customer_surname, o.customer_email,
                      o.customer_phone, o.comments as order_comments,
-                     o.status as status, a.capacity
+                     case o.status
+                       when 1 then 'pending_confirmation'
+                       when 2 then 'confirmed'
+                       when 3 then 'cancelled'
+                     end as status,
+                     a.capacity
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id
