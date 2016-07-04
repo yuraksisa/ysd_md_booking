@@ -131,7 +131,7 @@ module Yito
             returned_bookings.each do |booking|
               data = [booking.id,
                       "#{booking.date_to.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_to : ''}"]
-              data << booking.pickup_place if product_family.pickup_return_place
+              data << booking.return_place if product_family.pickup_return_place
               stock = []
               booking.booking_lines.each do |booking_line|
                 booking_line.booking_line_resources.each do |booking_line_resource|
