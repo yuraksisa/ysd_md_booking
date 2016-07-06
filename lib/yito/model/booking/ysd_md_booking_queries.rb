@@ -32,6 +32,7 @@ module Yito
              else
               conditions = Conditions::JoinComparison.new('$or', 
                               [Conditions::Comparison.new(:id, '$eq', search_text.to_i),
+                               Conditions::Comparison.new(:customer_name, '$like', "%#{search_text}%"),
                                Conditions::Comparison.new(:customer_surname, '$like', "%#{search_text}%"),
                                Conditions::Comparison.new(:customer_email, '$eq', search_text),
                                Conditions::Comparison.new(:customer_phone, '$eq', search_text),

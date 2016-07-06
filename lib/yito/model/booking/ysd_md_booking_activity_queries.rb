@@ -10,6 +10,28 @@ module Yito
         module ClassMethods
           
           #
+          # Search booking by text (customer surname, phone, email)
+          #          
+          def text_search(search_text, offset_order_query={})
+             if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
+               [query_strategy.count_text_search(search_text),
+                query_strategy.text_search(search_text, offset_order_query)]
+             else
+              conditions = Conditions::JoinComparison.new('$or', 
+                              [Conditions::Comparison.new(:id, '$eq', search_text.to_i),
+                               Conditions::Comparison.new(:customer_name, '$like', "%#{search_text}%"),
+                               Conditions::Comparison.new(:customer_surname, '$like', "%#{search_text}%"),
+                               Conditions::Comparison.new(:customer_email, '$eq', search_text),
+                               Conditions::Comparison.new(:customer_phone, '$eq', search_text),
+                               Conditions::Comparison.new(:customer_mobile_phone, '$eq', search_text)])
+            
+              total = conditions.build_datamapper(::Yito::Model::Order::Order).all.count 
+              data = conditions.build_datamapper(::Yito::Model::Order::Order).all(offset_order_query) 
+              [total, data]
+             end
+          end
+
+          #
           # Get the activity detail
           #
           def activity_detail(date, time, item_id)
@@ -217,6 +239,25 @@ module Yito
           end
 
         end
+
+        private
+
+        def query_strategy
+      
+          @query_strategy ||= 
+            if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
+              PostgresqlActivityQueries.new(repository)
+            else
+              if DataMapper::Adapters.const_defined?(:MysqlAdapter) and repository.adapter.is_a?DataMapper::Adapters::MysqlAdapter
+                MySQLActivityQueries.new(repository)
+              else
+                if DataMapper::Adapters.const_defined?(:SqliteAdapter) and repository.adapter.is_a?DataMapper::Adapters::SqliteAdapter
+                  SQLiteActivityQueries.new(repository)
+                end
+              end
+            end
+          end        
+
       end
     end
   end

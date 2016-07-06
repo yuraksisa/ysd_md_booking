@@ -330,7 +330,8 @@ module Yito
                   #{b.customer_email} = '#{search_text}' or 
                   #{b.customer_phone} = '#{search_text}' or 
                   #{b.customer_mobile_phone} = '#{search_text}' or
-                  unaccent(#{b.customer_surname}) ilike unaccent('#{search_text}%')
+                  unaccent(#{b.customer_surname}) ilike unaccent('#{search_text}%') or 
+                  unaccent(#{b.customer_name}) ilike unaccent('#{search_text}%')
           QUERY
 
         end 
