@@ -824,9 +824,28 @@ module Yito
             scheduler
 
           end 
+          
+          #
+          # Get the reservations pending of assignation
+          #
+          def pending_of_assignation
+
+            BookingDataSystem::Booking.by_sql{ |b| [select_pending_of_assignation(b)] }.all 
+
+          end
 
           private
     
+          def select_pending_of_assignation(b)
+              sql = <<-QUERY
+                select #{b.*} 
+                FROM #{b} 
+                join bookds_bookings_lines bl on bl.booking_id = #{b.id} 
+                join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
+                where blr.booking_item_reference IS NULL and #{b.date_from} >= '#{Date.today.strftime("%Y-%m-%d")}'
+              QUERY
+          end
+
           def hour_array(time_from, time_to, step, steps, last_time)
             first = time_from
             last = time_to == last_time ? last_time : time_to.split(':').last == '00' ? "#{time_to.split(':').first.to_i-1}:30" : "#{time_to.split(':').first}:00"
