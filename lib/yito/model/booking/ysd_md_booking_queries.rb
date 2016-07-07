@@ -830,7 +830,7 @@ module Yito
           #
           def pending_of_assignation
 
-            BookingDataSystem::Booking.by_sql{ |b| [select_pending_of_assignation(b)] }.all 
+            BookingDataSystem::Booking.by_sql{ |b| [select_pending_of_assignation(b)] }.all(order: :date_from) 
 
           end
 
@@ -842,7 +842,7 @@ module Yito
                 FROM #{b} 
                 join bookds_bookings_lines bl on bl.booking_id = #{b.id} 
                 join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
-                where blr.booking_item_reference IS NULL and #{b.date_from} >= '#{Date.today.strftime("%Y-%m-%d")}'
+                where #{b.status} NOT IN (1,5) and blr.booking_item_reference IS NULL and #{b.date_from} >= '#{Date.today.strftime("%Y-%m-%d")}'
               QUERY
           end
 
