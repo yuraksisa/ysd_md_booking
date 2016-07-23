@@ -78,7 +78,7 @@ module Yito
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id
-              where o.status NOT IN (1,5) and o_i.date >= ? and o_i.date <= ?
+              where o.status NOT IN (1,3) and o_i.date >= ? and o_i.date <= ?
               order by o_i.date, o_i.time, o_i.item_id, o.customer_surname, o.customer_name
             SQL
 
@@ -217,7 +217,7 @@ module Yito
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id 
-              where o.status NOT IN (1,5) and o_i.date >= ? and o_i.date <= ? and 
+              where o.status NOT IN (1,3) and o_i.date >= ? and o_i.date <= ? and 
                     a.occurence IN (3)
               group by o_i.item_id, o_i.date, o_i.time, o_i.item_price_type 
             SQL
