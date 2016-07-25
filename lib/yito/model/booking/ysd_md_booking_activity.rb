@@ -19,7 +19,7 @@ module Yito
         property :name, String, :length => 80
         property :short_description, String, :length => 256
         property :description, Text
-        property :occurence, Enum[:one_time, :multiple_dates, :cyclic]
+        property :occurence, Enum[:one_time, :multiple_dates, :cyclic, :customer_customizable]
         property :mode, Enum[:full,:partial], :default => :full
         property :active, Boolean, :default => true
         property :web_public, Boolean, :default => true

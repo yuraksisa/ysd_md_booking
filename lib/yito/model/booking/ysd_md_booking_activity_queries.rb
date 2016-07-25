@@ -31,6 +31,33 @@ module Yito
              end
           end
 
+          def count_start(date)
+            sql = <<-SQL
+                   select count(distinct oi.date, oi.time, oi.item_id)
+                   from orderds_orders o
+                   join orderds_order_items oi on oi.order_id = o.id
+                   join bookds_activities a on a.code = oi.item_id
+                   where o.status in (2) and oi.date = ? 
+                   group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, oi.item_description, a.schedule_color, a.duration_days, a.duration_hours
+                   order by oi.date desc, oi.time desc, oi.item_id            
+                  SQL
+
+            programmed_activities = repository.adapter.select(sql, date).first || 0     
+            
+          end
+
+          def count_received_orders(year)
+            query_strategy.count_received_orders(year)
+          end
+
+          def count_pending_confirmation_orders(year)
+            query_strategy.count_pending_confirmation_orders(year)
+          end
+
+          def count_confirmed_orders(year)
+            query_strategy.count_confirmed_orders(year)
+          end 
+
           #
           # Get the activity detail
           #
@@ -63,6 +90,35 @@ module Yito
           end
 
           #
+          # Get the activities that start on one date
+          #
+          def activities(date)
+
+            sql =<<-SQL
+              select o_i.id, o_i.date, o_i.time, o_i.item_id, o_i.item_description, 
+                     o_i.item_price_description,
+                     o_i.quantity, o_i.item_unit_cost, o_i.item_cost, o_i.item_price_type,
+                     o_i.comments,
+                     o.id as order_id, o.customer_name, o.customer_surname, o.customer_email,
+                     o.customer_phone, o.comments as order_comments,
+                     case o.status
+                       when 1 then 'pending_confirmation'
+                       when 2 then 'confirmed'
+                       when 3 then 'cancelled'
+                     end as status, 
+                     a.capacity
+              from orderds_order_items o_i
+              join orderds_orders o on o.id = o_i.order_id
+              join bookds_activities a on a.code = o_i.item_id
+              where o.status NOT IN (1,3) and o_i.date = ? 
+              order by o_i.date, o_i.time, o_i.item_id, o.customer_surname, o.customer_name
+            SQL
+
+            orders = repository.adapter.select(sql, date)
+
+          end
+
+          #
           # Get the activities summary between two dates
           #
           def activities_summary(date_from, date_to)
@@ -74,7 +130,12 @@ module Yito
                      o_i.comments,
                      o.id as order_id, o.customer_name, o.customer_surname, o.customer_email,
                      o.customer_phone, o.comments as order_comments,
-                     o.status as status, a.capacity
+                     case o.status
+                       when 1 then 'pending_confirmation'
+                       when 2 then 'confirmed'
+                       when 3 then 'cancelled'
+                     end as status, 
+                     a.capacity
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id
@@ -240,6 +301,10 @@ module Yito
 
         end
 
+        def pending_of_confirmation
+          orders = ::Yito::Model::Order::Order.by_sql { |o| select_pending_confirmation(o) }.all(order: :creation_date)
+        end
+
         private
 
         def query_strategy
@@ -256,7 +321,15 @@ module Yito
                 end
               end
             end
-          end        
+        end        
+
+        def select_pending_confirmation(o)
+          sql = <<-QUERY
+            select #{o.*} 
+            FROM #{o} 
+            where #{o.status} = 1 and #{o.id} in (select order_id from orderds_order_items oi where oi.date >= '#{Date.today.strftime("%Y-%m-%d")}')
+            QUERY
+        end
 
       end
     end
