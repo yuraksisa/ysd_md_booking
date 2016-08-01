@@ -183,6 +183,38 @@ module Yito
         end
 
         #
+        # Get the total charged amount for a year
+        #
+        def total_charged(year)
+          query = <<-QUERY
+            select c.payment_method_id as payment_method, sum(c.amount) as total
+            from bookds_bookings b
+            join bookds_booking_charges bc on bc.booking_id = b.id
+            join payment_charges c on c.id = bc.charge_id
+            where b.status NOT IN (1,5) and c.status IN (4) and
+                  date_part('year', c.date) = ? 
+            group by c.payment_method_id
+            order by total desc
+          QUERY
+          @repository.adapter.select(query, [year])
+        end
+
+        #
+        # Get the forecast charged for a period
+        #
+        def forecast_charged(date_from, date_to)
+          query = <<-QUERY 
+            select sum(b.total_pending) as total, TO_CHAR(b.date_from, 'YYYY-MM') as period 
+            from bookds_bookings b
+            WHERE b.date_from >= '#{date_from}' and 
+                  b.date_from < '#{date_to}' and
+                  b.status NOT IN (1,5)
+            group by period
+          QUERY
+          @repository.adapter.select(query)
+        end
+
+        #
         # Get the stock total cost
         #
         def stock_cost_total
@@ -285,7 +317,7 @@ module Yito
             JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
             where date_part('year', creation_date) = #{year.to_i} and status NOT IN (1,5)
             group by bookds_bookings_lines.item_id
-            order by bookds_bookings_lines.item_id
+            order by count desc
           QUERY
 
           @repository.adapter.select(query)
@@ -299,7 +331,7 @@ module Yito
             FROM bookds_bookings 
             where date_part('year', creation_date) = #{year.to_i}
             group by status
-            order by status
+            order by count desc
           QUERY
 
           @repository.adapter.select(query)

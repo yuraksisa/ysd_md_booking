@@ -62,6 +62,114 @@ module Yito
           @repository.adapter.select(query).first
         end    
 
+        def activities_by_category(year)
+          
+          query = <<-QUERY
+            select orderds_order_items.item_id, count(*) as count  
+            FROM orderds_order_items 
+            JOIN orderds_orders on orderds_orders.id = orderds_order_items.order_id
+            where date_part('year', creation_date) = #{year.to_i} and orderds_orders.status NOT IN (1,3)
+            group by orderds_order_items.item_id
+            order by count desc
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end
+
+        def activities_by_status(year)
+
+          query = <<-QUERY
+            select status, count(*) as count  
+            FROM orderds_orders 
+            where date_part('year', creation_date) = #{year.to_i}
+            group by status
+            order by count desc
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end
+
+        def activities_by_weekday(year)
+
+          query = <<-QUERY
+            select count(*), date_part('DOW', creation_date) as day 
+            FROM orderds_orders 
+            where date_part('year', creation_date) = #{year.to_i} and status <> 5
+            group by day
+            order by day
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end 
+
+
+        def last_30_days_activities
+ 
+          query = <<-QUERY
+             SELECT (now()::date - creation_date::date) as period, 
+             count(*) as occurrences
+             FROM orderds_orders
+             WHERE creation_date >= (now() - INTERVAL '30 day')
+             GROUP BY period 
+             order by period desc
+          QUERY
+
+          reservations=@repository.adapter.select(query)
+
+        end
+
+        #
+        # Get the activities total billing
+        #
+        def activities_billing_total(year)
+          query = <<-QUERY
+            select sum(orderds_order_items.item_cost) as total_cost
+            FROM orderds_order_items 
+            JOIN orderds_orders on orderds_orders.id = orderds_order_items.order_id
+            where date_part('year', orderds_order_items.date) = ? and 
+                  orderds_orders.status NOT IN (1,3)         
+          QUERY
+
+          @repository.adapter.select(query, [year])
+        end
+
+        #
+        # Get the total charged amount for a year
+        #
+        def total_charged(year)
+          query = <<-QUERY
+            select c.payment_method_id as payment_method, sum(c.amount) as total
+            from orderds_orders o
+            join orderds_order_items oi on oi.order_id = o.id
+            join orderds_order_charges oc on oc.order_id = o.id
+            join payment_charges c on c.id = oc.charge_id
+            where o.status NOT IN (1,3) and c.status IN (4) and
+                  date_part('year', c.date) = ? 
+            group by c.payment_method_id
+            order by total desc
+          QUERY
+          @repository.adapter.select(query, [year])
+        end
+
+        #
+        # Get the forecast charged for a period
+        #
+        def forecast_charged(date_from, date_to)
+          query = <<-QUERY 
+            select sum(o.total_pending) as total, TO_CHAR(oi.date, 'YYYY-MM') as period 
+            from orderds_orders o
+            join orderds_order_items oi on oi.order_id = o.id
+            WHERE oi.date >= '#{date_from}' and 
+                  oi.date < '#{date_to}' and
+                  o.status NOT IN (1,3)
+            group by period
+          QUERY
+          @repository.adapter.select(query)
+        end 
+
         private
 
         def text_search_query(o,search_text)

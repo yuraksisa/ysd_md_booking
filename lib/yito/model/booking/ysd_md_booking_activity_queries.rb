@@ -58,6 +58,154 @@ module Yito
             query_strategy.count_confirmed_orders(year)
           end 
 
+          def activities_by_category(year)
+
+            data = query_strategy.activities_by_category(year)
+            result = data.inject({}) do |result, value|
+               result.store(value.item_id, {value: value.count,
+                                            color: "#%06x" % (rand * 0xffffff),
+                                            highlight: "#%06x" % (rand * 0xffffff),
+                                            label: value.item_id})
+               result
+            end
+
+            result
+
+          end
+
+          def activities_by_status(year)
+ 
+            data = query_strategy.activities_by_status(year)
+
+
+            result = data.inject({}) do |result, value|
+               status = case value.status
+                          when 1
+                             BookingDataSystem.r18n.t.booking_status.pending_confirmation
+                          when 2 
+                             BookingDataSystem.r18n.t.booking_status.confirmed
+                          when 3 
+                             BookingDataSystem.r18n.t.booking_status.cancelled
+                        end
+
+               color = case value.status
+                          when 1
+                            'yellow'
+                          when 2
+                            'green'
+                          when 3
+                            'red'
+                       end
+
+               result.store(status, {value: value.count,
+                                     color: color,
+                                     highlight: "#%06x" % (rand * 0xffffff),
+                                     label: status})
+               result
+            end
+
+            result
+
+          end
+
+          def activities_by_weekday(year)
+            data = query_strategy.activities_by_weekday(year)
+            result = data.inject({}) do |result, value|
+               result.store(value.day.to_i.to_s, value.count)
+               result
+            end
+            result
+          end
+
+          def last_30_days_activities
+
+            months = ['E','F','M','A','My','J','Jl','A','S','O','N','D']
+
+            result = {}
+            (0..29).reverse_each do |item|
+              today = Date.today - item
+              key = "#{today.day}#{months[today.month-1]}"
+              result.store(key, 0)
+            end
+
+            data = query_strategy.last_30_days_activities
+            data.each do |item|
+               today = Date.today - item.period
+               key = "#{today.day}#{months[today.month-1]}"
+               result.store(key, item.occurrences) if result.has_key?(key)
+               result
+            end
+            result
+            
+          end
+
+          #
+          # Get the products total billing
+          #
+          def activities_billing_total(year)
+            query_strategy.activities_billing_total(year).first
+          end
+
+          #
+          # Total amount 
+          #
+          def total_should_charged(date_from, date_to)
+            query = <<-QUERY
+                      select sum(o.total_cost)
+                      from orderds_orders o
+                      join orderds_order_items oi on oi.order_id = o.id
+                      WHERE oi.date >= ? and date <= ? and 
+                            o.status NOT IN (1,3)
+                    QUERY
+            repository.adapter.select(query, date_from, date_to).first        
+          end
+
+
+          #
+          # Get the total charged amount for a year
+          #
+          def total_charged(year)
+            data = query_strategy.total_charged(year)
+            detail = data.inject({}) do |result, value|
+               result.store(value.payment_method, {value: value.total,
+                                                   color: "#%06x" % (rand * 0xffffff),
+                                                   highlight: "#%06x" % (rand * 0xffffff),
+                                                   label: Payments.r18n.t.payment_methods[value.payment_method.to_sym]})
+               result
+            end
+
+            result = {total: 0, detail: detail}
+            data.each { |item| result[:total] += item.total}
+
+            return result
+          end
+          
+          #
+          # Get the forecast charged for a period
+          #
+          def forecast_charged(date_from, date_to)
+            result = {total: 0, detail: {}}
+            month = date_from.month 
+            year = date_from.year
+            last_month = date_to.month
+            last_year = date_to.year
+            until (month == last_month && year == last_year) do
+              result[:detail].store("#{year}-#{month.to_s.rjust(2, '0')}", 0)
+              if month == 12
+                month = 1
+                year += 1
+              else
+                month += 1
+              end
+            end
+            data = query_strategy.forecast_charged(date_from, date_to)
+            data.each do |item| 
+              result[:total] += item.total
+              result[:detail][item.period] += item.total
+            end
+            return result
+          end
+
           #
           # Get the activity detail
           #

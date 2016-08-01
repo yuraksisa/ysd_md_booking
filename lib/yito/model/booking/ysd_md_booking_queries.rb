@@ -55,15 +55,24 @@ module Yito
           def reservations_confirmed(year)
             query_strategy.reservations_confirmed(year)
           end
-
+          
+          #
+          # Get the number of received reservations
+          #
           def count_received_reservations(year)
             query_strategy.count_received_reservations(year)
           end
 
+          #
+          # Get the number of pending of confirmation reservations
+          #
           def count_pending_confirmation_reservations(year)
             query_strategy.count_pending_confirmation_reservations(year)
           end
 
+          #
+          # Get the number of confirmed reservations
+          #
           def count_confirmed_reservations(year)
             query_strategy.count_confirmed_reservations(year)
           end 
@@ -89,6 +98,65 @@ module Yito
               end
             end
             return value
+          end
+          
+          #
+          # Total amount 
+          #
+          def total_should_charged(date_from, date_to)
+            query = <<-QUERY
+                      select sum(b.total_cost)
+                      from bookds_bookings b
+                      WHERE b.date_from >= ? and date_from <= ? and 
+                            b.status NOT IN (1,5)
+                    QUERY
+            repository.adapter.select(query, date_from, date_to).first        
+          end
+
+
+          #
+          # Get the total charged amount for a year
+          #
+          def total_charged(year)
+            data = query_strategy.total_charged(year)
+            detail = data.inject({}) do |result, value|
+               result.store(value.payment_method, {value: value.total,
+                                                   color: "#%06x" % (rand * 0xffffff),
+                                                   highlight: "#%06x" % (rand * 0xffffff),
+                                                   label: Payments.r18n.t.payment_methods[value.payment_method.to_sym]})
+               result
+            end
+
+            result = {total: 0, detail: detail}
+            data.each { |item| result[:total] += item.total}
+
+            return result
+          end
+          
+          #
+          # Get the forecast charged for a period
+          #
+          def forecast_charged(date_from, date_to)
+            result = {total: 0, detail: {}}
+            month = date_from.month 
+            year = date_from.year
+            last_month = date_to.month
+            last_year = date_to.year
+            until (month == last_month && year == last_year) do
+              result[:detail].store("#{year}-#{month.to_s.rjust(2, '0')}", 0)
+              if month == 12
+                month = 1
+                year += 1
+              else
+                month += 1
+              end
+            end
+            data = query_strategy.forecast_charged(date_from, date_to)
+            data.each do |item| 
+              result[:total] += item.total
+              result[:detail][item.period] += item.total
+            end
+            return result
           end
 
           #
@@ -317,19 +385,33 @@ module Yito
             result = data.inject({}) do |result, value|
                status = case value.status
                           when 1
-                             'pending-confirmation'
+                             BookingDataSystem.r18n.t.booking_status.pending_confirmation
                           when 2 
-                             'confirmed'
+                             BookingDataSystem.r18n.t.booking_status.confirmed
                           when 3 
-                             'in-progress'
+                             BookingDataSystem.r18n.t.booking_status.in_progress
                           when 4 
-                             'done'
+                             BookingDataSystem.r18n.t.booking_status.done
                           when 5 
-                             'canceled'
+                             BookingDataSystem.r18n.t.booking_status.cancelled
                         end
 
+               color = case value.status
+                          when 1
+                            'yellow'
+                          when 2
+                            'green'
+                          when 3
+                            'blue'
+                          when 4
+                            'black'
+                          when 5
+                            'red'
+
+                       end
+
                result.store(status, {value: value.count,
-                                     color: "#%06x" % (rand * 0xffffff),
+                                     color: color,
                                      highlight: "#%06x" % (rand * 0xffffff),
                                      label: status})
                result
