@@ -42,11 +42,22 @@ module Yito
           end
         end
 
+        #
+        # Check if the product is ready to start selling it
+        #
+        def ready?
+          !code.nil? and !code.empty? and 
+          !name.nil? and !name.empty? and 
+          !short_description.nil? and !short_description.empty?
+          !description.nil? and !description.empty? and
+          !price_definition.nil? 
+        end
+
+        alias_method :ready, :ready?
+
         def self.types
- 
           [{:id => 1, :description => BookingDataSystem.r18n.t.booking_category_type.category},
            {:id => 2, :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
-
         end
 
         def rates_template_code
@@ -60,6 +71,23 @@ module Yito
           super # Invokes the super class to achieve the chain of methods invoked       
         end
         
+        #
+        # Exporting to json
+        #
+        def as_json(options={})
+
+          if options.has_key?(:only)
+            super(options)
+          else
+            relationships = options[:relationships] || {}
+            methods = options[:methods] || []
+            methods << :ready
+            super(options.merge({:relationships => relationships, :methods => methods}))
+          end
+
+        end
+
+
         #
         # Calculate the unit cost for a date and a number of days
         #
