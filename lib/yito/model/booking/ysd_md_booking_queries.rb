@@ -639,8 +639,8 @@ module Yito
               date_to = reservation.date_to
               calculated_from = date_from.month < month ? 1 : date_from.day
               calculated_to = date_to.month > month ? to.day : date_to.day 
-              calculated_to = calculated_to - 1 if product_family.cycle_of_24_hours
-              p "reservation: #{reservation.id} #{calculated_from} - #{calculated_to} -- #{reservation.date_from} #{reservation.date_to}"
+              #calculated_to = calculated_to - 1 if product_family.cycle_of_24_hours
+              #p "reservation: #{reservation.id} #{calculated_from} - #{calculated_to} -- #{reservation.date_from} #{reservation.date_to}"
               (calculated_from..calculated_to).each do |index|
                 unless reservation.booking_item_reference.nil?
                   unless cat_occupation[reservation.item_id][index][:items].include?(reservation.booking_item_reference)
@@ -651,7 +651,7 @@ module Yito
               end
             end
             
-            p "occupation: #{cat_occupation.inspect}"
+            #p "occupation: #{cat_occupation.inspect}"
 
             # Calculate percentage 
             cat_occupation.each do |key, value|  
