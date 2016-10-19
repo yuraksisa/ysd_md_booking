@@ -4,7 +4,7 @@ module Yito
   module Model
     module Booking
       module Pdf
-        class Reservations
+        class CustomerReservations
 
           attr_reader :date_from, :date_to, :booking_reservation_starts_with, :product_family
 
@@ -17,13 +17,34 @@ module Yito
           end
 
           def build
-            reservations = BookingDataSystem::Booking.all(
-               :conditions => {:date_from.gte => date_from,
-                               :date_to.lte => date_to,
-                               :status.not => [:cancelled,:pending_confirmation]},
-               :order => [:date_from, :time_from])
 
-            pdf = Prawn::Document.new(:page_layout => :landscape)
+            condition = Conditions::JoinComparison.new('$and',
+             [Conditions::Comparison.new(:status, '$ne', [:cancelled, :pending_confirmation]),
+              Conditions::JoinComparison.new('$or', 
+                [Conditions::JoinComparison.new('$and', 
+                 [Conditions::Comparison.new(:date_from,'$lte', date_from),
+                  Conditions::Comparison.new(:date_to,'$gte', date_from)
+                  ]),
+                Conditions::JoinComparison.new('$and',
+                 [Conditions::Comparison.new(:date_from,'$lte', date_to),
+                  Conditions::Comparison.new(:date_to,'$gte', date_to)
+                  ]),
+               Conditions::JoinComparison.new('$and',
+                 [Conditions::Comparison.new(:date_from,'$lte', date_from),
+                  Conditions::Comparison.new(:date_to,'$gte', date_to)
+                  ]),
+               Conditions::JoinComparison.new('$and',
+                 [Conditions::Comparison.new(:date_from, '$gte', date_from),
+                  Conditions::Comparison.new(:date_to, '$lte', date_to)])               
+              ]
+            ),
+            ]
+          )
+
+            reservations = condition.build_datamapper(BookingDataSystem::Booking).all(
+             :order => [:date_from, :time_from])
+
+            pdf = Prawn::Document.new(:page_layout => :portrait)
             font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
             "fonts", "DejaVuSans.ttf"))
             pdf.font font_file
@@ -32,7 +53,7 @@ module Yito
             pdf.move_down 10
 
             if reservations.size == 0
-              pdf.text "No hay entregas"
+              pdf.text "No hay reservas"
             else
               
               last_month = nil
@@ -63,8 +84,6 @@ module Yito
                 build_table(month_reservations, pdf)
               end	
               	
-              #build_table(reservations, pdf) 
-
             end
             
             return pdf
@@ -78,54 +97,26 @@ module Yito
             
             header = ["Entrega"]
             header << "Devolución"
-            header << "Reserva"
             header << "Cliente"
-            header << "Teléfono"
-            header << "Email"
-            header << "Estado"
-            header << "Prod."
-            header << "Total"
-            header << "Pagado"
-            header << "Pdte." 
+            header << "Documento"
             table_data << header
 
             reservations.each do |booking|
               pickup_date_place = "#{booking.date_from.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_from : ''} "
-              pickup_date_place << "#{booking.pickup_place}" if product_family.pickup_return_place
               return_date_place = "#{booking.date_to.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_to : ''} "
-              return_date_place << "#{booking.return_place}" if product_family.pickup_return_place
-              products = []
-              booking.booking_lines.each do |booking_line|
-              	quantity = booking_reservation_starts_with == :shopcart ? "#{booking_line.quantity}" : ''
-                products << "#{booking_line.item_id} #{quantity}"
-              end
               data = [pickup_date_place,
               	      return_date_place,
-              	      booking.id,
-              	      "#{booking.customer_surname}, #{booking.customer_name}",
-              	      "#{booking.customer_phone} #{booking.customer_mobile_phone}",
-              	      booking.customer_email,
-              	      BookingDataSystem.r18n.t.booking_status[booking.status],
-              	      products.join(' '),
-              	      "%.2f" % booking.total_cost,
-              	      "%.2f" % booking.total_paid,
-              	      "%.2f" % booking.total_pending
+              	      "#{booking.driver_name} #{booking.driver_surname}",
+              	      booking.driver_document_id
                       ]              
               table_data << data                                 
             end
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
-              t.column(0).style(size: 8, width: 80)	
-              t.column(1).style(size: 8, width: 80)
-              t.column(2).style(size: 8, width: 50)
-              t.column(3).style(size: 8, width: 90)
-              t.column(4).style(size: 8, width: 70)              
-              t.column(5).style(size: 8, width: 100)
-              t.column(6).style(size: 8, width: 60)
-              t.column(7).style(size: 8, width: 40)
-              t.column(8).style(:align => :right, size: 8, width: 50)
-              t.column(9).style(:align => :right, size: 8, width: 50)
-              t.column(10).style(:align => :right, size: 8, width: 50)
+              t.column(0).style(size: 8)	
+              t.column(1).style(size: 8)
+              t.column(2).style(size: 8)
+              t.column(3).style(size: 8)
             end   
 
           end	
