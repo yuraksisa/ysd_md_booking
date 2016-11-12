@@ -44,14 +44,23 @@ module Yito
              end
           end
 
+          #
+          # Incoming money summary
+          #
           def incoming_money_summary(year)
             query_strategy.incoming_money_summary(year)
           end
 
+          #
+          # Reservations received in a year
+          #
           def reservations_received(year)
             query_strategy.reservations_received(year)
           end
 
+          # 
+          # Reservations confirmed in a year
+          #
           def reservations_confirmed(year)
             query_strategy.reservations_confirmed(year)
           end
@@ -101,7 +110,7 @@ module Yito
           end
           
           #
-          # Total amount 
+          # Total amount that should be charged in a period of time
           #
           def total_should_charged(date_from, date_to)
             query = <<-QUERY
@@ -919,6 +928,20 @@ module Yito
 
           end
 
+          #
+          # Get the detail of the reservations that involve a resource
+          #
+          def resource_reservations(date_from, date_to, stock_plate)
+
+             BookingDataSystem::Booking.by_sql { |b| 
+               [select_resource_reservations(b), stock_plate, 
+                 date_from, date_from, 
+                 date_to, date_to,
+                 date_from, date_to,
+                 date_from, date_to ] }.all(order: :date_from) 
+
+          end 
+
           private
     
           def select_pending_of_assignation(b)
@@ -929,6 +952,21 @@ module Yito
                 join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
                 where #{b.status} NOT IN (1,5) and blr.booking_item_reference IS NULL and #{b.date_from} >= '#{Date.today.strftime("%Y-%m-%d")}'
               QUERY
+          end
+
+          def select_resource_reservations(b) 
+             sql = <<-QUERY
+               select #{b.*}
+               FROM #{b}
+                join bookds_bookings_lines bl on bl.booking_id = #{b.id} 
+                join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
+                where #{b.status} NOT IN (1,5) and
+                      blr.booking_item_stock_plate = ? and 
+                     ((#{b.date_from} <= ? and #{b.date_to} >= ?) or 
+                      (#{b.date_from} <= ? and #{b.date_to} >= ?) or 
+                      (#{b.date_from} = ? and #{b.date_to} = ?) or
+                      (#{b.date_from} >= ? and #{b.date_to} <= ?))                      
+             QUERY
           end
 
           def hour_array(time_from, time_to, step, steps, last_time)
