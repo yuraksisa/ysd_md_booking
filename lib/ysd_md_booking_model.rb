@@ -201,12 +201,17 @@ module BookingDataSystem
      # Check the payment cadence is allowed
      # 
      def payment_cadence_allowed?
-         config_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence').to_i
-         _date_from_str = "#{self.date_from.strftime('%Y-%m-%d')}T#{self.time_from}:00#{self.date_from.strftime("%:z")}"
-         _date_from = DateTime.strptime(_date_from_str,'%Y-%m-%dT%H:%M:%S%:z')
-         diff_in_hours = (_date_from.to_time - self.creation_date.to_time) / 3600
-         allowed = diff_in_hours > 0 && (diff_in_hours >= config_payment_cadence)
-         allowed || force_allow_payment
+         begin
+           config_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence').to_i
+           _date_from_str = "#{self.date_from.strftime('%Y-%m-%d')}T#{self.time_from}:00#{self.date_from.strftime("%:z")}"
+           _date_from = DateTime.strptime(_date_from_str,'%Y-%m-%dT%H:%M:%S%:z')
+           diff_in_hours = (_date_from.to_time - self.creation_date.to_time) / 3600
+           allowed = diff_in_hours > 0 && (diff_in_hours >= config_payment_cadence)
+           allowed || force_allow_payment
+         rescue => error
+           p "Error #{id} #{date_from} #{time_from} #{date_to} #{time_to} #{driver_date_of_birth} #{driver_driving_license_date}"
+           return false
+         end
      end
 
      #
