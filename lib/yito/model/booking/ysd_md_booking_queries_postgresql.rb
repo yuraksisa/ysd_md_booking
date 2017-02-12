@@ -338,6 +338,8 @@ module Yito
 
         end
 
+        # Last 30 days reservations
+        #
         def last_30_days_reservations
  
           query = <<-QUERY
@@ -352,6 +354,41 @@ module Yito
           reservations=@repository.adapter.select(query)
 
         end
+
+        # Get the products (or categories) that where booked in a year
+        #
+        def historic_products(year)
+
+          query = <<-QUERY
+            select distinct(bookds_bookings_lines.item_id) 
+            FROM bookds_bookings_lines 
+            JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
+            where date_part('year', date_from) = #{year.to_i} and status NOT IN (1,5) and bookds_bookings_lines.item_id is not NULL
+            order by bookds_bookings_lines.item_id
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end
+
+        # Get the stock that where used in the reservations of a year
+        def historic_stock(year)
+
+          query = <<-QUERY
+            select distinct(bookds_bookings_lines_resources.booking_item_reference) as item_reference,
+                   bookds_bookings_lines.item_id as item_id,
+                   bookds_bookings_lines_resources.booking_item_category as item_category    
+            FROM bookds_bookings_lines_resources
+            JOIN bookds_bookings_lines on bookds_bookings_lines_resources.booking_line_id = bookds_bookings_lines.id
+            JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
+            where date_part('year', date_from) = #{year.to_i} and status NOT IN (1,5) and booking_item_reference is not NULL
+            order by bookds_bookings_lines_resources.booking_item_reference
+          QUERY
+
+          @repository.adapter.select(query)
+
+        end
+
 
         private
 

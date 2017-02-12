@@ -179,9 +179,21 @@ module Yito
           # Products billing summary detailed by stock item
           #
           def products_billing_summary_by_stock(year)
+
+            current_year = DateTime.now.year
+
             # Build the result holder
             total_cost = 0
-            stock_items = ::Yito::Model::Booking::BookingItem.all(conditions: {active: true}, fields: [:reference, :cost], order: [:category_code, :reference])
+            stock_items = if current_year == year
+                            ::Yito::Model::Booking::BookingItem.all(conditions: {active: true},
+                                                                    fields: [:reference, :cost],
+                                                                    order: [:category_code, :reference])
+                          else
+                            BookingDataSystem::Booking.historic_stock(year).map do |item|
+                              OpenStruct.new({reference: item.item_reference, cost: 0})
+                            end
+                          end
+
             summary = stock_items.inject({}) do |result, item|
               data_holder = {}
               (1..12).each { |item| data_holder.store(item, 0) }
@@ -371,6 +383,8 @@ module Yito
             result
           end
 
+          # Reservations by category
+          #
           def reservations_by_category(year)
 
             data = query_strategy.reservations_by_category(year)
@@ -386,10 +400,11 @@ module Yito
 
           end
 
+          # Reservations by status
+          #
           def reservations_by_status(year)
  
             data = query_strategy.reservations_by_status(year)
-
 
             result = data.inject({}) do |result, value|
                status = case value.status
@@ -430,6 +445,8 @@ module Yito
 
           end
 
+          # The last 30 days reservations
+          #
           def last_30_days_reservations
 
             months = ['E','F','M','A','My','J','Jl','A','S','O','N','D']
@@ -451,7 +468,23 @@ module Yito
             result
             
           end
-          
+
+
+          # Get the products (or categories) that where booked in a year
+          #
+          def historic_products(year)
+
+            data = query_strategy.historic_products(year)
+
+          end
+
+          # Get the stock that where used in the reservations of a year
+          def historic_stock(year)
+
+            data = query_strategy.historic_stock(year)
+
+          end
+
           #
           # Check the occupation of renting items for a period
           #
@@ -614,18 +647,39 @@ module Yito
           # Get the daily percentage occupation in a period of time 
           #
           def monthly_occupation(month, year, category=nil)
-            
+
+            current_year = DateTime.now.year
+
             from = Date.civil(year, month, 1)
             to = Date.civil(year, month, -1)
             product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
 
             # Get products stocks
-            conditions = category.nil? ? {} : {code: category}
-            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: conditions.merge({active: true}), fields: [:code, :stock])
-            stocks = categories.inject({}) do |result, item|
-                       result.store(item.code, item.stock)
-                       result
-                     end
+            if current_year == year
+              conditions = category.nil? ? {} : {code: category}
+              categories = ::Yito::Model::Booking::BookingCategory.all(conditions: conditions.merge({active: true}), fields: [:code, :stock])
+              stocks = categories.inject({}) do |result, item|
+                         result.store(item.code, item.stock)
+                         result
+                       end
+            else
+              categories = BookingDataSystem::Booking.historic_products(year).map do |item|
+                              OpenStruct.new({code: item, stock: 0})
+                           end
+              stocks = categories.inject({}) do |result, item|
+                          stock = if h_b_c = ::Yito::Model::Booking::BookingCategoryHistoric.first(category_code: item.code, year: year)
+                                    h_b_c.stock
+                                  else
+                                    if b_c = ::Yito::Model::Booking::BookingCategory.get(item.code)
+                                      b_c.stock
+                                    else
+                                      0
+                                    end
+                                  end
+                          result.store(item.code, stock)
+                          result
+                       end
+            end
             
             # Build products occupation
             cat_occupation =  categories.inject({}) do |result, item|
@@ -768,36 +822,61 @@ module Yito
           # Get the planning detail
           #
           def planning(date_from, date_to, options=nil)
-            
+
+            current_year = DateTime.now.year
+
             # 1. Get the stock 
 
             references = []
             references_hash = {}
 
-            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
-              references << options[:reference]
-              if item = ::Yito::Model::Booking::BookingItem.get(options[:reference])
-                references_hash.store(item.reference, item.category_code)
-              else
-                references_hash.store(options[:reference], nil)
-              end
-            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
-              ::Yito::Model::Booking::BookingItem.all(
-                :conditions => {category_code: options[:product]},
-                :fields => [:reference, :category_code],
-                :order =>  [:planning_order, :category_code, :reference]).each do |item| 
-                  references << item.reference
+            if current_year == date_from.year
+              if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+                references << options[:reference]
+                if item = ::Yito::Model::Booking::BookingItem.get(options[:reference])
                   references_hash.store(item.reference, item.category_code)
+                else
+                  references_hash.store(options[:reference], nil)
+                end
+              elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+                ::Yito::Model::Booking::BookingItem.all(
+                  :conditions => {category_code: options[:product], active: true},
+                  :fields => [:reference, :category_code],
+                  :order =>  [:planning_order, :category_code, :reference]).each do |item|
+                    references << item.reference
+                    references_hash.store(item.reference, item.category_code)
+                end
+              else
+                ::Yito::Model::Booking::BookingItem.all(
+                  :conditions => {active: true},
+                  :fields => [:reference, :category_code],
+                  :order =>  [:planning_order, :category_code, :reference]).each do |item|
+                    references << item.reference
+                    references_hash.store(item.reference, item.category_code)
+                end
               end
             else
-              ::Yito::Model::Booking::BookingItem.all(
-                :fields => [:reference, :category_code],
-                :order =>  [:planning_order, :category_code, :reference]).each do |item| 
-                  references << item.reference
-                  references_hash.store(item.reference, item.category_code)
+              historic_resources = BookingDataSystem::Booking.historic_stock(date_from.year)
+              historic_resources_hash = historic_resources.inject({}) do |result, item|
+                                          result.store(item.item_reference, item.item_category) unless result.has_key?(item.item_reference)
+                                          result
+                                        end
+              if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+                references << options[:reference]
+                references_hash.store(options[:reference], historic_resources_hash[options[:reference]])
+              elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+                historic_resources_hash.each do |key, value|
+                  if value == options[:product]
+                    references << key
+                    references_hash.store(key, value)
+                  end
+                end
+              else
+                references = historic_resources.map { |item| item.item_reference }
+                references.uniq!
+                references_hash = historic_resources_hash
               end
             end
-            
             # 2. Build the result structure
             result = {}
             days = (date_to - date_from).to_i
@@ -940,7 +1019,7 @@ module Yito
                  date_from, date_to,
                  date_from, date_to ] }.all(order: :date_from) 
 
-          end 
+          end
 
           private
     
