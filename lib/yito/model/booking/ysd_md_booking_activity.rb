@@ -41,7 +41,7 @@ module Yito
 
         # -- Multiple dates activities
 
-        has n, :activity_dates, 'ActivityDate', :constraint => :destroy
+        has n, :activity_dates, 'ActivityDate', :constraint => :destroy, :order => [:date_from.asc]
 
         # -- Cyclic activities
 
