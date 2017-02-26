@@ -66,5 +66,31 @@ module BookingDataSystem
 
      end
 
+     # --------------------------- Reservation items management -----------------------------------------
+
+     #
+     # Assign a resource
+     #
+     def assign_resource(new_booking_item_reference)
+
+       if new_booking_item_reference != self.booking_item_reference
+         if booking_item = ::Yito::Model::Booking::BookingItem.get(new_booking_item_reference)
+           self.booking_item_category = booking_item.category.code if booking_item.category
+           self.booking_item_reference = booking_item.reference
+           self.booking_item_stock_model = booking_item.stock_model
+           self.booking_item_stock_plate = booking_item.stock_plate
+           self.booking_item_characteristic_1 = booking_item.characteristic_1
+           self.booking_item_characteristic_2 = booking_item.characteristic_2
+           self.booking_item_characteristic_3 = booking_item.characteristic_3
+           self.booking_item_characteristic_4 = booking_item.characteristic_4
+           self.save
+         end
+       end
+
+     end
+
+     # -----------------------------------------------------------------------------------------------------------
+
+
   end
 end

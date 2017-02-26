@@ -6,6 +6,10 @@ require 'ysd_md_booking_flight'
 require 'ysd_md_booking_heightweight'
 require 'ysd_md_booking_pickup_return'
 require 'yito/model/booking/ysd_md_booking_activity_queries'
+require 'yito/model/booking/ysd_md_booking_shopping_cart_renting'
+require 'yito/model/booking/ysd_md_booking_shopping_cart_extra_renting'
+require 'yito/model/booking/ysd_md_booking_shopping_cart_item_renting'
+require 'yito/model/booking/ysd_md_booking_shopping_cart_item_resource_renting'
 require 'yito/model/booking/ysd_md_booking_activity_queries_mysql'
 require 'yito/model/booking/ysd_md_booking_activity_queries_postgresql'
 require 'yito/model/booking/ysd_md_booking_activity_queries_sqlite'
@@ -49,7 +53,10 @@ require 'ysd_md_booking_preservation'
 require 'ysd_md_booking_charge'
 require 'ysd_md_booking_charge_observer'
 require 'commands/ysd_new_booking_command'
+require 'yito/model/booking/ysd_md_booking_renting_search'
+require 'yito/model/booking/ysd_md_booking_renting_extra_search'
 
+require 'yito/model/booking/data_creation'
 require 'ysd_md_translation' unless defined?Yito::Translation
 
 module BookingDataSystem
@@ -57,6 +64,27 @@ module BookingDataSystem
 
   def self.r18n
     check_r18n!(:bookings_r18n, File.expand_path(File.join(File.dirname(__FILE__), '..', 'i18n')))
+  end
+
+  def self.pickup_places
+
+    place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
+    pickup_places = ::Yito::Model::Booking::PickupReturnPlace.all(:conditions => {:place_definition_id => place_definition.id, :is_pickup => true}, :order => [:name.asc])
+
+  end
+
+  def self.return_places
+    place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
+    return_places = ::Yito::Model::Booking::PickupReturnPlace.all(conditions: {:place_definition_id => place_definition.id, :is_return => true}, order: [:name.asc])          
+  end
+
+  def self.pickup_return_timetable
+  	['00:00','00:30','01:00','01:30','02:00','02:30','03:00','03:30',
+  	 '04:00','04:30','05:00','05:30','06:00','06:30','07:00','07:30',
+  	 '08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30',
+  	 '12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30',
+  	 '16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30',
+  	 '20:00','20:30','21:00','21:30','22:00','22:30','23:00','23:30']
   end
 
 end

@@ -69,12 +69,12 @@ module BookingDataSystem
      property :date_to, DateTime, :field => 'date_to', :required => true 
      property :time_to, String, :field => 'time_to', :required => false, :length => 5
           
-     property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10
-     property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10
-     property :time_from_cost, Decimal, :scale => 2, :precision => 10
-     property :time_to_cost, Decimal, :scale => 2, :precision => 10
+     property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10, :default => 0
+     property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10, :default => 0
+     property :time_from_cost, Decimal, :scale => 2, :precision => 10, :default => 0
+     property :time_to_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
-     property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10
+     property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10, :default => 0
      
      property :total_paid, Decimal, :field => 'total_paid', :scale => 2, :precision => 10, :default => 0
      property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
@@ -82,7 +82,7 @@ module BookingDataSystem
      property :pay_now, Boolean, :field => 'pay_now', :default => false
      property :force_allow_payment, Boolean, :field => 'force_allow_payment', :default => false
      property :payment, String, :field => 'payment', :length => 10
-     property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10
+     property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10, :default => 0
      property :payment_method_id, String, :field => 'payment_method_id', :length => 30
      has n, :booking_charges, 'BookingCharge', :child_key => [:booking_id], :parent_key => [:id]
      has n, :charges, 'Payments::Charge', :through => :booking_charges
@@ -92,6 +92,7 @@ module BookingDataSystem
      
      property :customer_name, String, :field => 'customer_name', :required => true, :length => 40
      property :customer_surname, String, :field => 'customer_surname', :required => true, :length => 40
+     property :customer_document_id, String, :length => 50
      property :customer_email, String, :field => 'customer_email', :required => true, :length => 40
      property :customer_phone, String, :field => 'customer_phone', :required => true, :length => 15 
      property :customer_mobile_phone, String, :field => 'customer_mobile_phone', :length => 15
@@ -125,17 +126,189 @@ module BookingDataSystem
      property :return_time, String, :length => 5
      property :return_agent, String, :length => 256
 
+     # --------------------------  CLASS METHODS -----------------------------------------------------------
+
+     def self.create_from_shopping_cart(shopping_cart)
+
+       begin
+         Booking.transaction do
+           # Create the booking
+           booking = Booking.create(date_from: shopping_cart.date_from,
+                          time_from: shopping_cart.time_from,
+                          date_to: shopping_cart.date_to,
+                          time_to: shopping_cart.time_to,
+                          item_cost: shopping_cart.item_cost,
+                          extras_cost: shopping_cart.extras_cost,
+                          time_from_cost: shopping_cart.time_from_cost,
+                          time_to_cost: shopping_cart.time_to_cost,
+                          product_deposit_cost: shopping_cart.product_deposit_cost,
+                          total_cost: shopping_cart.total_cost,
+                          booking_amount: shopping_cart.booking_amount,
+                          pay_now: shopping_cart.pay_now,
+                          payment_method_id: shopping_cart.payment_method_id,
+                          date_to_price_calculation: shopping_cart.date_to_price_calculation,
+                          days: shopping_cart.days,
+                          customer_name: shopping_cart.customer_name,
+                          customer_surname: shopping_cart.customer_surname,
+                          customer_email: shopping_cart.customer_email,
+                          customer_phone: shopping_cart.customer_phone,
+                          customer_mobile_phone: shopping_cart.customer_mobile_phone,
+                          customer_language: shopping_cart.customer_language,
+                          customer_document_id: shopping_cart.customer_document_id,
+                          promotion_code: shopping_cart.promotion_code,
+                          comments: shopping_cart.comments,
+                          number_of_adults: shopping_cart.number_of_adults,
+                          number_of_children: shopping_cart.number_of_children,
+                          driver_name: shopping_cart.driver_name,
+                          driver_surname: shopping_cart.driver_surname,
+                          driver_document_id: shopping_cart.driver_document_id,
+                          driver_date_of_birth: shopping_cart.driver_date_of_birth,
+                          driver_age_cost: shopping_cart.driver_age_cost,
+                          driver_driving_license_number: shopping_cart.driver_driving_license_number,
+                          driver_driving_license_date: shopping_cart.driver_driving_license_date,
+                          driver_driving_license_country: shopping_cart.driver_driving_license_country,
+                          pickup_place: shopping_cart.pickup_place,
+                          return_place: shopping_cart.return_place,
+                          pickup_place_cost: shopping_cart.pickup_place_cost,
+                          return_place_cost: shopping_cart.return_place_cost,
+                          flight_company: shopping_cart.flight_company,
+                          flight_number: shopping_cart.flight_number,
+                          flight_time: shopping_cart.flight_time)
+           # Create the items
+           shopping_cart.items.each do |shopping_cart_item|
+              booking_item = BookingLine.create(
+                                            booking: booking,
+                                            item_id: shopping_cart_item.item_id,
+                                            item_description: shopping_cart_item.item_description,
+                                            optional: shopping_cart_item.optional,
+                                            item_unit_cost_base: shopping_cart_item.item_unit_cost_base,
+                                            item_unit_cost: shopping_cart_item.item_unit_cost,
+                                            item_cost: shopping_cart_item.item_cost,
+                                            quantity: shopping_cart_item.quantity,
+                                            product_deposit_unit_cost: shopping_cart_item.product_deposit_unit_cost,
+                                            product_deposit_cost: shopping_cart_item.product_deposit_cost)
+             # Create the item resources
+             shopping_cart_item.item_resources.each do |shopping_cart_item_resource|
+               booking_item_resource = BookingLineResource.create(
+                                            booking_line: booking_item,
+                                            booking_item_category: shopping_cart_item_resource.booking_item_category,
+                                            booking_item_reference: shopping_cart_item_resource.booking_item_reference,
+                                            booking_item_stock_model: shopping_cart_item_resource.booking_item_stock_model,
+                                            booking_item_stock_plate: shopping_cart_item_resource.booking_item_stock_plate,
+                                            booking_item_characteristic_1: shopping_cart_item_resource.booking_item_characteristic_1,
+                                            booking_item_characteristic_2: shopping_cart_item_resource.booking_item_characteristic_2,
+                                            booking_item_characteristic_3: shopping_cart_item_resource.booking_item_characteristic_3,
+                                            booking_item_characteristic_4: shopping_cart_item_resource.booking_item_characteristic_4,
+                                            customer_height: shopping_cart_item_resource.customer_height,
+                                            customer_weight: shopping_cart_item_resource.customer_weight,
+                                            customer_2_height: shopping_cart_item_resource.customer_2_height,
+                                            customer_2_weight: shopping_cart_item_resource.customer_2_weight,
+                                            resource_user_name: shopping_cart_item_resource.resource_user_name,
+                                            resource_user_surname: shopping_cart_item_resource.resource_user_surname,
+                                            resource_user_document_id: shopping_cart_item_resource.resource_user_document_id,
+                                            resource_user_phone: shopping_cart_item_resource.resource_user_phone,
+                                            resource_user_email: shopping_cart_item_resource.resource_user_email,
+                                            resource_user_2_name: shopping_cart_item_resource.resource_user_2_name,
+                                            resource_user_2_surname: shopping_cart_item_resource.resource_user_2_surname,
+                                            resource_user_2_document_id: shopping_cart_item_resource.resource_user_2_document_id,
+                                            resource_user_2_phone: shopping_cart_item_resource.resource_user_2_phone,
+                                            resource_user_2_email: shopping_cart_item_resource.resource_user_2_email)
+             end
+           end
+
+           # Create the extras
+           shopping_cart.extras.each do |shopping_cart_extra|
+              booking_extra = BookingExtra.create(booking: booking,
+                                                  extra_id: shopping_cart_extra.extra_id,
+                                                  extra_description: shopping_cart_extra.extra_description,
+                                                  extra_unit_cost: shopping_cart_extra.extra_unit_cost,
+                                                  extra_cost: shopping_cart_extra.extra_cost,
+                                                  quantity: shopping_cart_extra.quantity
+              )
+           end
+
+           booking.reload
+
+         end
+       rescue DataMapper::SaveFailureError => error
+         p "Error creating booking from shopping cart #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
+         raise error
+       end
+
+
+     end
+
      #
      # Get a booking by its free access id
      #
      # @parm [String] free access id
-     # @return [Booking] 
+     # @return [Booking]
+     #
      def self.get_by_free_access_id(free_id)
-        first({:free_access_id => free_id})
-     end 
-     
-     def category
-       booking_lines and booking_lines.size > 0 ? ::Yito::Model::Booking::BookingCategory.get(booking_lines[0].item_id) : nil
+       first({:free_access_id => free_id})
+     end
+
+     #
+     # Check if a date is in the payment cadence
+     #
+     def self.payment_cadence?(date_from)
+
+       conf_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence', '0').to_i
+
+       cadence_from = DateTime.parse("#{date_from.strftime('%Y-%m-%d')}T00:00:00")
+       cadence_payment = (cadence_from.to_time - DateTime.now.to_time) / 3600
+       cadence_payment > conf_payment_cadence
+
+     end
+
+     # --------------------------  INSTANCE METHODS -------------------------------------------------------
+
+     #
+     # Before create hook (initilize fields)
+     #
+     before :create do |booking|
+       booking.creation_date = Time.now if booking.creation_date.nil?
+       booking.free_access_id = Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{rand}")
+       booking.item_cost ||= 0
+       booking.extras_cost ||= 0
+       booking.time_from_cost ||= 0
+       booking.time_to_cost ||= 0
+       booking.product_deposit_cost ||= 0
+       booking.total_cost ||= 0
+       booking.total_paid ||= 0
+       booking.total_pending ||= 0
+       booking.booking_amount ||= 0
+       booking.total_pending = booking.total_cost - booking.total_paid
+     end
+
+     #
+     # Before save hook (clear leading and trailing whitespaces)
+     #
+     before :save do |booking|
+       # Calculate days and date_to_price_calculation
+       cadence_hours = SystemConfiguration::Variable.get_value('booking.hours_cadence',2).to_i
+       booking.days = (booking.date_to - booking.date_from).to_i
+       booking.date_to_price_calculation = booking.date_to
+
+       begin
+         _t_from = DateTime.strptime(booking.time_from,"%H:%M")
+         _t_to = DateTime.strptime(booking.time_to,"%H:%M")
+         if _t_to > _t_from
+           hours_of_difference = (_t_to - _t_from).to_f.modulo(1) * 24
+           if hours_of_difference > cadence_hours
+             booking.days += 1
+             booking.date_to_price_calculation += 1
+           end
+         end
+       rescue
+         p "Time from or time to are not valid #{booking.time_from} #{booking.time_from}"
+       end
+
+       # Strip spaces in customer information (search purposes)
+       booking.customer_name.strip! unless booking.customer_name.nil?
+       booking.customer_surname.strip! unless booking.customer_surname.nil?
+       booking.customer_phone.strip! unless booking.customer_phone.nil?
+
      end
 
      #
@@ -143,50 +316,211 @@ module BookingDataSystem
      #
      def save
        result = true
+
        if new?
-         transaction do 
+         transaction do
            begin
              result = super
            rescue DataMapper::SaveFailureError => error
-             p "Error saving booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
+             p "Error creating booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
              raise error 
            end
            reload
-           #unless created_by_manager
-           if pay_now 
-             notify_manager_pay_now
-             notify_request_to_customer_pay_now
-           else
-             notify_manager
-             notify_request_to_customer
-           end
-           #end 
+           send_booking_notifications if booking_lines.size > 0
          end
        else
-         result = super
+         begin
+           result = super
+         rescue DataMapper::SaveFailureError => error
+           p "Error updating booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
+           raise error
+         end
        end
+
        return result
      end
-     
+
      #
-     # Before create hook (initilize fields)
+     # Notify that a new booking has been received
      #
-     before :create do |booking|
-       booking.creation_date = Time.now if not booking.creation_date
-       booking.total_pending = total_cost
-       booking.free_access_id = 
-         Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{rand}")
+     def send_booking_notifications
+       if pay_now
+         notify_manager_pay_now
+         notify_request_to_customer_pay_now
+       else
+         notify_manager
+         notify_request_to_customer
+       end
      end
-     
+
+     # --------------------------- Reservation items management -----------------------------------------
+
      #
-     # Before save hook (clear leading and trailing whitespaces)
+     # Add a booking line to the reservation
      #
-     before :save do |booking|
-       booking.customer_name.strip! unless booking.customer_name.nil?
-       booking.customer_surname.strip! unless booking.customer_surname.nil?
-       booking.customer_phone.strip! unless booking.customer_phone.nil?
+     def add_booking_line(item_id, quantity)
+
+       product_lines = self.booking_lines.select do |booking_line|
+         booking_line.item_id == item_id
+       end
+       if product_lines.empty?
+         if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
+           booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
+           product_unit_cost = product.unit_price(self.date_from, self.days)
+           product_deposit_cost = product.deposit
+           transaction do
+             # Create booking line
+             booking_line = BookingDataSystem::BookingLine.new
+             booking_line.booking = self
+             booking_line.item_id = item_id
+             booking_line.item_description = product.name
+             booking_line.item_unit_cost_base = product_unit_cost
+             booking_line.item_unit_cost = product_unit_cost
+             booking_line.item_cost = product_unit_cost * quantity
+             booking_line.quantity = quantity
+             booking_line.product_deposit_unit_cost = product_deposit_cost
+             booking_line.product_deposit_cost = product_deposit_cost * quantity
+             booking_line.save
+             # Create booking line resources
+             (1..quantity).each do |resource_number|
+               booking_line_resource = BookingDataSystem::BookingLineResource.new
+               booking_line_resource.booking_line = booking_line
+               booking_line_resource.save
+             end
+             # Update booking cost
+             item_cost_increment = product_unit_cost * quantity
+             deposit_cost_increment = product_deposit_cost * quantity
+             total_cost_increment = item_cost_increment + deposit_cost_increment
+             self.item_cost += item_cost_increment
+             self.product_deposit_cost += deposit_cost_increment
+             self.total_cost += total_cost_increment
+             self.total_pending += total_cost_increment
+             self.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+             self.save
+           end
+         end
+       end
      end
-     
+
+     #
+     # Add a booking extra to the reservation
+     #
+     def add_booking_extra(extra_id, quantity)
+
+       booking_extras = self.booking_extras.select do |booking_extra|
+         booking_extra.extra_id == extra_id
+       end
+
+       if booking_extras.empty?
+         if extra = ::Yito::Model::Booking::BookingExtra.get(extra_id)
+           booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
+           extra_unit_cost = extra.unit_price(self.date_from, self.days)
+           self.transaction do
+             # Create the booking extra line
+             booking_extra = BookingDataSystem::BookingExtra.new
+             booking_extra.booking = self
+             booking_extra.extra_id = extra_id
+             booking_extra.extra_description = extra.name
+             booking_extra.quantity = quantity
+             booking_extra.extra_unit_cost = extra_unit_cost
+             booking_extra.extra_cost = extra_unit_cost * quantity
+             booking_extra.save
+             # Updates the booking
+             extra_cost_increment = extra_unit_cost * quantity
+             total_cost_increment = extra_cost_increment
+             self.extras_cost += extra_cost_increment
+             self.total_cost += total_cost_increment
+             self.total_pending += total_cost_increment
+             self.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+             self.save
+           end
+         end
+       end
+
+     end
+
+     #
+     # Destroy a booking extra
+     #
+     def destroy_booking_extra(extra_id)
+
+       booking_extras = self.booking_extras.select do |booking_extra|
+         booking_extra.extra_id == extra_id
+       end
+
+       if booking_extra = booking_extras.first
+         booking_extra.transaction do
+           self.extras_cost -= booking_extra.extra_cost
+           self.total_cost -= booking_extra.extra_cost
+           if self.total_pending < booking_extra.extra_cost
+             self.total_pending = 0
+           else
+             self.total_pending -= booking_extra.extra_cost
+           end
+           booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
+           self.booking_amount -= (booking_extra.extra_cost * booking_deposit / 100).round unless booking_deposit == 0
+           self.save
+           booking_extra.destroy
+         end
+         self.reload
+       end
+
+     end
+
+     #
+     # Add a booking charge
+     #
+     def add_booking_charge(date, amount, payment_method_id)
+
+       self.transaction do
+         charge = Payments::Charge.new
+         charge.date = date
+         charge.amount = amount
+         charge.payment_method_id = payment_method_id
+         charge.status = :pending
+         charge.currency = SystemConfiguration::Variable.get_value('payments.default_currency', 'EUR')
+         charge.save
+         booking_charge = BookingDataSystem::BookingCharge.new
+         booking_charge.booking = self
+         booking_charge.charge = charge
+         booking_charge.save
+         charge.update(:status => :done)
+         self.reload
+       end
+
+     end
+
+     #
+     # Destroy a booking charge
+     #
+     def destroy_booking_charge(charge_id)
+
+       if booking_charge = BookingDataSystem::BookingCharge.first(:booking_id => self.id,
+                                                                  :charge_id => charge_id)
+         charge = booking_charge.charge
+         booking_charge.transaction do
+           if charge.status == :done
+             self.total_paid -= charge.amount
+             self.total_pending += charge.amount
+             self.save
+           end
+           charge.destroy
+           booking_charge.destroy
+         end
+         self.reload
+       end
+
+     end
+
+     # -----------------------------------------------------------------------------------------------------------
+
+     #
+     # Get the category of the reserved items
+     #
+     def category
+       booking_lines and booking_lines.size > 0 ? ::Yito::Model::Booking::BookingCategory.get(booking_lines[0].item_id) : nil
+     end
+
      #
      # Check if the reservation has expired
      #
@@ -236,18 +570,6 @@ module BookingDataSystem
 
      end
 
-     #
-     # Check if the reservation is within the cadence period
-     #
-     def self.payment_cadence?(date_from)
-
-         conf_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence', '0').to_i
-
-         cadence_from = DateTime.parse("#{date_from.strftime('%Y-%m-%d')}T00:00:00")
-         cadence_payment = (cadence_from.to_time - DateTime.now.to_time) / 3600
-         cadence_payment > conf_payment_cadence
-
-     end
 
      alias_method :is_expired, :expired?
      alias_method :can_pay, :can_pay?
@@ -334,13 +656,15 @@ module BookingDataSystem
      #
      # @return [Booking]
      #
-     def confirm
+     def confirm(notify_parts=true)
        if status == :pending_confirmation and
           not charges.select { |charge| charge.status == :done }.empty?
          self.status = :confirmed
-         save
-         notify_manager_confirmation 
-         notify_customer
+         self.save
+         if notify_parts
+           notify_manager_confirmation
+           notify_customer
+         end
        else
          p "Could not confirm booking #{id} #{status}"
        end
