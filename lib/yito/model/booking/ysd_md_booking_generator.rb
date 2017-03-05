@@ -37,7 +37,8 @@ module Yito
           pickup_return_timetable = pickup_return_timetable_id > 0 ? ::Yito::Model::Calendar::Timetable.get(pickup_return_timetable_id) : nil
           pickup_return_timetable_out_price = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_price', 0).to_i
           calendar_mode = SystemConfiguration::Variable.get_value('booking.renting_calendar_season_mode','first_day')
-
+          translatable_languages = ::Model::Translation::TranslationLanguage.find_translatable_languages
+          
           template_file = File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "..", "..",
              "templates", "booking.js.erb"))
           template = ERB.new File.read(template_file)
