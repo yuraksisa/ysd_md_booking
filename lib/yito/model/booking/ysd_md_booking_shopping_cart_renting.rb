@@ -72,7 +72,9 @@ module Yito
 				#
 				# Change selection data : date from/to, pickup/return place
 				#
-				def change_selection_data(date_from, time_from, date_to, time_to, pickup_place, return_place)
+				def change_selection_data(date_from, time_from, date_to, time_to,
+																	pickup_place, return_place,
+																	number_of_adults, number_of_children)
 
 					transaction do
 					  self.date_from = date_from
@@ -81,6 +83,8 @@ module Yito
 						self.time_to = time_to
 						self.pickup_place = pickup_place
 						self.return_place = return_place
+						self.number_of_adults = number_of_adults
+						self.number_of_children = number_of_children
 						self.calculate_renting_days
 					  self.save
 						# Recalculate items
