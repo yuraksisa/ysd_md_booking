@@ -50,6 +50,8 @@ module Yito
   		 #
   		 def self.search(from, to, days, product_code=nil)
 
+				 domain = SystemConfiguration::Variable.get_value('site.domain')
+
   		   result = []
 
   		   # Check the 'real' occupation
@@ -110,7 +112,8 @@ module Yito
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
-  		   	           	                 photo, full_photo,
+  		   	           	         photo.match(/^https?:/) ? photo : File.join(domain, photo),
+															 full_photo.match(/^https?:/) ? full_photo : File.join(domain, full_photo),
   		   	           					 base_price, price, deposit, 
   		   	           					 available, stock, busy, payment_available)
   		   	        end
