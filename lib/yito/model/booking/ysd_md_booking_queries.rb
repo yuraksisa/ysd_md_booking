@@ -1180,8 +1180,9 @@ module Yito
           end
 
           def query_strategy
-      
-            @query_strategy ||= 
+
+            # Removed for multi-tenant solution
+            #@query_strategy ||= 
                if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
                  PostgresqlQueries.new(repository)
                else
