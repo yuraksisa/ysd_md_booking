@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "ysd_md_booking"
-  s.version = "0.4.4"
+  s.version = "0.4.5"
   s.authors = ["Yurak Sisa Dream"]
   s.date    = "2012-03-06"
   s.email   = ["yurak.sisa.dream@gmail.com"]
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
       
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
+  s.add_development_dependency "rspec-its"
   s.add_development_dependency "dm-sqlite-adapter" # Model testing using sqlite
 
 end

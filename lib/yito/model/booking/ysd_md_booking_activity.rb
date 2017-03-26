@@ -9,7 +9,8 @@ module Yito
         include DataMapper::Resource
         extend  Plugins::ApplicableModelAspect          
         extend  Yito::Model::Finder
-
+        include Yito::Model::Booking::BookingActivityTranslation
+        
         storage_names[:default] = 'bookds_activities'
         
         # -- Basic attributes

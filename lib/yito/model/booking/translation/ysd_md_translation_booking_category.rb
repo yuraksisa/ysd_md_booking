@@ -29,7 +29,7 @@ module Yito
               if booking_category_translation
                 booking_category_translation.set_translated_attributes(language_code, attributes)
               else
-                translation = Model::Translation::Translation.create_with_terms(language_code, attributes)
+                translation = ::Model::Translation::Translation.create_with_terms(language_code, attributes)
                 booking_category_translation = BookingCategoryTranslation.create({
                                                   :booking_category => ::Yito::Model::Booking::BookingCategory.get(booking_category_code),
                                                   :translation => translation})
@@ -51,7 +51,7 @@ module Yito
           #
           def get_translated_attributes(language_code)
 
-            Model::Translation::TranslationTerm.find_translations_by_language(translation.id, language_code)
+            ::Model::Translation::TranslationTerm.find_translations_by_language(translation.id, language_code)
 
           end
 
