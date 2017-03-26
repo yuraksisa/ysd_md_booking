@@ -1,4 +1,5 @@
 require 'ysd_md_booking'
+require 'rspec/its'
 
 module DataMapper
   class Transaction
