@@ -14,7 +14,8 @@ module Yito
         include DataMapper::Resource
         extend  Plugins::ApplicableModelAspect           # Extends the entity to allow apply aspects
         extend  Yito::Model::Finder
-
+        include Yito::Model::Booking::BookingExtraTranslation
+        
         storage_names[:default] = 'bookds_extras'
 
         property :code, String, :field => 'code', :length => 50, :key => true      

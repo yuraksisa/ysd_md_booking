@@ -4,6 +4,8 @@ module Yito
 
       module BookingActivityTranslation
 
+        attr_accessor :language_code
+        
         #
         # Translate the booking category into the language code
         #
@@ -25,6 +27,8 @@ module Yito
             booking_activity = self
           end
 
+          booking_activity.language_code = language_code          
+          
           return booking_activity
 
         end

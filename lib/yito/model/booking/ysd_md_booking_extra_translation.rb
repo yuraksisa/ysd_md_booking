@@ -4,6 +4,8 @@ module Yito
 
       module BookingExtraTranslation
 
+        attr_accessor :language_code
+        
         #
         # Translate the booking extra into the language code
         #
@@ -25,6 +27,8 @@ module Yito
             booking_extra = self
           end
 
+          booking_extra.language_code = language_code
+          
           return booking_extra
 
         end

@@ -79,14 +79,26 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
     /** Define the families **/	              
     families : {
               <% booking_categories.each do |booking_category| %>
-                '<%=booking_category.code%>': { family: '<%=booking_category.code%>', 
+                '<%=booking_category.code%>': {
+                   family: '<%=booking_category.code%>',
                    description:'<%=booking_category.name%>', 
                    fullDescription:'<%=booking_category.description.nil? ? "" : booking_category.description.gsub(/\n/,"<br/>")%>',
                    cars:'<%=booking_category.short_description%>',
                    photo:'<%=booking_category.photo_url_medium%>',
                    capacity: <%=booking_category.capacity%>,
                    detailedPrice: <%=booking_category.price_definition and booking_category.price_definition.units_management == :detailed%>,
-                   deposit: <%='%.2f' % booking_category.deposit%>},
+                   deposit: <%='%.2f' % booking_category.deposit%>,
+                   translations: {
+                      <% translatable_languages.each do |translation_language| %>
+                        <% translated_category = booking_category.translate(translation_language.code) %>
+                        '<%=translation_language.code%>': {
+                            description: '<%= translated_category.name %>',
+                            fullDescription: '<%= translated_category.description.nil? ? "" : translated_category.description.gsub(/\n/,"<br/>") %>',
+                            cars: '<%= translated_category.short_description %>'
+                        },
+                      <% end %>
+                   }
+                },
               <% end %>
              },
   
@@ -139,12 +151,23 @@ define('booking_js', ['/booking/js/YSDRates.js'], function(YSDRates){
     extras : {
    	 
       <% booking_extras.each do |booking_extra| %>
-        '<%=booking_extra.code%>': new YSDRates.Extra('<%=booking_extra.code%>', 
-            '<%=booking_extra.name%>', <%=booking_extra.max_quantity%>,
+        '<%=booking_extra.code%>': new YSDRates.Extra(
+            '<%=booking_extra.code%>',
+            '<%=booking_extra.name%>',
+            '<%=booking_extra.description%>',
+            <%=booking_extra.max_quantity%>,
             [], 
-            <%=booking_extra.price_definition and booking_extra.price_definition.units_management == :detailed%>),
-      <% end %>
-   	 
+            <%=booking_extra.price_definition and booking_extra.price_definition.units_management == :detailed%>,
+            {
+              <% translatable_languages.each do |translation_language| %>
+                <% translated_extra = booking_extra.translate(translation_language.code) %>
+                  '<%=translation_language.code%>': {
+                     name: '<%= translated_extra.name %>',
+                     description: '<%= translated_extra.description.nil? ? "" : translated_extra.description.gsub(/\n/,"<br/>") %>',
+                  },
+               <% end %>
+            }),
+            <% end %>
     },
 
     extrasRates : {
