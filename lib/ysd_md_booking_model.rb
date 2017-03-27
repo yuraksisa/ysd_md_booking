@@ -130,10 +130,15 @@ module BookingDataSystem
 
      def self.create_from_shopping_cart(shopping_cart)
 
+       booking = nil
+       booking_item = nil
+       booking_item_resource = nil
+       booking_extra = nil
+
        begin
          Booking.transaction do
            # Create the booking
-           booking = Booking.create(date_from: shopping_cart.date_from,
+           booking = Booking.new(date_from: shopping_cart.date_from,
                           time_from: shopping_cart.time_from,
                           date_to: shopping_cart.date_to,
                           time_to: shopping_cart.time_to,
@@ -174,9 +179,10 @@ module BookingDataSystem
                           flight_company: shopping_cart.flight_company,
                           flight_number: shopping_cart.flight_number,
                           flight_time: shopping_cart.flight_time)
+           booking.save
            # Create the items
            shopping_cart.items.each do |shopping_cart_item|
-              booking_item = BookingLine.create(
+              booking_item = BookingLine.new(
                                             booking: booking,
                                             item_id: shopping_cart_item.item_id,
                                             item_description: shopping_cart_item.item_description,
@@ -187,9 +193,10 @@ module BookingDataSystem
                                             quantity: shopping_cart_item.quantity,
                                             product_deposit_unit_cost: shopping_cart_item.product_deposit_unit_cost,
                                             product_deposit_cost: shopping_cart_item.product_deposit_cost)
+               booking_item.save
              # Create the item resources
              shopping_cart_item.item_resources.each do |shopping_cart_item_resource|
-               booking_item_resource = BookingLineResource.create(
+               booking_item_resource = BookingLineResource.new(
                                             booking_line: booking_item,
                                             booking_item_category: shopping_cart_item_resource.booking_item_category,
                                             booking_item_reference: shopping_cart_item_resource.booking_item_reference,
@@ -213,25 +220,31 @@ module BookingDataSystem
                                             resource_user_2_document_id: shopping_cart_item_resource.resource_user_2_document_id,
                                             resource_user_2_phone: shopping_cart_item_resource.resource_user_2_phone,
                                             resource_user_2_email: shopping_cart_item_resource.resource_user_2_email)
+               booking_item_resource.save
              end
            end
 
            # Create the extras
            shopping_cart.extras.each do |shopping_cart_extra|
-              booking_extra = BookingExtra.create(booking: booking,
+              booking_extra = BookingExtra.new(booking: booking,
                                                   extra_id: shopping_cart_extra.extra_id,
                                                   extra_description: shopping_cart_extra.extra_description,
                                                   extra_unit_cost: shopping_cart_extra.extra_unit_cost,
                                                   extra_cost: shopping_cart_extra.extra_cost,
-                                                  quantity: shopping_cart_extra.quantity
-              )
+                                                  quantity: shopping_cart_extra.quantity)
+              booking_extra.save
            end
 
            booking.reload
 
          end
        rescue DataMapper::SaveFailureError => error
-         p "Error creating booking from shopping cart #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
+         p "Error creating booking from shopping cart #{error} "
+         p "Error in booking : #{booking.errors.full_messages.inspect}" if booking and booking.errors
+         p "Error in booking item : #{booking_item.errors.full_messages.inspect}" if booking_item and booking_item.errors
+         p "Error in booking item resource : #{booking_item_resource.errors.full_messages.inspect}" if booking_item_resource and booking_item_resource.errors
+         p "Error in booking extra : #{booking_extra.errors.full_messages.inspect}" if booking_extra and booking_extra.errors
+         p "Error detail"
          raise error
        end
 
