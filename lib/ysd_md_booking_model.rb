@@ -128,9 +128,13 @@ module BookingDataSystem
 
      # --------------------------  CLASS METHODS -----------------------------------------------------------
 
+     #
+     # Create a reservation from a shopping cart
+     #
      def self.create_from_shopping_cart(shopping_cart)
 
        booking = nil
+       booking_driver_address = nil
        booking_item = nil
        booking_item_resource = nil
        booking_extra = nil
@@ -180,6 +184,21 @@ module BookingDataSystem
                           flight_number: shopping_cart.flight_number,
                           flight_time: shopping_cart.flight_time)
            booking.save
+
+           if shopping_cart.driver_address
+             booking_driver_address = LocationDataSystem::Address.new(
+             street: shopping_cart.driver_address.street,
+                      number: shopping_cart.driver_address.number,
+                      complement: shopping_cart.driver_address.complement,
+                      city: shopping_cart.driver_address.city,
+                      state: shopping_cart.driver_address.state,
+                      country: shopping_cart.driver_address.country,
+                      zip: shopping_cart.driver_address.zip)
+             booking_driver_address.save
+             booking.driver_address = booking_driver_address
+             booking.save
+           end
+
            # Create the items
            shopping_cart.items.each do |shopping_cart_item|
               booking_item = BookingLine.new(
@@ -241,6 +260,7 @@ module BookingDataSystem
        rescue DataMapper::SaveFailureError => error
          p "Error creating booking from shopping cart #{error} "
          p "Error in booking : #{booking.errors.full_messages.inspect}" if booking and booking.errors
+         p "Error in booking driver address : #{booking_driver_address.errors.full_messages.inspect}" if booking_driver_address and booking_driver_address.errors
          p "Error in booking item : #{booking_item.errors.full_messages.inspect}" if booking_item and booking_item.errors
          p "Error in booking item resource : #{booking_item_resource.errors.full_messages.inspect}" if booking_item_resource and booking_item_resource.errors
          p "Error in booking extra : #{booking_extra.errors.full_messages.inspect}" if booking_extra and booking_extra.errors

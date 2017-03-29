@@ -51,6 +51,12 @@ module BookingDataSystem
      if model.respond_to?(:belongs_to)
        model.belongs_to :driver_address, 'LocationDataSystem::Address', :required => false # The driver address
      end
+      
+     if model.respond_to?(:after)
+       model.after :destroy do
+         driver_address.destroy unless driver_address.nil?
+       end
+     end  
 
    end
   end #BookingDriver  
