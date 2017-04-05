@@ -284,11 +284,15 @@ module BookingDataSystem
      #
      # Check if a date is in the payment cadence
      #
-     def self.payment_cadence?(date_from)
+     def self.payment_cadence?(date_from,time_from=nil)
 
        conf_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence', '0').to_i
 
-       cadence_from = DateTime.parse("#{date_from.strftime('%Y-%m-%d')}T00:00:00")
+       if time_from.nil?
+         cadence_from = DateTime.parse("#{date_from.strftime('%Y-%m-%d')}T00:00:00")
+       else
+         cadence_from = DateTime.parse("#{date_from.strftime('%Y-%m-%d')}T#{time_from}")
+       end
        cadence_payment = (cadence_from.to_time - DateTime.now.to_time) / 3600
        cadence_payment > conf_payment_cadence
 

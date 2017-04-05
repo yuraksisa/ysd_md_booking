@@ -108,7 +108,8 @@ module Yito
   		   	           # Get the availability
   		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
   		   	           busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
-  		   	           available = categories_available.include?(item.code) && stock > busy
+  		   	           available = categories_available.include?(item.code) # Calendar lock
+										 available = available && (stock > busy) if item.stock_control # Stock
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
