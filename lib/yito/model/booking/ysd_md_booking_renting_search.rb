@@ -27,17 +27,19 @@ module Yito
 
   		 def as_json(options={})
 
-  		 	   {code: @code,
+  		 	   {
+					  code: @code,
   		 	   	name: @name,
-  		 		short_description: @short_description,
-  		 		description: @description,
-  		 		photo: @photo,
-  		 		full_photo: @full_photo,
-  		 		base_price: @base_price,
-  		 		price: @price,
-  		 		deposit: @deposit,
-  		 		availability: @availability,
-  		 		payment_availibility: @payment_availibility}
+  		 		  short_description: @short_description,
+  		 		  description: @description,
+  		 		  photo: @photo,
+  		 		  full_photo: @full_photo,
+  		 		  base_price: @base_price,
+  		 		  price: @price,
+  		 		  deposit: @deposit,
+  		 		  availability: @availability,
+  		 		  payment_availibility: @payment_availibility
+					 }
 
   		 end
 
@@ -55,16 +57,16 @@ module Yito
   		   result = []
 
   		   # Check the 'real' occupation
-           occupation = BookingDataSystem::Booking.occupation(from, to).map do |item|  
-                			{item_id: item.item_id, stock: item.stock, busy: item.busy}
-                		end
+         occupation = BookingDataSystem::Booking.occupation(from, to).map do |item|
+                 			  {item_id: item.item_id, stock: item.stock, busy: item.busy}
+                		  end
 
-           occupation_hash = occupation.inject({}) do |result,item| 
-             result.store(item[:item_id], item.select {|key,value| key != :item_id}) 
-             result 
-           end                		
+         occupation_hash = occupation.inject({}) do |result,item|
+           result.store(item[:item_id], item.select {|key,value| key != :item_id})
+           result
+         end
 
-           # Check the calendar     		
+         # Check the calendar
   		   categories_available = Availability.instance.categories_available(from, to)
   		   categories_payment_enabled = Availability.instance.categories_payment_enabled(from, to)
 
@@ -97,7 +99,7 @@ module Yito
   		   	           	    when :amount
   		   	           	        discount = general_discount.value 
   		   	           	  end	
-	           		   end 
+	           		     end
 
   		   	           base_price = product_price
   		   	           price = (product_price - discount)
@@ -106,9 +108,7 @@ module Yito
   		   	           # Get the availability
   		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
   		   	           busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
-  		   	           available = categories_available.include?(item.code) and
-  		  	           			   stock > busy 
-  		   	           
+  		   	           available = categories_available.include?(item.code) && stock > busy
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
