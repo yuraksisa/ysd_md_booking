@@ -1,6 +1,9 @@
 module Yito
   module Model
   	module Booking
+			#
+			# Search extras and prices
+			#
   	  class RentingExtraSearch
 
   	     attr_reader :code, :name, :description, 

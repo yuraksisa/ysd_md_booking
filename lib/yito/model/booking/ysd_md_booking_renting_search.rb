@@ -1,6 +1,9 @@
 module Yito
   module Model
   	module Booking
+			#
+			# Search products, prices and availability
+			#
   	  class RentingSearch	
   		 attr_accessor :code, :name, :short_description, :description, :photo, :full_photo,
   		 			   :base_price, :price, :deposit, 

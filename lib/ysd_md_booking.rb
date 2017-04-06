@@ -55,6 +55,7 @@ require 'ysd_md_booking_charge_observer'
 require 'commands/ysd_new_booking_command'
 require 'yito/model/booking/ysd_md_booking_renting_search'
 require 'yito/model/booking/ysd_md_booking_renting_extra_search'
+require 'yito/model/booking/ysd_md_booking_renting_calculator'
 
 require 'yito/model/booking/data_creation'
 require 'ysd_md_translation' unless defined?Yito::Translation
