@@ -10,9 +10,9 @@ module Yito
   		 			   :availability, :stock, :busy, :payment_availibility
 
   		 def initialize(code, name, short_description, description,
-  		 	            photo, full_photo,
-  		 				base_price=0, price=0, deposit=0,
-  		 				availability=false,stock=0, busy=0, payment_availibility=false)
+  		 	              photo, full_photo,
+  		 				        base_price=0, price=0, deposit=0,
+  		 				        availability=false,stock=0, busy=0, payment_availibility=false, full_information=false)
   		   @code = code
   		   @name = name
   		   @short_description = short_description
@@ -25,12 +25,13 @@ module Yito
   		   @availability = availability
   		   @stock = stock
   		   @busy = busy
-  		   @payment_availibility = payment_availibility 
+  		   @payment_availibility = payment_availibility
+				 @full_information = full_information
   		 end
 
   		 def as_json(options={})
 
-  		 	   {
+  		 	   result = {
 					  code: @code,
   		 	   	name: @name,
   		 		  short_description: @short_description,
@@ -44,6 +45,10 @@ module Yito
   		 		  payment_availibility: @payment_availibility
 					 }
 
+					 result.merge!(stock: @stock, busy: @busy) if @full_information
+
+				   result
+
   		 end
 
   		 def to_json(*options)
@@ -53,7 +58,7 @@ module Yito
   		 #
   		 # Search products, price and availability
   		 #
-  		 def self.search(from, to, days, product_code=nil)
+  		 def self.search(from, to, days, full_information=false, product_code=nil)
 
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
@@ -119,7 +124,7 @@ module Yito
   		   	           	         photo.match(/^https?:/) ? photo : File.join(domain, photo),
 															 full_photo.match(/^https?:/) ? full_photo : File.join(domain, full_photo),
   		   	           					 base_price, price, deposit, 
-  		   	           					 available, stock, busy, payment_available)
+  		   	           					 available, stock, busy, payment_available, full_information)
   		   	        end
   		   
   		   return product_code.nil? ? result : result.first	        

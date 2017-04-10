@@ -9,11 +9,11 @@ module Yito
         attr_reader :days, :date_to_price_calculation,
                     :time_from_cost, :time_to_cost,
                     :pickup_place_cost, :return_place_cost,
-                    :age, :age_cost, :age_valid, :supplements_cost, :valid, :error
+                    :age, :under_age, :age_cost, :age_valid, :supplements_cost, :valid, :error
 
         def initialize(date_from, time_from, date_to,
                        time_to, pickup_place=nil, return_place=nil,
-                       date_of_birth=nil)
+                       date_of_birth=nil, under_age=false)
 
           @date_from = date_from
           @time_from = time_from
@@ -22,6 +22,7 @@ module Yito
           @pickup_place = pickup_place
           @return_place = return_place
           @date_of_birth = date_of_birth
+          @under_age = under_age
           @age = age_in_completed_years unless date_of_birth.nil?
 
           @days = 0
@@ -55,6 +56,7 @@ module Yito
             calculate_pickup_return_place_cost if @valid && @item_family.pickup_return_place
             @age_valid = check_age_valid if @valid && @item_family.driver && !@date_of_birth.nil?
             @age_cost = calculate_age_cost if @valid && @item_family.driver && !@date_of_birth.nil?
+            @age_cost = @min_age_cost if @valid && @age_cost == 0 && @under_age
             @supplements_cost = @time_from_cost + @time_to_cost + @pickup_place_cost + @return_place_cost + @age_cost
           else
             @valid = false
@@ -189,7 +191,7 @@ module Yito
         def calculate_time_cost(date, time, time_cost, timetable)
 
           price = BigDecimal.new("0")
-          day = date.day
+          day = date.wday
           time_parts = time.split(':')
           if time_parts.size == 2
             time_parts[0] = time_parts.first.rjust(2, '0')
@@ -202,7 +204,7 @@ module Yito
               when 1
                 price = time_cost if !timetable.timetable_monday ||
                                      time < timetable.timetable_monday_from  ||
-                                     time > timetable.timetable_sunday_monday_to
+                                     time > timetable.timetable_monday_to
               when 2
                 price = time_cost if !timetable.timetable_monday ||
                                      time < timetable.timetable_tuesday_from  ||

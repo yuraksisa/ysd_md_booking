@@ -173,6 +173,8 @@ module BookingDataSystem
                           driver_document_id: shopping_cart.driver_document_id,
                           driver_date_of_birth: shopping_cart.driver_date_of_birth,
                           driver_age_cost: shopping_cart.driver_age_cost,
+                          driver_under_age: shopping_cart.driver_under_age,
+                          driver_age: shopping_cart.driver_age,
                           driver_driving_license_number: shopping_cart.driver_driving_license_number,
                           driver_driving_license_date: shopping_cart.driver_driving_license_date,
                           driver_driving_license_country: shopping_cart.driver_driving_license_country,

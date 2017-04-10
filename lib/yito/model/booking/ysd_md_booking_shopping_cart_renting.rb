@@ -61,9 +61,38 @@ module Yito
 					first({:free_access_id => free_id})
 				end
 
+				#
+				# Create a new reservation from a booking
+				#
+				def update_from_booking(booking)
+					self.customer_name = booking.customer_name
+					self.customer_surname = booking.customer_surname
+					self.customer_email = booking.customer_email
+					self.customer_phone = booking.customer_phone
+					self.customer_mobile_phone = booking.customer_mobile_phone
+					self.customer_language = booking.customer_language
+					self.customer_document_id = booking.customer_document_id
+					self.driver_name = booking.driver_name
+					self.driver_surname = booking.driver_surname
+					self.driver_document_id = booking.driver_document_id
+					self.driver_date_of_birth = booking.driver_date_of_birth
+					self.driver_driving_license_number = booking.driver_driving_license_number
+					self.driver_driving_license_date = booking.driver_driving_license_date
+					self.driver_driving_license_country = booking.driver_driving_license_country
+					if self.driver_address.nil?
+						self.driver_address = LocationDataSystem::Address.new
+					end
+					self.driver_address.street = booking.driver_address.street if booking.driver_address
+					self.driver_address.number = booking.driver_address.number if booking.driver_address
+					self.driver_address.complement = booking.driver_address.complement if booking.driver_address
+					self.driver_address.city = booking.driver_address.city if booking.driver_address
+					self.driver_address.state = booking.driver_address.state if booking.driver_address
+					self.driver_address.country = booking.driver_address.country if booking.driver_address
+					self.driver_address.zip = booking.driver_address.zip if booking.driver_address
+				end
+
 				before :create do
-					self.calculate_renting_days
-					self.calculate_services
+					self.calculate_supplements
 					self.free_access_id = Digest::MD5.hexdigest("#{rand}#{date_from.to_time.iso8601}#{date_to.to_time.iso8601}#{rand}")
 				end
 
@@ -74,7 +103,8 @@ module Yito
 				#
 				def change_selection_data(date_from, time_from, date_to, time_to,
 																	pickup_place, return_place,
-																	number_of_adults, number_of_children)
+																	number_of_adults, number_of_children,
+				                          driver_under_age)
 
 					transaction do
 					  self.date_from = date_from
@@ -85,11 +115,13 @@ module Yito
 						self.return_place = return_place
 						self.number_of_adults = number_of_adults
 						self.number_of_children = number_of_children
-						self.calculate_renting_days
+						self.driver_under_age = driver_under_age
+						self.calculate_supplements
 					  self.save
+
 						# Recalculate items
 						self.items.each do |sc_item|
-							product = RentingSearch.search(date_from, date_to, self.days, sc_item.item_id)
+							product = RentingSearch.search(date_from, date_to, self.days,  false, sc_item.item_id)
 							sc_item.update_item_cost(product.base_price, product.price, product.deposit)
 						end
 						# Recalcute extras
@@ -97,19 +129,36 @@ module Yito
 							extra = RentingExtraSearch.search(date_from, date_to, self.days, sc_extra.extra_id)
 							sc_extra.update_extra_cost(extra.unit_price)
 						end
-						# Recalculate extra services
-						self.calculate_services
+
 					end
 
 				end
 
 				#
-				# Calculate services (time to/from, pickup/return place, ...)
+				# Calculate supplements (time to/from, pickup/return place, ...)
 				#
-				def calculate_services
-					# calculate_time_from_to_cost
-					# pickup_up_return_place_cost
-					# calculate_driver_age_cost
+				def calculate_supplements
+
+					self.total_cost -= (self.time_from_cost + self.time_to_cost + self.pickup_place_cost +
+							                self.return_place_cost + self.driver_age_cost)
+
+					calculator = RentingCalculator.new(self.date_from, self.time_from,
+					                                    self.date_to, self.time_to,
+					                                   self.pickup_place, self.return_place,
+																						 self.driver_date_of_birth, self.driver_under_age)
+
+					self.days = calculator.days
+					self.date_to_price_calculation = calculator.date_to_price_calculation
+					self.time_from_cost = calculator.time_from_cost
+					self.time_to_cost = calculator.time_to_cost
+					self.pickup_place_cost = calculator.pickup_place_cost
+					self.return_place_cost = calculator.return_place_cost
+					self.driver_age = calculator.age
+					self.driver_age_cost = calculator.age_cost
+
+					self.total_cost += (self.time_from_cost + self.time_to_cost + self.pickup_place_cost +
+							                self.return_place_cost + self.driver_age_cost)
+
 				end
 
 				# -----------------------------------------------------------------------------------
@@ -160,12 +209,12 @@ module Yito
 		  			if shopping_cart_item = items.select { |item| item.item_id == product_code }.first
 				  		shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
 					  	# Shopping cart does not contain item
-					  elsif product = RentingSearch.search(date_from, date_to, days, product_code)
+					  elsif product = RentingSearch.search(date_from, date_to, days, false, product_code)
 						  add_item(product.code, product.name, quantity,
 										 product.base_price, product.price, product.deposit)
 						end
 					else
-						product = RentingSearch.search(date_from, date_to, days, product_code)
+						product = RentingSearch.search(date_from, date_to, days, false, product_code)
 						# Shopping cart empty
 						if items.size == 0
 							add_item(product.code, product.name, quantity,
@@ -190,63 +239,6 @@ module Yito
 					elsif extra = RentingExtraSearch.search(date_from, date_to, days, extra_code)
 						add_extra(extra.code, extra.name, quantity, extra.unit_price)
 					end
-
-				end
-
-        protected
-
-				#
-				# Calculate the renting days (depending on the cadence hours)
-				#
-				def calculate_renting_days
-					cadence_hours = SystemConfiguration::Variable.get_value('booking.hours_cadence',2).to_i
-					self.days = (self.date_to - self.date_from).to_i
-					self.date_to_price_calculation = self.date_to
-					begin
-						_t_from = DateTime.strptime(self.time_from,"%H:%M")
-						_t_to = DateTime.strptime(self.time_to,"%H:%M")
-						if _t_to > _t_from
-							hours_of_difference = (_t_to - _t_from).to_f.modulo(1) * 24
-							if hours_of_difference > cadence_hours
-								self.days += 1
-								self.date_to_price_calculation += 1
-							end
-						end
-					rescue
-						p "Time from or time to are not valid #{self.time_from} #{self.time_from}"
-					end
-				end
-
-				#
-				# Calculate time from/to cost
-				#
-				def calculate_time_from_to_cost
-
-					if (pickup_return_timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable',0).to_i)
-						pickup_return_timetable = (pickup_return_timetable_id > 0) ? ::Yito::Model::Calendar::Timetable.get(pickup_return_timetable_id) : nil
-						# pickup / return price
-						pickup_return_timetable_out_price = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_price', 0).to_i
-						if pickup_return_timetable_out_price > 0
-
-						end
-					end
-
-				end
-
-				#
-				# Calculate pickup/return place cost
-				#
-				def pickup_up_return_place_cost
-					if (pickup_return_places_id = SystemConfiguration::Variable.get_value('booking.pickup_return_place',0).to_i) > 0
-					  pickup_return_place = (pickup_return_places_id > 0) ? PickupReturnPlaceDefinition.get() : PickupReturnPlaceDefinition.first
-					end
-				end
-
-
-				#
-				# Calculate driver age cost*
-				#
-				def calculate_driver_age_cost
 
 				end
 
