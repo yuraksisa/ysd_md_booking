@@ -111,8 +111,8 @@ module Yito
         # Update the shoping cart cost (in quantity or product update)
         #
         def update_shopping_cart_cost(old_item_cost, old_item_deposit)
-          item_cost_variation = ((self.item_cost || 0) - old_item_cost)
-          item_deposit_variation = ((self.product_deposit_cost || 0) - old_item_deposit)
+          item_cost_variation = ((self.item_cost || 0) - (old_item_cost || 0))
+          item_deposit_variation = ((self.product_deposit_cost || 0) - (old_item_deposit || 0))
           if item_cost_variation != 0 || item_deposit_variation != 0
             # Item cost
             self.shopping_cart.item_cost ||= 0
@@ -126,7 +126,12 @@ module Yito
             # Booking amount
             self.shopping_cart.booking_amount = self.shopping_cart.total_cost *
               SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100
-            self.shopping_cart.save
+            begin
+              self.shopping_cart.save
+            rescue DataMapper::SaveFailureError => error
+              p "Error saving shopping cart: #{self.shopping_cart.errors.full_messages.inspect}"
+              raise error
+            end  
           end
         end
 
