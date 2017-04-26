@@ -39,7 +39,7 @@ module BookingDataSystem
               booking.payment_status = :deposit
             end
             if booking.status == :pending_confirmation
-              booking.confirm(SystemConfiguration::Variable.get_value('booking.notify_confirmation', 'true').to_bool)
+              booking.confirm
             else
               booking.save
             end 

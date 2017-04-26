@@ -257,6 +257,8 @@ module BookingDataSystem
            end
 
            booking.reload
+           booking.send_new_booking_request_notifications
+           booking
 
          end
        rescue DataMapper::SaveFailureError => error
@@ -351,47 +353,32 @@ module BookingDataSystem
      end
 
      #
-     # Saving a booking
-     #
-     def save
-       result = true
-
-       if new?
-         transaction do
-           begin
-             result = super
-           rescue DataMapper::SaveFailureError => error
-             p "Error creating booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
-             raise error 
-           end
-           reload
-           send_booking_notifications if booking_lines.size > 0
-         end
-       else
-         begin
-           result = super
-         rescue DataMapper::SaveFailureError => error
-           p "Error updating booking #{error} #{self.inspect} #{self.booking_extras.inspect} #{self.errors.inspect}"
-           raise error
-         end
-       end
-
-       return result
-     end
-
-     #
      # Notify that a new booking has been received
      #
-     def send_booking_notifications
-       if pay_now
-         notify_manager_pay_now
-         notify_request_to_customer_pay_now
-       else
-         notify_manager
-         notify_request_to_customer
+     def send_new_booking_request_notifications
+       if SystemConfiguration::Variable.get_value('booking.notify_confirmation', 'true').to_bool
+         if pay_now
+           notify_manager_pay_now
+           notify_request_to_customer_pay_now
+         else
+           notify_manager
+           notify_request_to_customer
+         end
        end
      end
 
+     #
+     # Notify that a booking has been confirmed 
+     #
+     def send_booking_confirmation_notifications
+
+       if SystemConfiguration::Variable.get_value('booking.notify_confirmation', 'true').to_bool
+         notify_manager_confirmation
+         notify_customer
+       end
+       
+     end
+     
      # --------------------------- Reservation items management -----------------------------------------
 
      #
@@ -695,12 +682,12 @@ module BookingDataSystem
      #
      # @return [Booking]
      #
-     def confirm(notify_parts=true)
+     def confirm
        if status == :pending_confirmation and
           not charges.select { |charge| charge.status == :done }.empty?
          self.status = :confirmed
          self.save
-         if notify_parts
+         if SystemConfiguration::Variable.get_value('booking.notify_confirmation', 'true').to_bool
            notify_manager_confirmation
            notify_customer
          end
@@ -719,6 +706,7 @@ module BookingDataSystem
      def confirm!
        if status == :pending_confirmation 
          update(:status => :confirmed)
+         send_booking_confirmation_notifications
        end
        self
      end
@@ -731,6 +719,7 @@ module BookingDataSystem
      def pickup_item
        if status == :confirmed 
          update(:status => :in_progress)
+         send_booking_confirmation_notifications
        end
        self
      end
