@@ -45,17 +45,7 @@ module BookingDataSystem
   # ----------------------------------------
   class Booking 
      include DataMapper::Resource
-     extend BookingNotificationTemplates
-     include BookingNotifications
-     include Audit::Auditor
-     include BookingDataSystem::BookingGuests
-     include BookingDataSystem::BookingDriver
-     include BookingDataSystem::BookingPickupReturn
-     include BookingDataSystem::BookingFlight
-     extend Yito::Model::Booking::Queries
-     extend Yito::Model::Finder
-     include Yito::Model::UserAgentData
-    
+     
      storage_names[:default] = 'bookds_bookings' # stored in bookings table in default storage
      
      property :id, Serial, :field => 'id'
@@ -126,6 +116,21 @@ module BookingDataSystem
      property :return_time, String, :length => 5
      property :return_agent, String, :length => 256
 
+     # Booking extensions
+     
+     include BookingNotifications
+     include Audit::Auditor
+     include BookingDataSystem::BookingGuests
+     include BookingDataSystem::BookingDriver
+     include BookingDataSystem::BookingPickupReturn
+     include BookingDataSystem::BookingFlight
+     include Yito::Model::UserAgentData     
+     include Yito::Model::Booking::BookingExternalInvoice
+
+     extend BookingNotificationTemplates
+     extend Yito::Model::Booking::Queries
+     extend Yito::Model::Finder
+     
      # --------------------------  CLASS METHODS -----------------------------------------------------------
 
      #

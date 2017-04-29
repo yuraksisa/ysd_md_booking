@@ -6,7 +6,6 @@ module BookingDataSystem
   #
   class BookingLineResource
      include DataMapper::Resource
-     include BookingDataSystem::BookingHeightWeight     
      storage_names[:default] = 'bookds_bookings_lines_resources' 
      property :id, Serial
 
@@ -34,6 +33,11 @@ module BookingDataSystem
      property :booking_item_characteristic_2, String, :length => 80
      property :booking_item_characteristic_3, String, :length => 80
      property :booking_item_characteristic_4, String, :length => 80
+
+     # Booking extensions
+     
+     include BookingDataSystem::BookingHeightWeight
+     include Yito::Model::Booking::BookingPickupReturnUnits
 
      def booking_item
        if !booking_item_reference.nil? and !booking_item_reference.empty?

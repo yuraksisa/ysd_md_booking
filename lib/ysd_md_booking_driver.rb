@@ -11,6 +11,8 @@ module BookingDataSystem
        model.property :driver_name, String, :field => 'driver_name', :length => 40
        model.property :driver_surname, String, :field => 'driver_surname', :length => 40
        model.property :driver_document_id, String, :field => 'driver_document_id', :length => 50
+       model.property :driver_document_id_date, DateTime
+       model.property :driver_document_id_expiration_date, DateTime
        model.property :driver_date_of_birth, DateTime, :field => 'driver_date_of_birth'
        model.property :driver_age, Integer
        model.property :driver_under_age, DataMapper::Property::Boolean
@@ -19,6 +21,7 @@ module BookingDataSystem
        model.property :driver_driving_license_number, String, :field => 'driver_driving_license_number', :length => 50
        model.property :driver_driving_license_date, DateTime, :field => 'driver_driving_license_date'
        model.property :driver_driving_license_country, String, :field => 'driver_driving_license_country', :length => 50
+       model.property :driver_driving_license_expiration_date, DateTime
 
        # Additional drivers
        model.property :additional_driver_1_name, String, :length => 40
@@ -28,7 +31,10 @@ module BookingDataSystem
        model.property :additional_driver_1_under_age, DataMapper::Property::Boolean
        model.property :additional_driver_1_driving_license_number, String, :length => 50
        model.property :additional_driver_1_driving_license_date, DateTime
+       model.property :additional_driver_1_driving_license_expiration_date, DateTime
        model.property :additional_driver_1_document_id, String, :length => 50
+       model.property :additional_driver_1_document_id_date, DateTime
+       model.property :additional_driver_1_document_id_expiration_date, DateTime
        model.property :additional_driver_1_phone, String, :length => 15
        model.property :additional_driver_1_email, String, :length => 40
 
@@ -39,7 +45,10 @@ module BookingDataSystem
        model.property :additional_driver_2_under_age, DataMapper::Property::Boolean
        model.property :additional_driver_2_driving_license_number, String, :length => 50
        model.property :additional_driver_2_document_id, String, :length => 50
+       model.property :additional_driver_2_document_id_date, DateTime
+       model.property :additional_driver_2_document_id_expiration_date, DateTime
        model.property :additional_driver_2_driving_license_date, DateTime
+       model.property :additional_driver_2_driving_license_expiration_date, DateTime
        model.property :additional_driver_2_phone, String, :length => 15
        model.property :additional_driver_2_email, String, :length => 40
 
@@ -50,7 +59,10 @@ module BookingDataSystem
        model.property :additional_driver_3_under_age, DataMapper::Property::Boolean
        model.property :additional_driver_3_driving_license_number, String, :length => 50
        model.property :additional_driver_3_document_id, String, :length => 50
+       model.property :additional_driver_3_document_id_date, DateTime
+       model.property :additional_driver_3_document_id_expiration_date, DateTime
        model.property :additional_driver_3_driving_license_date, DateTime
+       model.property :additional_driver_3_driving_license_expiration_date, DateTime
        model.property :additional_driver_3_phone, String, :length => 15
        model.property :additional_driver_3_email, String, :length => 40
 
