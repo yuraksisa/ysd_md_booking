@@ -109,8 +109,8 @@ module Yito
   		   	           	  end	
 	           		     end
 
-  		   	           base_price = product_price
-  		   	           price = (product_price - discount)
+  		   	           base_price = product_price.round(0) # Make sure no decimals in prices
+  		   	           price = (product_price - discount).round(0) # Make sure no decimal in prices
   		   	           deposit = item.deposit
   		   	           
   		   	           # Get the availability
