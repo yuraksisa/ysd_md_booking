@@ -136,7 +136,7 @@ module BookingDataSystem
      #
      # Create a reservation from a shopping cart
      #
-     def self.create_from_shopping_cart(shopping_cart)
+     def self.create_from_shopping_cart(shopping_cart, user_agent_data=nil)
 
        booking = nil
        booking_driver_address = nil
@@ -190,6 +190,7 @@ module BookingDataSystem
                           flight_company: shopping_cart.flight_company,
                           flight_number: shopping_cart.flight_number,
                           flight_time: shopping_cart.flight_time)
+           booking.init_user_agent_data(user_agent_data) unless user_agent_data.nil?
            booking.save
 
            if shopping_cart.driver_address
@@ -692,10 +693,7 @@ module BookingDataSystem
           not charges.select { |charge| charge.status == :done }.empty?
          self.status = :confirmed
          self.save
-         if SystemConfiguration::Variable.get_value('booking.notify_confirmation', 'true').to_bool
-           notify_manager_confirmation
-           notify_customer
-         end
+         send_booking_confirmation_notifications
        else
          p "Could not confirm booking #{id} #{status}"
        end
@@ -724,7 +722,6 @@ module BookingDataSystem
      def pickup_item
        if status == :confirmed 
          update(:status => :in_progress)
-         send_booking_confirmation_notifications
        end
        self
      end
