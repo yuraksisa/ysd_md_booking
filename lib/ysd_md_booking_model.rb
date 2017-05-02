@@ -136,7 +136,7 @@ module BookingDataSystem
      #
      # Create a reservation from a shopping cart
      #
-     def self.create_from_shopping_cart(shopping_cart, user_agent_data=nil)
+     def self.create_from_shopping_cart(shopping_cart, user_agent_data=nil, created_from_manager=false)
 
        booking = nil
        booking_driver_address = nil
@@ -189,7 +189,8 @@ module BookingDataSystem
                           return_place_cost: shopping_cart.return_place_cost,
                           flight_company: shopping_cart.flight_company,
                           flight_number: shopping_cart.flight_number,
-                          flight_time: shopping_cart.flight_time)
+                          flight_time: shopping_cart.flight_time,
+                          created_from_manager: created_from_manager)
            booking.init_user_agent_data(user_agent_data) unless user_agent_data.nil?
            booking.save
 
