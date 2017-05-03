@@ -83,13 +83,12 @@ module Yito
 
   		   # Query for products
   		   prod_attributes = [:code, :name, :short_description, :description,
-  		   					  :stock_control, :stock, :album_id, :deposit]
+  		   					          :stock_control, :stock, :album_id, :deposit, :price_definition_id]
   		   conditions = {active: true, web_public: true}
   		   conditions.store(:code, product_code) unless product_code.nil?
 
-  		   result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes, 
-  		   			   conditions: conditions, 
-  		   			   order: [:code]).map do |item| 
+  		   result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes,
+  		   			      conditions: conditions, order: [:code]).map do |item| 
   		   	           
   		   	           # Get the photos
   		   	           photo = item.album ? item.album.thumbnail_medium_url : nil
@@ -105,7 +104,7 @@ module Yito
   		   	                when :percentage
   		   	                	discount = product_price * (general_discount.value / 100)
   		   	           	    when :amount
-  		   	           	        discount = general_discount.value 
+  		   	           	      discount = general_discount.value 
   		   	           	  end	
 	           		     end
 
@@ -126,7 +125,7 @@ module Yito
   		   	           					 base_price, price, deposit, 
   		   	           					 available, stock, busy, payment_available, full_information)
   		   	        end
-  		   
+
   		   return product_code.nil? ? result : result.first	        
 
   		 end
