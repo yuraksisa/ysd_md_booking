@@ -53,8 +53,8 @@ module Yito
         #
         def create_data(num_of_bookings, date_from, date_to, max_products=1, max_extras=1)
 
-          notify_value = SystemConfiguration::Variable.get_value('booking.notify_confirmation', "true").to_bool
-          SystemConfiguration::Variable.set_value('booking.notify_confirmation', 'false', {:module => :booking, :description => "Notify confirmation"})
+          notify_value = SystemConfiguration::Variable.get_value('booking.send_notifications', "true").to_bool
+          SystemConfiguration::Variable.set_value('booking.send_notifications', 'false', {:module => :booking, :description => "Notify confirmation"})
 
           products = ::Yito::Model::Booking::BookingCategory.all
           extras = ::Yito::Model::Booking::BookingExtra.all
@@ -146,7 +146,7 @@ module Yito
           end
 
         rescue
-          SystemConfiguration::Variable.set_value('booking.notify_confirmation', notify_value.to_s)
+          SystemConfiguration::Variable.set_value('booking.send_notifications', notify_value.to_s)
         end
 
       end

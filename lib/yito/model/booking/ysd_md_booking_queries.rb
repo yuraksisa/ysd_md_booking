@@ -1021,6 +1021,15 @@ module Yito
 
           end
 
+          def max_external_invoice_number
+            query = <<-QUERY
+               select max(external_invoice_number)
+               from bookds_bookings
+            QUERY
+
+            repository.adapter.select(query).first
+          end
+          
           private
     
           def select_pending_of_assignation(b)
