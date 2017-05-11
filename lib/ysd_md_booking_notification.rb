@@ -234,23 +234,25 @@ module BookingDataSystem
     # 
     def notify_manager
 
-      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
-        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification')
+      if send_notifications?
+        if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+          bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification')
 
-        template = if bmn_template
+          template = if bmn_template
                      ERB.new bmn_template.text
                    else
                      ERB.new Booking.manager_notification_template
                    end
         
-        message = template.result(binding)
+          message = template.result(binding)
 
-        Notifier.delay.notify_manager(notification_email, 
-          BookingDataSystem.r18n.t.notifications.manager_email_subject.to_s, 
-          message,
-          self.id)
+          Notifier.delay.notify_manager(notification_email, 
+            BookingDataSystem.r18n.t.notifications.manager_email_subject.to_s, 
+            message,
+            self.id)
 
-      end
+        end
+      end  
 
     end  
 
@@ -263,22 +265,23 @@ module BookingDataSystem
     # 
     def notify_manager_pay_now
 
-      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
-        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
+      if send_notifications?
+        if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+          bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
 
-        template = if bmn_template
-                     ERB.new bmn_template.text
-                   else
-                     ERB.new Booking.manager_notification_pay_now_template
-                   end
+          template = if bmn_template
+                       ERB.new bmn_template.text
+                     else
+                       ERB.new Booking.manager_notification_pay_now_template
+                     end
         
-        message = template.result(binding)
+          message = template.result(binding)
 
-        Notifier.delay.notify_manager_pay_now(notification_email, 
-          BookingDataSystem.r18n.t.notifications.manager_paying_email_subject.to_s, 
-          message,
-          self.id)
-
+          Notifier.delay.notify_manager_pay_now(notification_email, 
+            BookingDataSystem.r18n.t.notifications.manager_paying_email_subject.to_s, 
+            message,
+            self.id)
+        end
       end
 
     end
@@ -292,22 +295,23 @@ module BookingDataSystem
     # 
     def notify_manager_confirmation
 
-      if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
-        bmn_template = ContentManagerSystem::Template.first(:name => 'booking_confirmation_manager_notification')
+      if send_notifications?
+        if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
+          bmn_template = ContentManagerSystem::Template.first(:name => 'booking_confirmation_manager_notification')
 
-        template = if bmn_template
-                     ERB.new bmn_template.text
-                   else
-                     ERB.new Booking.manager_confirm_notification_template
-                   end
+          template = if bmn_template
+                       ERB.new bmn_template.text
+                     else
+                       ERB.new Booking.manager_confirm_notification_template
+                     end
         
-        message = template.result(binding)
+          message = template.result(binding)
 
-        Notifier.delay.notify_manager(notification_email, 
-          BookingDataSystem.r18n.t.notifications.manager_confirmation_email_subject.to_s, 
-          message,
-          self.id)
-
+          Notifier.delay.notify_manager(notification_email, 
+            BookingDataSystem.r18n.t.notifications.manager_confirmation_email_subject.to_s, 
+            message,
+            self.id)
+        end
       end
 
     end  
@@ -321,23 +325,24 @@ module BookingDataSystem
     #
     def notify_request_to_customer
 
-      unless customer_email.empty?
+      if send_notifications?
+        unless customer_email.empty?
 
-        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
         
-        if bcn_template
-          template = ERB.new bcn_template.translate(customer_language).text
-        else
-          template = ERB.new Booking.customer_notification_booking_request_template
+          if bcn_template
+            template = ERB.new bcn_template.translate(customer_language).text
+          else
+            template = ERB.new Booking.customer_notification_booking_request_template
+          end
+
+          message = template.result(binding)
+
+          Notifier.delay.notify_request_to_customer(self.customer_email, 
+            BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+            message, 
+            self.id)
         end
-
-        message = template.result(binding)
-
-        Notifier.delay.notify_request_to_customer(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
-          message, 
-          self.id)
-
       end
 
     end
@@ -351,23 +356,23 @@ module BookingDataSystem
     #
     def notify_request_to_customer_pay_now
 
-      unless customer_email.empty?
-
-        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
+      if send_notifications?
+        unless customer_email.empty?
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
         
-        if bcn_template
-          template = ERB.new bcn_template.translate(customer_language).text
-        else
-          template = ERB.new Booking.customer_notification_request_pay_now_template
+          if bcn_template
+            template = ERB.new bcn_template.translate(customer_language).text
+          else
+            template = ERB.new Booking.customer_notification_request_pay_now_template
+          end
+
+          message = template.result(binding)
+
+          Notifier.delay.notify_request_to_customer_pay_now(self.customer_email, 
+            BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+            message, 
+            self.id)
         end
-
-        message = template.result(binding)
-
-        Notifier.delay.notify_request_to_customer_pay_now(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
-          message, 
-          self.id)
-
       end
 
     end
@@ -383,23 +388,23 @@ module BookingDataSystem
     #
     def notify_customer
 
-      unless customer_email.empty?
-
-        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
+      if send_notifications?
+        unless customer_email.empty?
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
         
-        if bcn_template
-          template = ERB.new bcn_template.translate(customer_language).text
-        else
-          template = ERB.new Booking.customer_notification_booking_confirmed_template
+          if bcn_template
+            template = ERB.new bcn_template.translate(customer_language).text
+          else
+            template = ERB.new Booking.customer_notification_booking_confirmed_template
+          end
+
+          message = template.result(binding)
+
+          Notifier.delay.notify_customer(self.customer_email, 
+            BookingDataSystem.r18n.t.notifications.customer_email_subject.to_s, 
+            message, 
+            self.id)
         end
-
-        message = template.result(binding)
-
-        Notifier.delay.notify_customer(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_email_subject.to_s, 
-          message, 
-          self.id)
-
       end
 
     end
@@ -409,25 +414,38 @@ module BookingDataSystem
     #
     def notify_customer_payment_enabled
 
-      unless customer_email.empty?
-
-        bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled')
+      if send_notifications?
+        unless customer_email.empty?
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled')
         
-        if bcn_template
-          template = ERB.new bcn_template.translate(customer_language).text
-        else
-          template = ERB.new Booking.customer_notification_booking_confirmed_template
-        end
+          if bcn_template
+            template = ERB.new bcn_template.translate(customer_language).text
+          else
+            template = ERB.new Booking.customer_notification_booking_confirmed_template
+          end
 
-        message = template.result(binding)
+          message = template.result(binding)
 
-        Notifier.delay.notify_customer_payment_enabled(self.customer_email, 
-          BookingDataSystem.r18n.t.notifications.customer_payment_enabled_subject.to_s, 
-          message, 
-          self.id)
-
+          Notifier.delay.notify_customer_payment_enabled(self.customer_email, 
+            BookingDataSystem.r18n.t.notifications.customer_payment_enabled_subject.to_s, 
+            message, 
+            self.id)
+        end  
       end
 
+
+    end
+
+    #
+    # Check if the notifications should be send
+    #
+    def send_notifications?
+
+      if created_by_manager
+        notify = SystemConfiguration::Variable.get_value('booking.send_notifications_backoffice_reservations', 'false').to_bool
+      else
+        notify = SystemConfiguration::Variable.get_value('booking.send_notifications', 'true').to_bool
+      end
 
     end
   

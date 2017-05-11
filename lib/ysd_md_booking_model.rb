@@ -368,23 +368,14 @@ module BookingDataSystem
      #
      def send_new_booking_request_notifications
 
-       notify = false
-
-       if created_by_manager
-         notify = SystemConfiguration::Variable.get_value('booking.send_notifications_new_reservations_from_backoffice', 'false').to_bool
+       if pay_now
+         notify_manager_pay_now
+         notify_request_to_customer_pay_now
        else
-         notify = SystemConfiguration::Variable.get_value('booking.send_notifications', 'true').to_bool
+         notify_manager
+         notify_request_to_customer
        end
 
-       if notify
-         if pay_now
-           notify_manager_pay_now
-           notify_request_to_customer_pay_now
-         else
-           notify_manager
-           notify_request_to_customer
-         end
-       end
      end
 
      #
@@ -392,10 +383,8 @@ module BookingDataSystem
      #
      def send_booking_confirmation_notifications
 
-       if SystemConfiguration::Variable.get_value('booking.send_notifications', 'true').to_bool
-         notify_manager_confirmation
-         notify_customer
-       end
+       notify_manager_confirmation
+       notify_customer
        
      end
      
