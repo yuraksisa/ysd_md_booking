@@ -72,13 +72,61 @@ module Yito
 					self.customer_mobile_phone = booking.customer_mobile_phone
 					self.customer_language = booking.customer_language
 					self.customer_document_id = booking.customer_document_id
+
 					self.driver_name = booking.driver_name
 					self.driver_surname = booking.driver_surname
 					self.driver_document_id = booking.driver_document_id
+					self.driver_document_id_date = booking.driver_document_id_date
+					self.driver_document_id_expiration_date = booking.driver_document_id_expiration_date
+					self.driver_origin_country = booking.driver_origin_country
 					self.driver_date_of_birth = booking.driver_date_of_birth
 					self.driver_driving_license_number = booking.driver_driving_license_number
 					self.driver_driving_license_date = booking.driver_driving_license_date
 					self.driver_driving_license_country = booking.driver_driving_license_country
+					self.driver_driving_license_expiration_date = booking.driver_driving_license_expiration_date
+
+					self.additional_driver_1_name = booking.additional_driver_1_name
+					self.additional_driver_1_surname = booking.additional_driver_1_surname
+					self.additional_driver_1_document_id = booking.additional_driver_1_document_id
+					self.additional_driver_1_document_id_date = booking.additional_driver_1_document_id_date
+					self.additional_driver_1_document_id_expiration_date = booking.additional_driver_1_document_id_expiration_date
+					self.additional_driver_1_origin_country = booking.additional_driver_1_origin_country
+					self.additional_driver_1_date_of_birth = booking.additional_driver_1_date_of_birth
+					self.additional_driver_1_driving_license_number = booking.additional_driver_1_driving_license_number
+					self.additional_driver_1_driving_license_date = booking.additional_driver_1_driving_license_date
+					self.additional_driver_1_driving_license_country = booking.additional_driver_1_driving_license_country
+					self.additional_driver_1_driving_license_expiration_date = booking.additional_driver_1_driving_license_expiration_date
+					self.additional_driver_1_phone = booking.additional_driver_1_phone
+					self.additional_driver_1_email = booking.additional_driver_1_email
+
+					self.additional_driver_2_name = booking.additional_driver_2_name
+					self.additional_driver_2_surname = booking.additional_driver_2_surname
+					self.additional_driver_2_document_id = booking.additional_driver_2_document_id
+					self.additional_driver_2_document_id_date = booking.additional_driver_2_document_id_date
+					self.additional_driver_2_document_id_expiration_date = booking.additional_driver_2_document_id_expiration_date
+					self.additional_driver_2_origin_country = booking.additional_driver_2_origin_country
+					self.additional_driver_2_date_of_birth = booking.additional_driver_2_date_of_birth
+					self.additional_driver_2_driving_license_number = booking.additional_driver_2_driving_license_number
+					self.additional_driver_2_driving_license_date = booking.additional_driver_2_driving_license_date
+					self.additional_driver_2_driving_license_country = booking.additional_driver_2_driving_license_country
+					self.additional_driver_2_driving_license_expiration_date = booking.additional_driver_2_driving_license_expiration_date
+					self.additional_driver_2_phone = booking.additional_driver_2_phone
+					self.additional_driver_2_email = booking.additional_driver_2_email
+					
+					self.additional_driver_3_name = booking.additional_driver_3_name
+					self.additional_driver_3_surname = booking.additional_driver_3_surname
+					self.additional_driver_3_document_id = booking.additional_driver_3_document_id
+					self.additional_driver_3_document_id_date = booking.additional_driver_3_document_id_date
+					self.additional_driver_3_document_id_expiration_date = booking.additional_driver_3_document_id_expiration_date
+					self.additional_driver_3_origin_country = booking.additional_driver_3_origin_country
+					self.additional_driver_3_date_of_birth = booking.additional_driver_3_date_of_birth
+					self.additional_driver_3_driving_license_number = booking.additional_driver_3_driving_license_number
+					self.additional_driver_3_driving_license_date = booking.additional_driver_3_driving_license_date
+					self.additional_driver_3_driving_license_country = booking.additional_driver_3_driving_license_country
+					self.additional_driver_3_driving_license_expiration_date = booking.additional_driver_3_driving_license_expiration_date
+					self.additional_driver_3_phone = booking.additional_driver_3_phone
+					self.additional_driver_3_email = booking.additional_driver_3_email
+					
 					if self.driver_address.nil?
 						self.driver_address = LocationDataSystem::Address.new
 					end

@@ -90,7 +90,10 @@ module Yito
               stock = []
               booking.booking_lines.each do |booking_line|
                 booking_line.booking_line_resources.each do |booking_line_resource|
-                  stock << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
+                  stock_item = booking_line.item_id
+                  stock_item << " - " unless booking_line_resource.booking_item.nil?
+                  stock_item << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
+                  stock << stock_item
                 end 
               end
               data << stock.join(', ')
@@ -135,7 +138,10 @@ module Yito
               stock = []
               booking.booking_lines.each do |booking_line|
                 booking_line.booking_line_resources.each do |booking_line_resource|
-                  stock << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
+                  stock_item = booking_line.item_id
+                  stock_item << " - " unless booking_line_resource.booking_item.nil?
+                  stock_item << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
+                  stock << stock_item
                 end 
               end
               data << stock.join(', ')
