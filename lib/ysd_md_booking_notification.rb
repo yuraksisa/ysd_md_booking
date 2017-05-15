@@ -232,9 +232,9 @@ module BookingDataSystem
     #
     # It allows to define a custom template naming it as booking_manager_notification
     # 
-    def notify_manager
+    def notify_manager(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
           bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification')
 
@@ -263,9 +263,9 @@ module BookingDataSystem
     #
     # It allows to define a custom template naming it as booking_manager_notification
     # 
-    def notify_manager_pay_now
+    def notify_manager_pay_now(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
           bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
 
@@ -293,9 +293,9 @@ module BookingDataSystem
     #
     # It allows to define a custom template naming it as booking_manager_notification
     # 
-    def notify_manager_confirmation
+    def notify_manager_confirmation(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
           bmn_template = ContentManagerSystem::Template.first(:name => 'booking_confirmation_manager_notification')
 
@@ -323,9 +323,9 @@ module BookingDataSystem
     #
     # It allows to define a custom template naming it as booking_customer_req_notification
     #
-    def notify_request_to_customer
+    def notify_request_to_customer(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         unless customer_email.empty?
 
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
@@ -354,9 +354,9 @@ module BookingDataSystem
     #
     # It allows to define a custom template naming it as booking_customer_req_notification
     #
-    def notify_request_to_customer_pay_now
+    def notify_request_to_customer_pay_now(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         unless customer_email.empty?
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
         
@@ -386,9 +386,9 @@ module BookingDataSystem
     # It allows to define a custom template naming it as booking_customer_notification
     # 
     #
-    def notify_customer
+    def notify_customer(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         unless customer_email.empty?
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
         
@@ -412,9 +412,9 @@ module BookingDataSystem
     #
     # Notifies by email the customer that the payment has been enabled for the booking
     #
-    def notify_customer_payment_enabled
+    def notify_customer_payment_enabled(force_send=false)
 
-      if send_notifications?
+      if force_send || send_notifications?
         unless customer_email.empty?
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled')
         
