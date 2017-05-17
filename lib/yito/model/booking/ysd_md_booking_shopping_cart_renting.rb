@@ -211,6 +211,29 @@ module Yito
 
 				# -----------------------------------------------------------------------------------
 
+				def clear
+					transaction do
+						items.destroy
+						extras.destroy
+						self.time_from_cost = 0
+						self.time_to_cost = 0
+						self.pickup_place_cost = 0
+						self.return_place_cost = 0
+						self.driver_age_cost = 0
+						self.total_cost = 0
+						self.item_cost = 0
+						self.extras_cost = 0
+						self.product_deposit_cost = 0
+						self.booking_amount = 0
+						self.customer_name = nil
+						self.customer_surname = nil
+						self.customer_email = nil
+						self.customer_phone = nil
+						self.customer_mobile_phone = nil
+						self.save
+					end
+				end
+				
 				#
 				# Add an item to the shopping cart
 				#
