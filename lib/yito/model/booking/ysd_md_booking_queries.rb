@@ -898,21 +898,9 @@ module Yito
 
             required_categories.each do |category_code, category_value|
 
-              busy_stock_resources = category_value[:stock].select do |k,v| 
-                                       busy = v.select do |resource_urge|
-                                                resource_urge_date_from = parse_date_time_from(resource_urge.date_from, resource_urge.time_from)
-                                                resource_urge_date_to = parse_date_time_to(resource_urge.date_to, resource_urge.time_to)
-                                                (request_date_from <= resource_urge_date_from && request_date_to >= resource_urge_date_to) ||
-                                                (request_date_from <= resource_urge_date_from && request_date_to >= resource_urge_date_from) ||
-                                                (request_date_from >= resource_urge_date_from && request_date_to <= resource_urge_date_to) ||
-                                                (request_date_from <= resource_urge_date_to && request_date_to >= resource_urge_date_to) 
-                                              end
-                                       busy.size > 0        
-                                     end
-
               category_occupation.store(category_code,
                                        {stock: category_value[:category_stock],
-                                        occupation: busy_stock_resources.keys.count,
+                                        occupation: (stock_detail.select {|k,v| v[:category] == category_code && (!v[:detail].empty? || !v[:estimation].empty?) }).keys.count,#busy_stock_resources.keys.count,
                                         occupation_assigned: (stock_detail.select {|k,v| v[:category] == category_code && !v[:detail].empty? }).keys.count,
                                         available_stock: (stock_detail.select {|k,v| v[:category] == category_code && v[:detail].empty? }).keys ,
                                         automatically_preassigned_stock: (stock_detail.select {|k,v| v[:category] == category_code && !v[:estimation].empty? }).keys, 
