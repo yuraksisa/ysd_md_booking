@@ -797,10 +797,11 @@ module Yito
             # 2. Build the stock detail structure
             #                
             stock_items = if category 
-                      ::Yito::Model::Booking::BookingItem.all(:conditions => {category_code: category },
+                      ::Yito::Model::Booking::BookingItem.all(:conditions => {category_code: category, active: true },
                                                               :order => [:planning_order, :category_code, :reference])
                     else
-                      ::Yito::Model::Booking::BookingItem.all(:order => [:planning_order, :category_code, :reference])
+                      ::Yito::Model::Booking::BookingItem.all(:conditions => {active: true },
+                                                              :order => [:planning_order, :category_code, :reference])
                     end
 
             stock_detail = {}
