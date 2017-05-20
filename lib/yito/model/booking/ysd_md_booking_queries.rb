@@ -728,93 +728,203 @@ module Yito
           end
           
           #
+          # Get the assignable resources in a date range (including reservations and prereservations)
+          #
+          #
+          def resource_urges(date_from, date_to)
+            query = resources_occupation_query(date_from, date_to)
+            resource_occupations = repository.adapter.select(query)
+          end
+
+          #
           # Get the resources occupation to assign stock
           #
           # Return an array with two elements
           #
-          #  - First  : The resources occupation detail for the dates
-          #  - Second : The categories availability
+          #  - First  : stock_detail. (Hash) The stock, availability and assigned sources
+          #
+          #             - The key is the stock resource id
+          #             - The value is a Hash with :
+          #                 :category   : The product category
+          #                 :available  : Boolean that says the is available or not
+          #                 :detail     : Assigned reservations
+          #                 :estimation : Automatically assigned reservations
+          #
+          #  - Second : category_occupation. (Hash) The products categories and its occupation
+          #
+          #             - The key is the category code and 
+          #             - The value is a Hash with :
+          #                 :stock               : # of stock in the category
+          #                 :occupation [urges]  : # of occupied stock in the category (taking into account automatically assignation)
+          #                 :occupation_assigned : # of assigned urges
+          #                 :available_stock     : # stock not assigned [id's of the items]
+          #                 :assignation_pending : #
+          # 
           #
           def resources_occupation(date_from, date_to, category=nil)
-            
-            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: {active: true}, fields: [:code, :stock], order: [:code])            
-  
-            # 1. Build the result structure
-            #    
-            items = if category 
-                      ::Yito::Model::Booking::BookingItem.all(:conditions => {category_code: 
-                        category },
-                        :order => [:planning_order, :category_code, :reference])
-                    else
-                      ::Yito::Model::Booking::BookingItem.all(
-                        :order => [:planning_order, :category_code, :reference])
-                    end
+              
+            hours_cadency = SystemConfiguration::Variable.get_value('booking.hours_cadence','2').to_f / 24
 
-            result = {}
-            items.each do |b_item|
-              result.store(b_item.reference, {category: b_item.category_code, 
-                                              available: true, 
-                                              detail: []})
-            end
+            # 1. Build the required_categories
+            #
+            #    - The key is the category_code
+            #    - The valus is a Hash
+            #
+            #        :total                           # of resource urges for this category (that has not been already assigned) [AFTER AUTO REASSIGN]
+            #        :assignation_pending             List of reservations/prereservations that requires the item [AFTER AUTO REASSIGN]
+            #        :original_total                  # of resource urges for this category [BEFORE AUTO REASSIGN] 
+            #        :original_assignation_pending    List of reservations/prereservations that requires the item [BEFORE AUTO REASSIGN]
+            #        :reassign_total                  # of resource urges for this category [HAVE BEEN AUTO REASSIGNED]
+            #        :reassigned_assignation_pending  List of reservations/prereservations that requires the item [HAVE BEEN AUTO REASSIGNED]
+            #        :stock                           is a Hash
+            #                                           - The key the is the stock item reference
+            #                                           - The value is an array with the assigned (+ automatically assigned) reservations
+            #           
+            categories = ::Yito::Model::Booking::BookingCategory.all(conditions: {active: true}, fields: [:code, :stock], order: [:code])   
 
-            # 2. Build the not assigned summary
-            #    It holds the confirmed reservations that have not been already assigned
-            #    to a resource (stock), so they can be taken into account
-            not_assigned_reservations = categories.inject({}) do |result, cat|
-              result.store(cat.code, {total: 0, detail: []})
+            required_categories = categories.inject({}) do |result, cat|
+              result.store(cat.code, {category_stock: cat.stock,
+                                      total: 0,
+                                      assignation_pending: [],
+                                      original_total: 0,
+                                      original_assignation_pending: [],
+                                      reassigned_total: 0, 
+                                      reassigned_assignation_pending: [],
+                                      stock: {}})
               result
             end
 
-            # 3. Fill with reservations information
-            query = resources_occupation_query(date_from, date_to)
-            resource_occupations = repository.adapter.select(query)
+            # 2. Build the stock detail structure
+            #                
+            stock_items = if category 
+                      ::Yito::Model::Booking::BookingItem.all(:conditions => {category_code: category },
+                                                              :order => [:planning_order, :category_code, :reference])
+                    else
+                      ::Yito::Model::Booking::BookingItem.all(:order => [:planning_order, :category_code, :reference])
+                    end
 
-            resource_occupations.each do |resource_occupation|
-              if resource_occupation.booking_item_reference
-                if item = result[resource_occupation.booking_item_reference]
-                  item[:available] = false
-                  item[:detail] << resource_occupation
+            stock_detail = {}
+            stock_items.each do |stock_item|
+              # Register the item in the stock_detail hash
+              stock_detail.store(stock_item.reference, {category: stock_item.category_code, 
+                                                        available: true, 
+                                                        detail: [],
+                                                        estimation: []})
+              # Register the item in the required_categories hash
+              if required_categories.has_key?(stock_item.category_code)
+                required_categories[stock_item.category_code][:stock].store(stock_item.reference, [])
+              end
+            end
+
+            # 3. Fill with reservations urges 
+
+            #
+            # Get the resources urges (that corresponds to reservations that must be served in the period)
+            #
+            resource_urges = resource_urges(date_from, date_to)
+            resource_urges.each do |resource_urge|
+              resource_urge.instance_eval { class << self; self end }.send(:attr_accessor, :preassigned_item_reference)
+              if resource_urge.booking_item_reference # Assigned stock resource
+                if stock_detail.has_key?(resource_urge.booking_item_reference)
+                  stock_detail[resource_urge.booking_item_reference][:available] = false
+                  stock_detail[resource_urge.booking_item_reference][:detail] << resource_urge
+                  # Append the resource_urge (of the assigned stock) to the category to manage the already assigned resources
+                  if required_categories[resource_urge.item_id][:stock].has_key?(resource_urge.booking_item_reference)
+                    required_categories[resource_urge.item_id][:stock][resource_urge.booking_item_reference] << resource_urge
+                  else
+                    required_categories[resource_urge.item_id][:stock][resource_urge.booking_item_reference] = [resource_urge]
+                  end  
                 end
-              else
-                if not_assigned_reservations.has_key?(resource_occupation.item_id)
-                  not_assigned_reservations[resource_occupation.item_id][:total] += 1
-                  not_assigned_reservations[resource_occupation.item_id][:detail] << resource_occupation
+              else # Not assigned resource stock 
+                if required_categories.has_key?(resource_urge.item_id)
+                  required_categories[resource_urge.item_id][:total] += 1
+                  required_categories[resource_urge.item_id][:assignation_pending] << resource_urge
                 end
               end
             end
+
+            #
+            # 4. Try to automatically assign stock to assignation pending (resource_urges)
+            #
+            required_categories.each do |category_code, category_data|
+
+              required_categories[category_code][:original_total] = required_categories[category_code][:total]
+              required_categories[category_code][:original_assignation_pending] = required_categories[category_code][:assignation_pending].clone
+
+              # Clones the assignation pending resource urges (because we are going to manipulate it)
+              assignation_pending_sources = category_data[:assignation_pending].clone 
+              assignation_pending_sources.each do |assignation_pending_source|
+                # Search stock items candidates
+                candidates = category_data[:stock].select do |item_reference, item_reference_assigned_reservations| 
+                               item_reference_assigned_reservations.all? do |assigned|                                  
+                                 assign_pend_d_f = parse_date_time_from(assignation_pending_source.date_from, assignation_pending_source.time_from)
+                                 assign_pend_d_t = parse_date_time_to(assignation_pending_source.date_to, assignation_pending_source.time_to)
+                                 assigned_d_f = parse_date_time_from(assigned.date_from, assigned.time_from)
+                                 assigned_d_t = parse_date_time_from(assigned.date_to, assigned.time_to)
+                                 assignation_pending_source.date_to < (assigned.date_from - hours_cadency) || assignation_pending_source.date_from > (assigned.date_to + hours_cadency)
+                               end
+                             end  
+                if candidates.size > 0
+                  candidate_item_reference = candidates.keys.first
+                  # Apply reassignation
+                  category_data[:total] -= 1
+                  category_data[:assignation_pending].delete(assignation_pending_source)
+                  # Holds for history
+                  category_data[:reassigned_total] += 1
+                  category_data[:reassigned_assignation_pending] << assignation_pending_source
+                  # Append the assignation pending to the stock assigned 
+                  category_data[:stock][candidate_item_reference] << assignation_pending_source
+                  category_data[:stock][candidate_item_reference].sort! {|x,y| x.date_from <=> y.date_from }
+                  if stock_detail.has_key?(candidate_item_reference)
+                    stock_detail[candidate_item_reference][:estimation] << assignation_pending_source
+                  end 
+                  assignation_pending_source.preassigned_item_reference = candidate_item_reference
+                end             
+
+              end 
+
+            end
+
+            #p "==================================================="
+            #p "stock detail : #{stock_detail.inspect}"
+            #p "==================================================="
+            #p "required categories: #{required_categories.inspect}"
+            #p "==================================================="
             
-            # 4. Build category occupation
-            stocks = categories.inject({}) do |result, item|
-                       result.store(item.code, item.stock || 0)
-                       result
-                     end
             category_occupation = {}
             
-            # 4.1 Fill with stock assignation
-            result.each do |key, value|
-              if category_occupation.has_key?(value[:category])
-                category_occupation[value[:category]][:occupation] += 1 unless value[:available]
-                category_occupation[value[:category]][:occupation_assigned] += 1 unless value[:available]
-              else
-                category_occupation.store(value[:category], {
-                        stock: stocks[value[:category]] || 0,
-                        occupation: value[:available] ? 0 : 1,
-                        occupation_assigned: value[:available] ? 0 : 1,
-                        available_stock: [],
-                        assignation_pending: []})
-              end
-              category_occupation[value[:category]][:available_stock] << key if value[:available]
-            end
-            
-            # 4.2 Fill with not assigned
-            not_assigned_reservations.each do |key, value|
-              if category_occupation.has_key?(key)
-                category_occupation[key][:occupation] += value[:detail].size unless value[:detail].empty?
-                category_occupation[key][:assignation_pending].concat(value[:detail]) unless value[:detail].empty? 
-              end
+            request_date_from =parse_date_time_from(date_from)
+            request_date_to = parse_date_time_to(date_to)
+
+            required_categories.each do |category_code, category_value|
+
+              busy_stock_resources = category_value[:stock].select do |k,v| 
+                                       busy = v.select do |resource_urge|
+                                                resource_urge_date_from = parse_date_time_from(resource_urge.date_from, resource_urge.time_from)
+                                                resource_urge_date_to = parse_date_time_to(resource_urge.date_to, resource_urge.time_to)
+                                                (request_date_from <= resource_urge_date_from && request_date_to >= resource_urge_date_to) ||
+                                                (request_date_from <= resource_urge_date_from && request_date_to >= resource_urge_date_from) ||
+                                                (request_date_from >= resource_urge_date_from && request_date_to <= resource_urge_date_to) ||
+                                                (request_date_from <= resource_urge_date_to && request_date_to >= resource_urge_date_to) 
+                                              end
+                                       busy.size > 0        
+                                     end
+
+              category_occupation.store(category_code,
+                                       {stock: category_value[:category_stock],
+                                        occupation: busy_stock_resources.keys.count,
+                                        occupation_assigned: (stock_detail.select {|k,v| v[:category] == category_code && !v[:detail].empty? }).keys.count,
+                                        available_stock: (stock_detail.select {|k,v| v[:category] == category_code && v[:detail].empty? }).keys ,
+                                        automatically_preassigned_stock: (stock_detail.select {|k,v| v[:category] == category_code && !v[:estimation].empty? }).keys, 
+                                        assignation_pending: category_value[:original_assignation_pending]})
+
             end
 
-            return [result, category_occupation]
+            #p "======================================"
+            #p "CATEGORY OCCUPATION : #{category_occupation.inspect}"
+            #p "======================================"
+
+            return [stock_detail, category_occupation]
 
           end
           

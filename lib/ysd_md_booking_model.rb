@@ -362,6 +362,53 @@ module BookingDataSystem
 
      end
 
+     #
+     # Parses date and time (from)
+     #
+     def self.parse_date_time_from(date, time=nil)
+
+       parsing_time = if time.nil? or time.empty?
+                        "10:00"
+                      else 
+                        time
+                      end 
+
+       parse_date_time(date, parsing_time)
+     end
+
+     #
+     # Parses date and time (to)
+     #
+     def self.parse_date_time_to(date, time=nil)
+
+       @@product_family ||= ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+
+       parsing_time = if time.nil? or time.empty?
+                        @@product_family and @@product_family.cycle_of_24_hours ? "10:00" : "20:00"
+                      else 
+                        time
+                      end 
+
+       parse_date_time(date, parsing_time)
+     end
+     
+     #
+     # Parses date and time
+     #
+     def self.parse_date_time(date, time)
+
+       begin
+         date_str = "#{date.strftime('%Y-%m-%d')}T#{time}:00#{date.strftime("%:z")}"
+         result = DateTime.strptime(date_str,'%Y-%m-%dT%H:%M:%S%:z')
+       rescue
+         p "Invalid date #{date} #{time}"
+         result = date
+       end
+
+       return date
+
+     end
+
      # --------------------------  INSTANCE METHODS -------------------------------------------------------
 
      #
