@@ -27,6 +27,7 @@ module Yito
         property :alias, String, :length => 80
         
         property :request_customer_information, Boolean, :default => false
+        property :request_customer_address, Boolean, :default => false
         property :request_customer_document_id, Boolean, :default => false
         property :request_customer_phone, Boolean, :default => false
         property :request_customer_email, Boolean, :default => false
