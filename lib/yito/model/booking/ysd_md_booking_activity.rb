@@ -24,7 +24,17 @@ module Yito
         property :mode, Enum[:full,:partial], :default => :full
         property :active, Boolean, :default => true
         property :web_public, Boolean, :default => true
-        property :alias, String, :length => 80   
+        property :alias, String, :length => 80
+        
+        property :request_customer_information, Boolean, :default => false
+        property :request_customer_address, Boolean, :default => false
+        property :request_customer_document_id, Boolean, :default => false
+        property :request_customer_phone, Boolean, :default => false
+        property :request_customer_email, Boolean, :default => false
+        property :request_customer_height, Boolean, :default => false
+        property :request_customer_weight, Boolean, :default => false
+        property :request_customer_allergies_intolerances, Boolean, :default => false
+        property :uses_planning_resources, Boolean, :default => false
 
         property :from_price, Decimal, :scale => 2, :precision => 10, :default => 0
         property :from_price_offer, Decimal, :scale => 2, :precision => 10, :default => 0 

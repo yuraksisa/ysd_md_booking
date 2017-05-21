@@ -22,7 +22,7 @@ module Yito
           if booking_activity_translation = Yito::Model::Booking::Translation::BookingActivityTranslation.get(id)
             translated_attributes = {}
             booking_activity_translation.get_translated_attributes(language_code).each {|term| translated_attributes.store(term.concept.to_sym, term.translated_text)}
-            booking_activity = ::Yito::Model::Booking::BookingActivity.new(attributes.merge(translated_attributes){ |key, old_value, new_value| new_value.to_s.strip.length > 0?new_value:old_value })
+            booking_activity = ::Yito::Model::Booking::Activity.new(attributes.merge(translated_attributes){ |key, old_value, new_value| new_value.to_s.strip.length > 0?new_value:old_value })
           else
             booking_activity = self
           end
