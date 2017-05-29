@@ -36,7 +36,8 @@ module Yito
                                Conditions::Comparison.new(:customer_surname, '$like', "%#{search_text}%"),
                                Conditions::Comparison.new(:customer_email, '$eq', search_text),
                                Conditions::Comparison.new(:customer_phone, '$eq', search_text),
-                               Conditions::Comparison.new(:customer_mobile_phone, '$eq', search_text)])
+                               Conditions::Comparison.new(:customer_mobile_phone, '$eq', search_text),
+                               Conditions::Comparison.new(:external_invoice_number, '$eq', search_text)])
             
               total = conditions.build_datamapper(BookingDataSystem::Booking).all.count 
               data = conditions.build_datamapper(BookingDataSystem::Booking).all(offset_order_query) 
