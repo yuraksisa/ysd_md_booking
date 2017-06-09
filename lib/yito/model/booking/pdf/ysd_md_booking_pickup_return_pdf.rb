@@ -105,18 +105,22 @@ module Yito
             end
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
-              t.rows(no_span_rows).column(0).style(size: 8, width: 90)
-              t.rows(no_span_rows).column(1).style(size: 8, width: 30)
-              t.rows(no_span_rows).column(2).style(size: 8, width: 50)
-              t.rows(no_span_rows).column(3).style(size: 8)
-              t.rows(no_span_rows).column(4).style(size: 8, width: 120)
-              t.rows(no_span_rows).column(5).style(size: 8)
-              t.rows(no_span_rows).column(6).style(size: 8, width: 100)
-              t.rows(no_span_rows).column(7).style(size: 8)
-              t.rows(no_span_rows).column(8).style(size: 8)
-              t.rows(no_span_rows).column(9).style(:align => :right, size: 8, width: 60)
-              t.rows(span_rows).column(0).style(size: 8)
-              t.rows(span_rows).column(1).style(size: 8)
+              if no_span_rows.size > 0
+                t.rows(no_span_rows).column(0).style(size: 8, width: 90)
+                t.rows(no_span_rows).column(1).style(size: 8, width: 30)
+                t.rows(no_span_rows).column(2).style(size: 8, width: 50)
+                t.rows(no_span_rows).column(3).style(size: 8)
+                t.rows(no_span_rows).column(4).style(size: 8, width: 120)
+                t.rows(no_span_rows).column(5).style(size: 8)
+                t.rows(no_span_rows).column(6).style(size: 8, width: 100)
+                t.rows(no_span_rows).column(7).style(size: 8)
+                t.rows(no_span_rows).column(8).style(size: 8)
+                t.rows(no_span_rows).column(9).style(:align => :right, size: 8, width: 60)
+              end
+              if span_rows.size > 0
+                t.rows(span_rows).column(0).style(size: 8)
+                t.rows(span_rows).column(1).style(size: 8)
+              end
             end   
 
           end
@@ -169,16 +173,20 @@ module Yito
             end
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
-              t.rows(no_span_rows).column(0).style(size: 8, width: 90)
-              t.rows(no_span_rows).column(1).style(size: 8)
-              t.rows(no_span_rows).column(2).style(size: 8, width: 70)
-              t.rows(no_span_rows).column(3).style(size: 8)
-              t.rows(no_span_rows).column(4).style(size: 8)
-              t.rows(no_span_rows).column(5).style(size: 8)
-              t.rows(no_span_rows).column(6).style(size: 8, width: 70)
-              t.rows(no_span_rows).column(7).style(size: 8)
-              t.rows(span_rows).column(0).style(size: 8)
-              t.rows(span_rows).column(1).style(size: 8)
+              if no_span_rows.size > 0
+                t.rows(no_span_rows).column(0).style(size: 8, width: 90)
+                t.rows(no_span_rows).column(1).style(size: 8)
+                t.rows(no_span_rows).column(2).style(size: 8, width: 70)
+                t.rows(no_span_rows).column(3).style(size: 8)
+                t.rows(no_span_rows).column(4).style(size: 8)
+                t.rows(no_span_rows).column(5).style(size: 8)
+                t.rows(no_span_rows).column(6).style(size: 8, width: 70)
+                t.rows(no_span_rows).column(7).style(size: 8)
+              end
+              if span_rows.size > 0
+                t.rows(span_rows).column(0).style(size: 8)
+                t.rows(span_rows).column(1).style(size: 8)
+              end  
             end 
 
           end
