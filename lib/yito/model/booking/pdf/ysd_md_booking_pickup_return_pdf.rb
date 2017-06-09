@@ -6,33 +6,19 @@ module Yito
       module Pdf
         class PickupReturn
  
-          attr_reader :from, :to, :product_family
+          attr_reader :from, :to, :include_journal, :product_family
 
-          def initialize(date_from, date_to)
+          def initialize(date_from, date_to, include_journal=false)
             @from = date_from.nil? ? DateTime.now : date_from
             @to = date_to.nil? ? DateTime.now : date_to
+            @include_journal = include_journal
             @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
           end
 
           def build
 
-            picked_up_bookings = BookingDataSystem::Booking.all(
-                                   :date_from.gte => from,
-                                   :date_from.lte => to,
-                                   :status => [:confirmed, :in_progress, :done],
-                                   :order => [:date_from.asc, :time_from.asc]).sort do |x,y| 
-              comp = x.date_from <=> y.date_from 
-              comp.zero? ? Time.parse(x.time_from) <=> Time.parse(y.time_from) : comp
-            end     
-
-            returned_bookings = BookingDataSystem::Booking.all(
-                                   :date_to.gte => from,
-                                   :date_to.lte => to,
-                                   :status => [:confirmed, :in_progress, :done],
-                                   :order => [:date_to.asc, :time_to.asc]).sort do |x,y|
-              comp = x.date_to <=> y.date_to  
-              comp.zero? ? Time.parse(x.time_to) <=> Time.parse(y.time_to) : comp
-            end
+            picked_up_bookings = BookingDataSystem::Booking.pickup_list(from, to, include_journal).map { |item| OpenStruct.new(item) }
+            returned_bookings = BookingDataSystem::Booking.return_list(from, to, include_journal).map {|item| OpenStruct.new(item)}
 
             pdf = Prawn::Document.new(:page_layout => :landscape)
             font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
@@ -71,94 +57,128 @@ module Yito
 
           def pickup_table(picked_up_bookings, pdf)
 
-            table_data = []
-            header = ["Reserva"]
-            header << "Fecha entrega" 
-            header << "Lugar" if product_family.pickup_return_place 
-            header << "Producto"
+            header = []
+            header << "Fecha entrega"
+            header << "Días"
+            header << "Reserva"
+            header << "Lugar" if product_family.pickup_return_place
+            header << "Producto(s)"
+            header << "Extra(s)"
             header << "Cliente"
-            header << "Teléfono" 
-            header << "Email" 
-            header << "Vuelo" if product_family.flight 
-            header << "Pdte." 
+            header << "Notas"
+            header << "Vuelo" if product_family.flight
+            header << "Pdte."
+
+            table_data = []
             table_data << header
 
+            span_rows = []
+            no_span_rows = [0]
+            idx = 1
+
             picked_up_bookings.each do |booking|
-              data = [booking.id,
-                      "#{booking.date_from.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_from : ''}"]
-              data << booking.pickup_place if product_family.pickup_return_place
-              stock = []
-              booking.booking_lines.each do |booking_line|
-                booking_line.booking_line_resources.each do |booking_line_resource|
-                  stock_item = booking_line.item_id
-                  stock_item << " - " unless booking_line_resource.booking_item.nil?
-                  stock_item << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
-                  stock << stock_item
-                end 
+              date_from = booking.date_from.strftime('%d-%m-%Y')
+              if product_family.time_to_from
+                date_from << ' '
+                date_from << booking.time_from
               end
-              data << stock.join(', ')
-              data << "#{booking.customer_surname}, #{booking.customer_name}"
-              data << "#{booking.customer_phone} #{booking.customer_mobile_phone}"
-              data << booking.customer_email
-              data << "#{booking.flight_company} #{booking.flight_number} #{booking.flight_time}" if product_family.flight
-              data << "%.2f" % booking.total_pending
-              table_data << data                                 
+              data = []
+              if booking.id == '.'
+                data << date_from
+                data << {content: booking.product, colspan: 9}
+                span_rows << idx
+              else
+                data << date_from
+                data << (booking.id == '.' ? '' : booking.days)
+                data << (booking.id == '.' ? '' : booking.id)
+                data << booking.pickup_place if product_family.pickup_return_place
+                data << booking.product
+                data << booking.extras
+                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
+                data << booking.notes
+                data << booking.flight if product_family.flight
+                data <<  (booking.id == '.' ? '' : "%.2f" % booking.total_pending)
+                no_span_rows << idx
+              end
+              table_data << data
+              idx = idx + 1
             end
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
-              t.column(0).style(size: 8)	
-              t.column(1).style(size: 8)
-              t.column(2).style(size: 8)
-              t.column(3).style(size: 8)
-              t.column(4).style(size: 8)              
-              t.column(5).style(size: 8, width: 70)
-              t.column(6).style(size: 8)
-              t.column(7).style(size: 8)
-              t.column(8).style(:align => :right, size: 8)
+              t.rows(no_span_rows).column(0).style(size: 8, width: 90)
+              t.rows(no_span_rows).column(1).style(size: 8, width: 30)
+              t.rows(no_span_rows).column(2).style(size: 8, width: 50)
+              t.rows(no_span_rows).column(3).style(size: 8)
+              t.rows(no_span_rows).column(4).style(size: 8, width: 120)
+              t.rows(no_span_rows).column(5).style(size: 8)
+              t.rows(no_span_rows).column(6).style(size: 8, width: 100)
+              t.rows(no_span_rows).column(7).style(size: 8)
+              t.rows(no_span_rows).column(8).style(size: 8)
+              t.rows(no_span_rows).column(9).style(:align => :right, size: 8, width: 60)
+              t.rows(span_rows).column(0).style(size: 8)
+              t.rows(span_rows).column(1).style(size: 8)
             end   
 
           end
 
           def return_table(returned_bookings, pdf)
 
-            table_data = []
-            header = ["Reserva"]
-            header << "Fecha recogida" 
-            header << "Lugar" if product_family.pickup_return_place 
+            header = []
+            header << "Fecha recogida"
+            header << "Reserva"
+            header << "Lugar" if product_family.pickup_return_place
             header << "Producto"
+            header << "Extras"
             header << "Cliente"
             header << "Teléfono" 
             header << "Email"
+
+            table_data = []
             table_data << header
 
+            span_rows = []
+            no_span_rows = [0]
+            idx = 1
+
             returned_bookings.each do |booking|
-              data = [booking.id,
-                      "#{booking.date_to.strftime('%d-%m-%Y')} #{product_family.time_to_from ? booking.time_to : ''}"]
-              data << booking.return_place if product_family.pickup_return_place
-              stock = []
-              booking.booking_lines.each do |booking_line|
-                booking_line.booking_line_resources.each do |booking_line_resource|
-                  stock_item = booking_line.item_id
-                  stock_item << " - " unless booking_line_resource.booking_item.nil?
-                  stock_item << booking_line_resource.booking_item.reference unless booking_line_resource.booking_item.nil?
-                  stock << stock_item
-                end 
+
+              date_to = booking.date_to.strftime('%d-%m-%Y')
+              if product_family.time_to_from
+                date_to << ' '
+                date_to << booking.time_to
               end
-              data << stock.join(', ')
-              data << "#{booking.customer_surname}, #{booking.customer_name}"
-              data << "#{booking.customer_phone} #{booking.customer_mobile_phone}"
-              data << booking.customer_email
-              table_data << data                                 
+
+              data = []
+              if booking.id == '.'
+                data << date_to
+                data << {content: booking.product, colspan: 7}
+                span_rows << idx
+              else
+                data << date_to
+                data << booking.id
+                data << booking.return_place if product_family.pickup_return_place
+                data << booking.product
+                data << booking.extras
+                data << booking.customer
+                data << "#{booking.customer_phone} #{booking.customer_mobile_phone}"
+                data << booking.customer_email
+                no_span_rows << idx
+              end
+              table_data << data
+              idx = idx + 1
             end
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
-              t.column(0).style(size: 8)	
-              t.column(1).style(size: 8)
-              t.column(2).style(size: 8)
-              t.column(3).style(size: 8)
-              t.column(4).style(size: 8)              
-              t.column(5).style(size: 8, width: 70)
-              t.column(6).style(size: 8)
+              t.rows(no_span_rows).column(0).style(size: 8, width: 90)
+              t.rows(no_span_rows).column(1).style(size: 8)
+              t.rows(no_span_rows).column(2).style(size: 8, width: 70)
+              t.rows(no_span_rows).column(3).style(size: 8)
+              t.rows(no_span_rows).column(4).style(size: 8)
+              t.rows(no_span_rows).column(5).style(size: 8)
+              t.rows(no_span_rows).column(6).style(size: 8, width: 70)
+              t.rows(no_span_rows).column(7).style(size: 8)
+              t.rows(span_rows).column(0).style(size: 8)
+              t.rows(span_rows).column(1).style(size: 8)
             end 
 
           end

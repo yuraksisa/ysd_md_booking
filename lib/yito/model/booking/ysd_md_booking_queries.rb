@@ -1121,6 +1121,9 @@ module Yito
 
           end
 
+          #
+          # Max external invoice number
+          #
           def max_external_invoice_number
             query = <<-QUERY
                select max(external_invoice_number)
@@ -1128,6 +1131,125 @@ module Yito
             QUERY
 
             repository.adapter.select(query).first
+          end
+          
+          #
+          # Pickup in a date
+          #
+          def pickup_list(from, to, include_journal=false)
+
+            # Get reservations
+            
+            data = BookingDataSystem::Booking.all(
+                :date_from.gte => from,
+                :date_from.lte => to,
+                :status => [:confirmed, :in_progress, :done],
+                :order => [:date_from.asc, :time_from.asc]).map do |item|
+              product = item.booking_lines.inject('') do |result, b_l|
+                result << b_l.item_id
+                b_l.booking_line_resources.each do |b_l_r|
+                  result << ' - '
+                  result << b_l_r.booking_item_reference
+                  result << ' '
+                end
+                result
+              end
+              extras = item.booking_extras.inject('') do |result, b_e|
+                result << b_e.extra_description
+                result << ' '
+                result
+              end
+              {id: item.id, date_from: item.date_from.to_date.to_datetime, time_from: item.time_from, pickup_place: item.pickup_place, product: product,
+               customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
+               customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
+               total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days}
+            end
+            
+            # Include journal
+            
+            if include_journal
+              journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
+              event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_pickup')
+              journal_events = ::Yito::Model::Calendar::Event.all(
+                  :conditions => {:from.gte => from, :from.lt => to+1, event_type_id: event_type.id,
+                                  :calendar_id => journal_calendar.id},
+                  :order => [:from.asc]).map do |item|
+                {id: '.', date_from: item.from.to_date.to_datetime, time_from: item.from.strftime('%H:%M'), pickup_place: '', product: item.description, customer: '', customer_phone: '', customer_mobile_phone: '',
+                 customer_email: '', flight: '', total_pending: 0, extras: '', notes: '', days: 0}
+              end
+              data.concat(journal_events)
+            end
+
+            data.sort! do |x, y|
+              comp = x[:date_from] <=> y[:date_from]
+              if comp.zero?
+                Time.parse(x[:time_from]) <=> Time.parse(y[:time_from])
+              else
+                comp
+              end
+            end
+            
+          end
+          
+          #
+          # Return list (including journal)
+          #
+          def return_list(from, to, include_journal=false)
+
+            # Get reservations
+            
+            data = BookingDataSystem::Booking.all(
+                :date_to.gte => from,
+                :date_to.lte => to,
+                :status => [:confirmed, :in_progress, :done],
+                :order => [:date_to.asc, :time_to.asc]).map do |item|
+              product = item.booking_lines.inject('') do |result, b_l|
+                result << b_l.item_id
+                b_l.booking_line_resources.each do |b_l_r|
+                  result << ' - '
+                  result << b_l_r.booking_item_reference
+                  result << ' '
+                end
+                result
+              end
+              extras = item.booking_extras.inject('') do |result, b_e|
+                result << b_e.extra_description
+                result << ' '
+                result
+              end
+              {id: item.id, date_to: item.date_to.to_date.to_datetime, time_to: item.time_to, return_place: item.return_place, product: product,
+               customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
+               customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
+               total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days}
+            end
+
+            # Include Journal
+            
+            if include_journal
+              journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
+              event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_return')
+              journal_events = ::Yito::Model::Calendar::Event.all(
+                  :conditions => {:from.gte => from, :from.lt => from+1, event_type_id: event_type.id,
+                                  :calendar_id => journal_calendar.id},
+                  :order => [:to.asc]).map do |item|
+                {id: '.', date_to: item.from.to_date.to_datetime, time_to: item.from.strftime('%H:%M'),
+                 return_place: '', product: item.description, customer: '', customer_phone: '', customer_mobile_phone: '',
+                 customer_email: '', flight: '', total_pending: 0, extras: '', notes: '', days: 0}
+              end
+              data.concat(journal_events)
+            end
+
+            data.sort! do |x, y|
+              comp = x[:date_to] <=> y[:date_to]
+              if comp.zero?
+                Time.parse(x[:time_to]) <=> Time.parse(y[:time_to])
+              else
+                comp
+              end
+            end
+            
+            return data
+            
           end
           
           private
