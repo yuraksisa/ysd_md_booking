@@ -64,8 +64,8 @@ module Yito
             header << "Lugar" if product_family.pickup_return_place
             header << "Producto(s)"
             header << "Extra(s)"
-            header << "Cliente"
             header << "Notas"
+            header << "Cliente"
             header << "Vuelo" if product_family.flight
             header << "Pdte."
 
@@ -94,8 +94,8 @@ module Yito
                 data << booking.pickup_place if product_family.pickup_return_place
                 data << booking.product
                 data << booking.extras
-                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.notes
+                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.flight if product_family.flight
                 data <<  (booking.id == '.' ? '' : "%.2f" % booking.total_pending)
                 no_span_rows << idx
@@ -112,8 +112,8 @@ module Yito
                 t.rows(no_span_rows).column(3).style(size: 8)
                 t.rows(no_span_rows).column(4).style(size: 8, width: 120)
                 t.rows(no_span_rows).column(5).style(size: 8)
-                t.rows(no_span_rows).column(6).style(size: 8, width: 100)
                 t.rows(no_span_rows).column(7).style(size: 8)
+                t.rows(no_span_rows).column(6).style(size: 8, width: 100)
                 t.rows(no_span_rows).column(8).style(size: 8)
                 t.rows(no_span_rows).column(9).style(:align => :right, size: 8, width: 60)
               end
@@ -133,9 +133,8 @@ module Yito
             header << "Lugar" if product_family.pickup_return_place
             header << "Producto"
             header << "Extras"
+            header << "Notas"
             header << "Cliente"
-            header << "Teléfono" 
-            header << "Email"
 
             table_data = []
             table_data << header
@@ -155,7 +154,7 @@ module Yito
               data = []
               if booking.id == '.'
                 data << date_to
-                data << {content: booking.product, colspan: 7}
+                data << {content: booking.product, colspan: (product_family.pickup_return_place ? 6 : 5)}
                 span_rows << idx
               else
                 data << date_to
@@ -163,9 +162,8 @@ module Yito
                 data << booking.return_place if product_family.pickup_return_place
                 data << booking.product
                 data << booking.extras
-                data << booking.customer
-                data << "#{booking.customer_phone} #{booking.customer_mobile_phone}"
-                data << booking.customer_email
+                data << booking.notes
+                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 no_span_rows << idx
               end
               table_data << data
@@ -176,12 +174,15 @@ module Yito
               if no_span_rows.size > 0
                 t.rows(no_span_rows).column(0).style(size: 8, width: 90)
                 t.rows(no_span_rows).column(1).style(size: 8)
-                t.rows(no_span_rows).column(2).style(size: 8, width: 70)
-                t.rows(no_span_rows).column(3).style(size: 8)
-                t.rows(no_span_rows).column(4).style(size: 8)
-                t.rows(no_span_rows).column(5).style(size: 8)
-                t.rows(no_span_rows).column(6).style(size: 8, width: 70)
-                t.rows(no_span_rows).column(7).style(size: 8)
+                col = 0
+                if product_family.pickup_return_place
+                  t.rows(no_span_rows).column(2).style(size: 8, width: 70)
+                  col = 1
+                end
+                t.rows(no_span_rows).column(2 + col).style(size: 8)
+                t.rows(no_span_rows).column(3 + col).style(size: 8)
+                t.rows(no_span_rows).column(4 + col).style(size: 8)
+                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 100)
               end
               if span_rows.size > 0
                 t.rows(span_rows).column(0).style(size: 8)

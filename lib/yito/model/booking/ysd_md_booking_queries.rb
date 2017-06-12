@@ -1149,14 +1149,14 @@ module Yito
                 result << b_l.item_id
                 b_l.booking_line_resources.each do |b_l_r|
                   result << ' - '
-                  result << b_l_r.booking_item_reference
+                  result << (b_l_r.booking_item_reference.nil? ? 'NO ASIGNADO' : b_l_r.booking_item_reference)
                   result << ' '
                 end
                 result
               end
               extras = item.booking_extras.inject('') do |result, b_e|
                 result << b_e.extra_description
-                result << ' '
+                result << "(#{b_e.quantity}) "
                 result
               end
               {id: item.id, date_from: item.date_from.to_date.to_datetime, time_from: item.time_from, pickup_place: item.pickup_place, product: product,
@@ -1183,7 +1183,11 @@ module Yito
             data.sort! do |x, y|
               comp = x[:date_from] <=> y[:date_from]
               if comp.zero?
-                Time.parse(x[:time_from]) <=> Time.parse(y[:time_from])
+                begin
+                  Time.parse(x[:time_from]) <=> Time.parse(y[:time_from])
+                rescue
+                  comp
+                end
               else
                 comp
               end
@@ -1207,14 +1211,14 @@ module Yito
                 result << b_l.item_id
                 b_l.booking_line_resources.each do |b_l_r|
                   result << ' - '
-                  result << b_l_r.booking_item_reference
+                  result << (b_l_r.booking_item_reference.nil? ? 'NO ASIGNADO' : b_l_r.booking_item_reference)
                   result << ' '
                 end
                 result
               end
               extras = item.booking_extras.inject('') do |result, b_e|
                 result << b_e.extra_description
-                result << ' '
+                result << "(#{b_e.quantity}) "
                 result
               end
               {id: item.id, date_to: item.date_to.to_date.to_datetime, time_to: item.time_to, return_place: item.return_place, product: product,
@@ -1242,7 +1246,11 @@ module Yito
             data.sort! do |x, y|
               comp = x[:date_to] <=> y[:date_to]
               if comp.zero?
-                Time.parse(x[:time_to]) <=> Time.parse(y[:time_to])
+                begin
+                  Time.parse(x[:time_to]) <=> Time.parse(y[:time_to])
+                rescue
+                  comp
+                end  
               else
                 comp
               end
