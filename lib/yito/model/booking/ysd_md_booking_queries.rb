@@ -746,10 +746,12 @@ module Yito
           #
           #             - The key is the stock resource id
           #             - The value is a Hash with :
-          #                 :category   : The product category
-          #                 :available  : Boolean that says the is available or not
-          #                 :detail     : Assigned reservations
-          #                 :estimation : Automatically assigned reservations
+          #                 :category        : The product category
+          #                 :own_property    : The product belongs to the company
+          #                 :assignable      : The product allow assignation
+          #                 :available       : Boolean that says the is available or not
+          #                 :detail          : Assigned reservations
+          #                 :estimation      : Automatically assigned reservations
           #
           #  - Second : category_occupation. (Hash) The products categories and its occupation
           #
@@ -808,7 +810,9 @@ module Yito
             stock_detail = {}
             stock_items.each do |stock_item|
               # Register the item in the stock_detail hash
-              stock_detail.store(stock_item.reference, {category: stock_item.category_code, 
+              stock_detail.store(stock_item.reference, {category: stock_item.category_code,
+                                                        own_property: stock_item.own_property,
+                                                        assignable: stock_item.assignable,
                                                         available: true, 
                                                         detail: [],
                                                         estimation: []})
@@ -848,17 +852,18 @@ module Yito
             #
             # 4. Try to automatically assign stock to assignation pending (resource_urges)
             #
-            required_categories.each do |category_code, category_data|
+            required_categories.each do |required_category_key, required_category_value|
 
-              required_categories[category_code][:original_total] = required_categories[category_code][:total]
-              required_categories[category_code][:original_assignation_pending] = required_categories[category_code][:assignation_pending].clone
+              required_categories[required_category_key][:original_total] = required_categories[required_category_key][:total]
+              required_categories[required_category_key][:original_assignation_pending] = required_categories[required_category_key][:assignation_pending].clone
 
               # Clones the assignation pending resource urges (because we are going to manipulate it)
-              assignation_pending_sources = category_data[:assignation_pending].clone 
+              assignation_pending_sources = required_category_value[:assignation_pending].clone
               assignation_pending_sources.each do |assignation_pending_source|
                 # Search stock items candidates
-                candidates = category_data[:stock].select do |item_reference, item_reference_assigned_reservations| 
-                               item_reference_assigned_reservations.all? do |assigned|                                  
+                candidates = required_category_value[:stock].select do |item_reference, item_reference_assigned_reservations|
+                               (stock_detail[item_reference][:assignable]) and # Avoid not assignable resource
+                               item_reference_assigned_reservations.all? do |assigned|
                                  assign_pend_d_f = parse_date_time_from(assignation_pending_source.date_from, assignation_pending_source.time_from)
                                  assign_pend_d_t = parse_date_time_to(assignation_pending_source.date_to, assignation_pending_source.time_to)
                                  assigned_d_f = parse_date_time_from(assigned.date_from, assigned.time_from)
@@ -869,14 +874,14 @@ module Yito
                 if candidates.size > 0
                   candidate_item_reference = candidates.keys.first
                   # Apply reassignation
-                  category_data[:total] -= 1
-                  category_data[:assignation_pending].delete(assignation_pending_source)
+                  required_category_value[:total] -= 1
+                  required_category_value[:assignation_pending].delete(assignation_pending_source)
                   # Holds for history
-                  category_data[:reassigned_total] += 1
-                  category_data[:reassigned_assignation_pending] << assignation_pending_source
+                  required_category_value[:reassigned_total] += 1
+                  required_category_value[:reassigned_assignation_pending] << assignation_pending_source
                   # Append the assignation pending to the stock assigned 
-                  category_data[:stock][candidate_item_reference] << assignation_pending_source
-                  category_data[:stock][candidate_item_reference].sort! {|x,y| x.date_from <=> y.date_from }
+                  required_category_value[:stock][candidate_item_reference] << assignation_pending_source
+                  required_category_value[:stock][candidate_item_reference].sort! {|x,y| x.date_from <=> y.date_from }
                   if stock_detail.has_key?(candidate_item_reference)
                     stock_detail[candidate_item_reference][:estimation] << assignation_pending_source
                   end 
@@ -898,15 +903,26 @@ module Yito
             request_date_from =parse_date_time_from(date_from)
             request_date_to = parse_date_time_to(date_to)
 
-            required_categories.each do |category_code, category_value|
+            required_categories.each do |required_category_key, required_category_value|
 
-              category_occupation.store(category_code,
-                                       {stock: category_value[:category_stock],
-                                        occupation: (stock_detail.select {|k,v| v[:category] == category_code && (!v[:detail].empty? || !v[:estimation].empty?) }).keys.count,#busy_stock_resources.keys.count,
-                                        occupation_assigned: (stock_detail.select {|k,v| v[:category] == category_code && !v[:detail].empty? }).keys.count,
-                                        available_stock: (stock_detail.select {|k,v| v[:category] == category_code && v[:detail].empty? }).keys ,
-                                        automatically_preassigned_stock: (stock_detail.select {|k,v| v[:category] == category_code && !v[:estimation].empty? }).keys, 
-                                        assignation_pending: category_value[:original_assignation_pending]})
+              stock = required_category_value[:category_stock]
+              occupation = (stock_detail.select {|k,v| v[:category] == required_category_key && (!v[:detail].empty? || !v[:estimation].empty?) }).keys.count
+              occupation_assigned = (stock_detail.select {|k,v| v[:category] == required_category_key && !v[:detail].empty? }).keys.count
+              available_stock = (stock_detail.select {|k,v| v[:category] == required_category_key && v[:detail].empty? }).keys
+              automatically_preassigned_stock = (stock_detail.select {|k,v| v[:category] == required_category_key && !v[:estimation].empty? }).keys
+              available_assignable_resource = (stock_detail.select do
+                                                  |k,v| v[:category] == required_category_key && v[:detail].empty? && v[:estimation].empty? && stock_detail[k][:assignable]
+                                               end).keys.count
+              # If there is not stock, check if there are available assignable resources in order to admit reservations
+              stock = occupation + available_assignable_resource if (stock <= occupation)
+
+              category_occupation.store(required_category_key,
+                                       {stock: stock,
+                                        occupation: occupation,
+                                        occupation_assigned: occupation_assigned,
+                                        available_stock: available_stock ,
+                                        automatically_preassigned_stock: automatically_preassigned_stock,
+                                        assignation_pending: required_category_value[:original_assignation_pending]})
 
             end
 
