@@ -43,23 +43,24 @@ module Yito
         property :duration_days, Integer, :default => 0
         property :duration_hours, String, :length => 5
 
-        # -- One time 
+        # -- One time activity [date-time from / date-time to]
 
         property :date_from, DateTime
         property :time_from, String, :length => 5
         property :date_to, DateTime
         property :time_to, String, :length => 5 
 
-        # -- Multiple dates activities
+        # -- Multiple dates activities [multiple dates]
 
         has n, :activity_dates, 'ActivityDate', :constraint => :destroy, :order => [:date_from.asc]
 
-        # -- Cyclic activities
-
-        belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
+        # -- Cyclic activities [all year - one or multiple periods]
+        
+        property :all_year, Boolean, :default => true
+        property :multiple_periods, Boolean, :default => false
+        has n, :activity_periods, 'ActivityPeriod', :constraint => :destroy, :order => [:from_day.asc, :from_month.asc]
         
         # To manage if the activity is offered all year or only on specific period
-        property :all_year, Boolean, :default => true
         property :from_day, Integer
         property :from_month, Integer
         property :to_day, Integer
@@ -102,11 +103,11 @@ module Yito
         property :saturday_afternoon_turns, String, :length => 255
         property :saturday_night_turns, String, :length => 255
 
-        property :notify_customer_if_empty, Boolean, :default => false
-
         # -- Other attributes
 
         property :capacity, Integer, :default => 0
+        belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
+        property :notify_customer_if_empty, Boolean, :default => false
 
         # -- Prices
         property :type_of_multiple_prices, Enum[:none, :duration, :ages, :accomodation], default: :none
