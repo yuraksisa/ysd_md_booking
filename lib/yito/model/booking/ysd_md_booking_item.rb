@@ -29,6 +29,8 @@ module Yito
         property :characteristic_4, String, :length => 80
         property :cost, Decimal, :scale => 2, :precision => 10 
         property :active, Boolean, :default => true
+        property :own_property, Boolean, :default => true
+        property :assignable, Boolean, :default => true
         property :planning_order, Integer, :default => 0   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]
