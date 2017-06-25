@@ -215,7 +215,7 @@ module Yito
               select o_i.id, o_i.date, o_i.time, o_i.item_id, o_i.item_description, 
                      o_i.item_price_description,
                      o_i.quantity, o_i.item_unit_cost, o_i.item_cost, o_i.item_price_type,
-                     o_i.comments,
+                     o_i.comments, o_i.notes, o_i.custom_customers_pickup_place, o_i.customers_pickup_place,
                      o.id as order_id, o.customer_name, o.customer_surname, o.customer_email,
                      o.customer_phone, o.comments as order_comments,
                      case o.status
@@ -246,7 +246,7 @@ module Yito
               select o_i.id, o_i.date, o_i.time, o_i.item_id, o_i.item_description, 
                      o_i.item_price_description,
                      o_i.quantity, o_i.item_unit_cost, o_i.item_cost, o_i.item_price_type,
-                     o_i.comments,
+                     o_i.comments, o_i.notes, o_i.customers_pickup_place,
                      o.id as order_id, o.customer_name, o.customer_surname, o.customer_email,
                      o.customer_phone, o.comments as order_comments,
                      case o.status
@@ -258,7 +258,7 @@ module Yito
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id
-              where o.status NOT IN (1,3) and o_i.date = ? 
+              where o.status NOT IN (3) and o_i.date = ? 
               order by o_i.date, o_i.time, o_i.item_id, o.customer_surname, o.customer_name
             SQL
 
@@ -294,7 +294,60 @@ module Yito
             orders = repository.adapter.select(sql, date_from, date_to)
 
           end
-          
+
+          #
+          # Get programmed activities between two dates.
+          #
+          # They represent the activities that have any confirmation
+          #
+          def programmed_activities_plus_pending(date_from, date_to)
+
+            sql = <<-SQL
+                   select oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, CAST (oi.status as UNSIGNED) as status,
+                          oi.item_description, sum(oi.quantity) as occupation,
+                          a.schedule_color, a.duration_days, a.duration_hours
+                   from orderds_orders o
+                   join orderds_order_items oi on oi.order_id = o.id
+                   join bookds_activities a on a.code = oi.item_id
+                   where o.status in (1,2) and oi.date >= ? and oi.date <= ?
+                   group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, oi.item_description, a.schedule_color, a.duration_days, a.duration_hours, oi.status
+                   order by oi.date desc, oi.time desc, oi.item_id
+            SQL
+
+            activities = repository.adapter.select(sql, date_from, date_to).inject([]) do |result, value|
+                           index = result.index { |x| x.date == value.date and x.time == value.time and
+                                                      x.date_to == value.date_to and x.time_to == value.time_to and
+                                                      x.item_id == value.item_id and x.schedule_color == value.schedule_color and
+                                                      x.duration_days == value.duration_days and x.duration_hours == value.duration_hours
+                                                }
+                           if index
+                             if value.status == 1
+                               result[index].pending_confirmation = value.occupation
+                             elsif value.status == 2
+                               result[index].confirmed = value.occupation
+                             end
+                           else 
+                             data = {date: value.date,
+                                     time: value.time,
+                                     date_to: value.date_to,
+                                     time_to: value.time_to,
+                                     item_id: value.item_id,
+                                     item_description: value.item_description,
+                                     schedule_color: value.schedule_color,
+                                     duration_days: value.duration_days,
+                                     duration_hours: value.duration_hours,
+                                     pending_confirmation: (value.status == 1 ? value.occupation : 0),
+                                     confirmed: (value.status == 2 ? value.occupation : 0),
+                             }
+                             result << OpenStruct.new(data)
+                           end  
+                           result
+                         end
+
+
+
+          end
+
           #
           # Get programmed activities between two dates.
           #
@@ -311,7 +364,7 @@ module Yito
                    join bookds_activities a on a.code = oi.item_id
                    where o.status in (2) and oi.date >= ? and oi.date <= ?
                    group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, oi.item_description, a.schedule_color, a.duration_days, a.duration_hours
-                   order by oi.date desc, oi.time desc, oi.item_id            
+                   order by oi.date asc, oi.time asc, oi.item_id
                   SQL
 
             programmed_activities = repository.adapter.select(sql, date_from, date_to)      
@@ -402,9 +455,11 @@ module Yito
 
                   if activity.cyclic_planned?(date.wday)
                     days.store(day, {quantity: (item_prices.empty? ? 0 : item_prices.clone),
+                                     pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
                                      capacity: real_capacity})
                   else
                     days.store(day, {quantity: '-',
+                                     pending_confirmation: (item_prices_empty? ? 0 : item_prices.clone),
                                      capacity: real_capacity})
                   end 
                 end
@@ -422,28 +477,31 @@ module Yito
             # Fill with the orders
 
             sql =<<-SQL
-              select o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, sum(quantity) as quantity
+              select o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, CAST (o_i.status AS UNSIGNED) as status, sum(quantity) as quantity
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id 
-              where o.status NOT IN (1,3) and o_i.date >= ? and o_i.date <= ? and 
+              where o.status NOT IN (3) and o_i.date >= ? and o_i.date <= ? and 
                     a.occurence IN (3)
-              group by o_i.item_id, o_i.date, o_i.time, o_i.item_price_type 
+              group by o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, o_i.status
             SQL
 
             orders = repository.adapter.select(sql, date_from, date_to)
 
             orders.each do |order|
-              if result[order.item_id] and result[order.item_id][:occupation] and
+              if result[order.item_id] and
+                 result[order.item_id][:occupation] and
                  result[order.item_id][:occupation][order.time] and 
                  result[order.item_id][:occupation][order.time][order.date.day] and
-                 result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type]
-                result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity
+                 result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] and
+                 result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type]
+                result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type] += order.quantity if order.status == 1
+                result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity if order.status == 2
               end
             end
 
             # Result
-            return result
+            result
 
           end
 

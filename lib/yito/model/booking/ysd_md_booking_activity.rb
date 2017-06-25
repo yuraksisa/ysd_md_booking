@@ -43,6 +43,10 @@ module Yito
         property :duration_days, Integer, :default => 0
         property :duration_hours, String, :length => 5
 
+        # -- Pickup places
+        property :custom_pickup_places, Boolean, default: false
+        belongs_to :pickup_return_place_definition, 'Yito::Model::Booking::PickupReturnPlaceDefinition', :required => false
+
         # -- One time 
 
         property :date_from, DateTime
