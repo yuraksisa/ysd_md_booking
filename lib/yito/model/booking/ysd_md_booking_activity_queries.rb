@@ -459,7 +459,7 @@ module Yito
                                      capacity: real_capacity})
                   else
                     days.store(day, {quantity: '-',
-                                     pending_confirmation: (item_prices_empty? ? 0 : item_prices.clone),
+                                     pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
                                      capacity: real_capacity})
                   end 
                 end
