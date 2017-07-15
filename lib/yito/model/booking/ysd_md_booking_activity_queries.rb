@@ -385,7 +385,7 @@ module Yito
                    where o.status in (2) and oi.date >= ? 
                    group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, 
                             oi.item_description
-                   order by oi.date desc, oi.time desc, oi.item_id            
+                   order by oi.date asc, oi.time asc, oi.item_id
                   SQL
 
             programmed_activities = repository.adapter.select(sql, date_from)      
