@@ -148,7 +148,29 @@ module Yito
           check_price_definition! if self.price_definition_1 || self.price_definition_2 || self.price_definition_3
           super # Invokes the super class to achieve the chain of methods invoked       
         end
-        
+
+        #
+        # Get the date for one time timetable
+        #
+        def one_time_timetable
+          if occurence == :one_time
+            [time_from]
+          else
+            nil
+          end
+        end
+
+        #
+        # Get the "turns" for multiple date timetable
+        #
+        def multiple_dates_timetable
+          if occurence == :multiple_dates
+            (self.activity_dates.map { |activity_date| activity_date.time_from.empty? ? activity_date.time_from : activity_date.time_from.rjust(5,"0") }).select { |time| !time.empty? }.uniq.sort
+          else
+            nil
+          end
+        end
+
         #
         # Get the turns summary (taking into account all days)
         #
@@ -200,6 +222,7 @@ module Yito
         # Check if the activity is planned for a day of week
         #
         def cyclic_planned?(day_of_week)
+          return false unless occurence == :cyclic
           return true if all_days
           case day_of_week
             when 0 
@@ -219,11 +242,25 @@ module Yito
           end
           return false 
         end
-        
+
         #
-        # Check if an activity for multiple dates has active dates
+        # Check if a date correponds
+        #
+        def start_date?(date)
+          if occurence == :one_time
+            self.date_from.to_date == date
+          elsif occurence == :multiple_dates
+            (activity_dates.select { |item| item.date_from.to_date == date  }).size > 0
+          else
+            return false
+          end
+        end
+
+        #
+        # Check if an activity is alive.
         #
         def lives?
+
           if occurence == :multiple_dates
             today = Date.today
             (activity_dates.select { |item| item.date_from >= today  }).size > 0
@@ -329,7 +366,7 @@ module Yito
                                                                            activity_code: self.code)
           occupation_capacity = planned_activity.nil? ? self.capacity : planned_activity.capacity
 
-          result = {total_occupation: total_occupation, occupation_detail: occupation_detail, occupation_capacity: occupation_capacity}
+          result = {total_occupation: total_occupation.to_i, occupation_detail: occupation_detail, occupation_capacity: occupation_capacity}
         
           return result
 
