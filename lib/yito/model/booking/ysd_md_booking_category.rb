@@ -44,6 +44,13 @@ module Yito
         end
 
         #
+        # Count the defined stock
+        #
+        def defined_stock
+          BookingItem.all(category_code: code, active: true, assignable: true).count
+        end
+
+        #
         # Check if the product is ready to start selling it
         #
         def ready?
@@ -83,6 +90,7 @@ module Yito
             relationships = options[:relationships] || {}
             methods = options[:methods] || []
             methods << :ready
+            methods << :defined_stock
             super(options.merge({:relationships => relationships, :methods => methods}))
           end
 

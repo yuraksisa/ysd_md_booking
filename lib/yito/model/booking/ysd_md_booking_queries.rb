@@ -822,6 +822,24 @@ module Yito
               end
             end
 
+            # 2.b create dummy resources (when category stock does not match stock items)
+            required_categories.each do |category_code, category_value|
+               if category_value[:category_stock] > category_value[:stock].size
+                 ((category_value[:stock].size+1)..category_value[:category_stock]).each do |idx|
+                   stock_id = "DUMMY-#{category_code}-#{idx}"
+                   # Add dummy resource to the category stock detail
+                   category_value[:stock].store(stock_id, [])
+                   # Add dummy resource to the stock detail
+                   stock_detail.store(stock_id, {category: category_code,
+                                               own_property: true,
+                                               assignable: true,
+                                               available: true,
+                                               detail: [],
+                                               estimation: []})
+                 end
+               end
+            end
+
             # 3. Fill with reservations urges 
 
             #
