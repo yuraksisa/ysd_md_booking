@@ -227,7 +227,7 @@ module Yito
               from orderds_order_items o_i
               join orderds_orders o on o.id = o_i.order_id
               join bookds_activities a on a.code = o_i.item_id
-              where o_i.date = ? and o_i.time = ? and o_i.item_id = ?
+              where o_i.date = ? and o_i.time = ? and o_i.item_id = ? and o.status not in (3)
               order by o_i.date, o_i.time, o_i.item_id, o.customer_surname, o.customer_name
             SQL
 
@@ -311,7 +311,7 @@ module Yito
                    join bookds_activities a on a.code = oi.item_id
                    where o.status in (1,2) and oi.date >= ? and oi.date <= ?
                    group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, oi.item_description, a.schedule_color, a.duration_days, a.duration_hours, oi.status
-                   order by oi.date desc, oi.time desc, oi.item_id
+                   order by oi.date asc, oi.time asc, oi.item_id
             SQL
 
             activities = repository.adapter.select(sql, date_from, date_to).inject([]) do |result, value|
@@ -382,7 +382,7 @@ module Yito
                    from orderds_orders o
                    join orderds_order_items oi on oi.order_id = o.id
                    join bookds_activities a on a.code = oi.item_id
-                   where o.status in (2) and oi.date >= ? 
+                   where o.status in (2) and oi.date > ? 
                    group by oi.date, oi.time, oi.date_to, oi.time_to, oi.item_id, 
                             oi.item_description
                    order by oi.date asc, oi.time asc, oi.item_id
@@ -398,12 +398,200 @@ module Yito
           #
           def one_time_occupation_detail(month, year)
 
+            date_from = Date.civil(year, month, 1)
+            date_to = Date.civil(year, month, -1)
+            result = {}
+
+            # Get planned activities
+            condition = Conditions::JoinComparison.new('$and',
+                                                       [Conditions::Comparison.new(:date,'$gte', date_from),
+                                                        Conditions::Comparison.new(:date,'$lte', date_to)
+                                                       ])
+            planned_activities = condition.build_datamapper(::Yito::Model::Booking::PlannedActivity).all(
+                :order => [:date, :time, :activity_code]
+            )
+
+            # Build the structure
+            activities = ::Yito::Model::Booking::Activity.all(#:active => true,
+                                                              :occurence => :one_time,
+                                                              :date_from.gte => date_from,
+                                                              :date_from.lte => date_to)
+
+            activities.each do |activity|
+
+              # Build item prices hash
+              item_prices = {}
+              if activity.number_of_item_price > 0
+                (1..activity.number_of_item_price).each do |item_price|
+                  item_prices.store(item_price, 0)
+                end
+              end
+
+              # Fill with the activity turns
+              activity_detail = {}
+              activity.one_time_timetable.each do |turn|
+                # Build days hash
+                days = {}
+                (1..(date_to.day)).each do |day|
+                  date = Date.civil(year, month, day)
+                  modified_capacity = planned_activities.select do |item|
+                    item.date.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') and
+                        item.time == turn and
+                        item.activity_code == activity.code
+                  end
+                  real_capacity = modified_capacity.size > 0 ? modified_capacity.first.capacity : activity.capacity
+
+                  if activity.start_date?(date)
+                    days.store(day, {quantity: (item_prices.empty? ? 0 : item_prices.clone),
+                                     pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
+                                     capacity: real_capacity,
+                                     planned: true})
+                  else
+                    days.store(day, {quantity: '-',
+                                     pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
+                                     capacity: real_capacity,
+                                     planned: false})
+                  end
+                end
+                activity_detail.store(turn, days)
+              end
+
+              # Store the item
+              result.store(activity.code, {name: activity.name,
+                                           capacity: activity.capacity,
+                                           price_literals: activity.price_definition_detail,
+                                           number_of_item_price: activity.number_of_item_price,
+                                           occupation: activity_detail})
+            end
+
+            sql =<<-SQL
+              select o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, CAST (o_i.status AS UNSIGNED) as status, sum(quantity) as quantity
+              from orderds_order_items o_i
+              join orderds_orders o on o.id = o_i.order_id
+              join bookds_activities a on a.code = o_i.item_id 
+              where o.status NOT IN (3) and o_i.date >= ? and o_i.date <= ? and 
+                    a.occurence IN (1)
+              group by o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, o_i.status
+            SQL
+
+            # Fill with the orders
+
+            orders = repository.adapter.select(sql, date_from, date_to)
+
+            orders.each do |order|
+              if result[order.item_id] and
+                  result[order.item_id][:occupation] and
+                  result[order.item_id][:occupation][order.time] and
+                  result[order.item_id][:occupation][order.time][order.date.day] and
+                  result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] and
+                  result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type]
+                result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type] += order.quantity if order.status == 1
+                result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity if order.status == 2
+              end
+            end
+
+            return result
+
           end
           
           #
           # Get the occupation detail of activities that occurs multiple dates
           #
           def multiple_dates_occupation_detail(month, year)
+
+            date_from = Date.civil(year, month, 1)
+            date_to = Date.civil(year, month, -1)
+            result = {}
+
+            # Get planned activities
+            condition = Conditions::JoinComparison.new('$and',
+                                                       [Conditions::Comparison.new(:date,'$gte', date_from),
+                                                        Conditions::Comparison.new(:date,'$lte', date_to)
+                                                       ])
+            planned_activities = condition.build_datamapper(::Yito::Model::Booking::PlannedActivity).all(
+                :order => [:date, :time, :activity_code]
+            )
+
+            # Build the structure
+            activities = ::Yito::Model::Booking::Activity.all(#:active => true,
+                                                              :occurence => :multiple_dates,
+                                                         'activity_dates.date_from.gte'.to_sym => date_from,
+                                                         'activity_dates.date_from.lte'.to_sym => date_to)
+
+            activities.each do |activity|
+
+              # Build item prices hash
+              item_prices = {}
+              if activity.number_of_item_price > 0
+                (1..activity.number_of_item_price).each do |item_price|
+                  item_prices.store(item_price, 0)
+                end
+              end
+
+              # Fill with the activity turns
+              activity_detail = {}
+              activity.multiple_dates_timetable.each do |turn|
+                # Build days hash
+                days = {}
+                (1..(date_to.day)).each do |day|
+                  date = Date.civil(year, month, day)
+                  modified_capacity = planned_activities.select do |item|
+                    item.date.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') and
+                        item.time == turn and
+                        item.activity_code == activity.code
+                  end
+                  real_capacity = modified_capacity.size > 0 ? modified_capacity.first.capacity : activity.capacity
+
+                  if activity.start_date?(date)
+                    days.store(day, {quantity: (item_prices.empty? ? 0 : item_prices.clone),
+                                     pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
+                                     capacity: real_capacity,
+                                     planned: true})
+                  else
+                    days.store(day, {quantity: '-',
+                                     pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
+                                     capacity: real_capacity,
+                                     planned: false})
+                  end
+                end
+                activity_detail.store(turn, days)
+              end
+
+              # Store the item
+              result.store(activity.code, {name: activity.name,
+                                           capacity: activity.capacity,
+                                           price_literals: activity.price_definition_detail,
+                                           number_of_item_price: activity.number_of_item_price,
+                                           occupation: activity_detail})
+            end
+
+            sql =<<-SQL
+              select o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, CAST (o_i.status AS UNSIGNED) as status, sum(quantity) as quantity
+              from orderds_order_items o_i
+              join orderds_orders o on o.id = o_i.order_id
+              join bookds_activities a on a.code = o_i.item_id 
+              where o.status NOT IN (3) and o_i.date >= ? and o_i.date <= ? and 
+                    a.occurence IN (2)
+              group by o_i.item_id, o_i.date, o_i.time, o_i.item_price_type, o_i.status
+            SQL
+
+            # Fill with the orders
+
+            orders = repository.adapter.select(sql, date_from, date_to)
+
+            orders.each do |order|
+              if result[order.item_id] and
+                  result[order.item_id][:occupation] and
+                  result[order.item_id][:occupation][order.time] and
+                  result[order.item_id][:occupation][order.time][order.date.day] and
+                  result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] and
+                  result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type]
+                result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type] += order.quantity if order.status == 1
+                result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity if order.status == 2
+              end
+            end
+
+            return result
 
           end
           
@@ -456,11 +644,13 @@ module Yito
                   if activity.cyclic_planned?(date.wday)
                     days.store(day, {quantity: (item_prices.empty? ? 0 : item_prices.clone),
                                      pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
-                                     capacity: real_capacity})
+                                     capacity: real_capacity,
+                                     planned: true})
                   else
                     days.store(day, {quantity: '-',
                                      pending_confirmation: (item_prices.empty? ? 0 : item_prices.clone),
-                                     capacity: real_capacity})
+                                     capacity: real_capacity,
+                                     planned: false})
                   end 
                 end
                 activity_detail.store(turn, days) 
@@ -492,11 +682,23 @@ module Yito
               if result[order.item_id] and
                  result[order.item_id][:occupation] and
                  result[order.item_id][:occupation][order.time] and 
-                 result[order.item_id][:occupation][order.time][order.date.day] and
-                 result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] and
-                 result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type]
-                result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type] += order.quantity if order.status == 1
-                result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity if order.status == 2
+                 result[order.item_id][:occupation][order.time][order.date.day]
+                # Prepare not planned activities that have been ordered
+                if result[order.item_id][:occupation][order.time][order.date.day][:quantity] == '-'
+                  activity = ::Yito::Model::Booking::Activity.first(code: order.item_id)
+                  item_prices = {}
+                  if activity.number_of_item_price > 0
+                    (1..activity.number_of_item_price).each do |item_price|
+                      item_prices.store(item_price, 0)
+                    end
+                  end
+                  result[order.item_id][:occupation][order.time][order.date.day][:quantity] = item_prices
+                end
+                if result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] and
+                   result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type]
+                  result[order.item_id][:occupation][order.time][order.date.day][:pending_confirmation][order.item_price_type] += order.quantity if order.status == 1
+                  result[order.item_id][:occupation][order.time][order.date.day][:quantity][order.item_price_type] += order.quantity if order.status == 2
+                end
               end
             end
 
