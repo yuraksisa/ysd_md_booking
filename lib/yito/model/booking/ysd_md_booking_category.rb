@@ -95,14 +95,17 @@ module Yito
           end
 
         end
-
-
+        
         #
         # Calculate the unit cost for a date and a number of days
         #
-        def unit_price(date_from, ndays)
+        def unit_price(date_from, ndays, mode=nil)
           if price_definition
-            price_definition.calculate_price(date_from, ndays)
+            if mode.nil?
+              mode = SystemConfiguration::Variable.get_value('booking.renting_calendar_season_mode','first_day')
+              mode = (mode == 'first_day' ? :first_season_day : :season_days_average)
+            end
+            price_definition.calculate_price(date_from.to_date, ndays, mode)
           else
             return 0
           end
