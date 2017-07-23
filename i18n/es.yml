@@ -38,3 +38,10 @@ months:
   10: Octubre
   11: Noviembre
   12: Diciembre
+booking_category_warnings:
+  code_empty: Código no informado
+  name_empty: Nombre no informado
+  short_description_empty: Descripción corta no inforada
+  description_empty: Descripción no informada
+  price_definition_empty: No ha definido precios
+booking_activities_warnings:

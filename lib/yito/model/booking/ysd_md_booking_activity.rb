@@ -121,6 +121,7 @@ module Yito
         property :price_1_affects_capacity, Boolean, :default => true
         property :price_1_duration_days, Integer, :default => 0
         property :price_1_duration_hours, String, :length => 5
+        property :price_1_step_tickets, Integer, :default => 1
         belongs_to :price_definition_1, 'Yito::Model::Rates::PriceDefinition', :required => false
         
         property :price_2_description, String, :length => 255
@@ -128,6 +129,7 @@ module Yito
         property :price_2_affects_capacity, Boolean, :default => false
         property :price_2_duration_days, Integer, :default => 0
         property :price_2_duration_hours, String, :length => 5
+        property :price_2_step_tickets, Integer, :default => 1
         belongs_to :price_definition_2, 'Yito::Model::Rates::PriceDefinition', :required => false
         
         property :price_3_description, String, :length => 255
@@ -135,6 +137,7 @@ module Yito
         property :price_3_affects_capacity, Boolean, :default => false
         property :price_3_duration_days, Integer, :default => 0
         property :price_3_duration_hours, String, :length => 5
+        property :price_3_step_tickets, Integer, :default => 1
         belongs_to :price_definition_3, 'Yito::Model::Rates::PriceDefinition', :required => false
 
         before :create do
@@ -143,10 +146,24 @@ module Yito
           end
         end
 
+        #
+        # Save the activity
+        #
         def save
           check_calendar! if self.calendar
           check_price_definition! if self.price_definition_1 || self.price_definition_2 || self.price_definition_3
           super # Invokes the super class to achieve the chain of methods invoked       
+        end
+
+        #
+        # Get the prices total capacity
+        #
+        def prices_total_capacity
+          t = 0
+          t += price_1_total_capacity if !price_definition_1.nil? and price_1_affects_capacity and !price_1_total_capacity.nil?
+          t += price_2_total_capacity if !price_definition_2.nil? and price_2_affects_capacity and !price_2_total_capacity.nil?
+          t += price_3_total_capacity if !price_definition_3.nil? and price_3_affects_capacity and !price_3_total_capacity.nil?
+          return t
         end
 
         #
@@ -383,6 +400,7 @@ module Yito
             relationships = options[:relationships] || {}
             relationships.store(:activity_dates, {})
             methods = options[:methods] || []
+            methods << :prices_total_capacity
             super(options.merge({:relationships => relationships, :methods => methods}))
           end
 

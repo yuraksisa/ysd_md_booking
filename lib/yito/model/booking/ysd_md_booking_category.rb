@@ -56,11 +56,24 @@ module Yito
         def ready?
           !code.nil? and !code.empty? and 
           !name.nil? and !name.empty? and 
-          !short_description.nil? and !short_description.empty?
+          !short_description.nil? and !short_description.empty? and
           !description.nil? and !description.empty? and
           !price_definition.nil? 
         end
-
+        
+        #
+        # Ready warnings
+        #
+        def ready_warnings
+          warnings = []
+          warnings << BookingDataSystem.r18n.t.code_empty if code.nil? or code.empty?
+          warnings << BookingDataSystem.r18n.t.name_empty if name.nil? or name.empty?
+          warnings << BookingDataSystem.r18n.t.short_description_empty if short_description.nil? or short_description.empty?
+          warnings << BookingDataSystem.r18n.t.description_empty if description.nil? or description.empty?
+          warnings << BookingDataSystem.r18n.t.price_definition_empty if price_definition.nil?
+          return warnings
+        end
+        
         alias_method :ready, :ready?
 
         def self.types
@@ -90,6 +103,7 @@ module Yito
             relationships = options[:relationships] || {}
             methods = options[:methods] || []
             methods << :ready
+            methods << :ready_warnings
             methods << :defined_stock
             super(options.merge({:relationships => relationships, :methods => methods}))
           end
