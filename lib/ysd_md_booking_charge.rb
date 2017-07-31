@@ -55,6 +55,13 @@ module BookingDataSystem
     #
     # Integration with charges
     #
+    def charge_source
+      booking
+    end
+    
+    #
+    # Integration with charges
+    #
     def charge_source_description
       
       if booking and booking.id
