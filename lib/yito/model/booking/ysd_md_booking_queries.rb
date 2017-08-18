@@ -1409,6 +1409,24 @@ module Yito
               else
                 comp
               end
+
+          # Detailed picked up products
+          #
+          def detailed_picked_up_products(date_from, date_to)
+
+            repository.adapter.select(query_detailed_picked_up_products, date_from, date_to).sort do |x,y|
+              comp = x.date_from <=> y.date_from
+            end
+            
+          end
+
+          # Finance finished reservations
+          #
+          def finances_finished_reservations(date_from, date_to)
+
+            repository.adapter.select(query_finances_finished_reservations, date_from, date_to).sort do |x,y|
+              comp = x.date_to <=> y.date_to
+              comp.zero? ? Time.parse(x.time_to) <=> Time.parse(y.time_to) : comp
             end
             
           end
@@ -1475,7 +1493,7 @@ module Yito
             end
             
             return data
-            
+
           end
           
           private
@@ -1673,6 +1691,44 @@ module Yito
                    (pr.date_from >= '#{from}' and pr.date_to <= '#{to}'))
                 ORDER BY item_id, date_from              
               QUERY
+
+          end
+
+          #
+          # Retrieve the pickuped up products on a range of dates
+          #
+          def query_detailed_picked_up_products
+
+            query = <<-QUERY
+              select b.id, 
+                     b.date_from, b.time_from, b.date_to, b.time_to,
+                     booking_item_stock_model, booking_item_stock_plate, booking_item_characteristic_1, booking_item_characteristic_2, booking_item_characteristic_3, booking_item_characteristic_4,
+                     b.driver_name, b.driver_surname, b.driver_document_id, b.driver_date_of_birth, b.driver_driving_license_number,
+                     a.street, a.number, a.complement, a.city, a.state, a.country, a.zip
+              from bookds_bookings b
+              join bookds_bookings_lines bl on bl.booking_id = b.id
+              join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
+              join locds_address a on a.id = b.driver_address_id
+              where b.date_from >= ? and b.date_from <= ?
+              order by b.id;
+            QUERY
+
+          end
+
+          #
+          # Retrive the returned products on a range of dates 
+          #
+          def query_finances_finished_reservations
+
+            query = <<-QUERY
+              select b.id, booking_item_stock_model, booking_item_stock_plate, b.driver_name, b.driver_surname,
+                     b.date_from, b.time_from, b.date_to, b.time_to, b.total_cost
+              from bookds_bookings b
+              join bookds_bookings_lines bl on bl.booking_id = b.id
+              join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
+              where b.date_to >= ? and b.date_to <= ?
+              order by b.id;
+            QUERY
 
           end
 
