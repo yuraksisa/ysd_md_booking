@@ -11,9 +11,8 @@ module Yito
           def initialize(date_from, date_to)
             @date_from = date_from
             @date_to = date_to
-            @booking_reservation_starts_with =
-              SystemConfiguration::Variable.get_value('booking.reservation_starts_with', :dates).to_sym         
             @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+            @booking_reservation_starts_with = @product_family.frontend
           end
 
           def build

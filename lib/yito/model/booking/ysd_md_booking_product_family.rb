@@ -15,6 +15,9 @@ module Yito
         storage_names[:default] = 'bookds_families'
       
         property :code, String, :field => 'code', :length => 20, :key => true
+        property :name, String, :length => 255
+        property :presentation_order, Integer
+        property :frontend, Enum[:dates, :categories, :shopcart, :calendar], :default => :dates
         property :driver, Boolean, :field => 'driver', :default => false
         property :driver_date_of_birth, Boolean, :field => 'driver_date_of_birth', :default => false
         property :driver_license, Boolean, :field => 'driver_license', :default => false
