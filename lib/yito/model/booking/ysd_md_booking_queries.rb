@@ -1486,6 +1486,7 @@ module Yito
 
             repository.adapter.select(query_detailed_picked_up_products, date_from, date_to).sort do |x,y|
               comp = x.date_from <=> y.date_from
+              comp.zero? ? Time.parse(x.time_from) <=> Time.parse(y.time_from) : comp
             end
             
           end
