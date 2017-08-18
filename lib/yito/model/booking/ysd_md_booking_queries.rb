@@ -1409,35 +1409,19 @@ module Yito
               else
                 comp
               end
-
-          # Detailed picked up products
-          #
-          def detailed_picked_up_products(date_from, date_to)
-
-            repository.adapter.select(query_detailed_picked_up_products, date_from, date_to).sort do |x,y|
-              comp = x.date_from <=> y.date_from
             end
-            
+
+            return data
+
           end
 
-          # Finance finished reservations
-          #
-          def finances_finished_reservations(date_from, date_to)
-
-            repository.adapter.select(query_finances_finished_reservations, date_from, date_to).sort do |x,y|
-              comp = x.date_to <=> y.date_to
-              comp.zero? ? Time.parse(x.time_to) <=> Time.parse(y.time_to) : comp
-            end
-            
-          end
-          
           #
           # Return list (including journal)
           #
           def return_list(from, to, include_journal=false)
 
             # Get reservations
-            
+
             data = BookingDataSystem::Booking.all(
                 :date_to.gte => from,
                 :date_to.lte => to,
@@ -1464,7 +1448,7 @@ module Yito
             end
 
             # Include Journal
-            
+
             if include_journal
               journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
               event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_return')
@@ -1486,16 +1470,37 @@ module Yito
                   Time.parse(x[:time_to]) <=> Time.parse(y[:time_to])
                 rescue
                   comp
-                end  
+                end
               else
                 comp
               end
             end
-            
+
             return data
 
           end
-          
+
+          # Detailed picked up products
+          #
+          def detailed_picked_up_products(date_from, date_to)
+
+            repository.adapter.select(query_detailed_picked_up_products, date_from, date_to).sort do |x,y|
+              comp = x.date_from <=> y.date_from
+            end
+            
+          end
+
+          # Finance finished reservations
+          #
+          def finances_finished_reservations(date_from, date_to)
+
+            repository.adapter.select(query_finances_finished_reservations, date_from, date_to).sort do |x,y|
+              comp = x.date_to <=> y.date_to
+              comp.zero? ? Time.parse(x.time_to) <=> Time.parse(y.time_to) : comp
+            end
+            
+          end
+
           private
     
           def select_pending_of_assignation(b)
