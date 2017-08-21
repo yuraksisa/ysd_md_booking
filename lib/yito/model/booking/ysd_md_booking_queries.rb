@@ -1715,7 +1715,7 @@ module Yito
               join bookds_bookings_lines bl on bl.booking_id = b.id
               join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
               join locds_address a on a.id = b.driver_address_id
-              where b.date_from >= ? and b.date_from <= ?
+              where b.date_from >= ? and b.date_from <= ? and b.status NOT IN (1,5)
               order by b.id;
             QUERY
 
@@ -1732,7 +1732,7 @@ module Yito
               from bookds_bookings b
               join bookds_bookings_lines bl on bl.booking_id = b.id
               join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
-              where b.date_to >= ? and b.date_to <= ?
+              where b.date_to >= ? and b.date_to <= ? and b.status NOT IN (1,5)
               order by b.id;
             QUERY
 
