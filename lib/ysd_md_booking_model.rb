@@ -116,6 +116,8 @@ module BookingDataSystem
      property :return_time, String, :length => 5
      property :return_agent, String, :length => 256
 
+     belongs_to :rental_location, 'Yito::Model::Booking::RentalLocation', required: false
+
      # Booking extensions
      
      include BookingNotifications

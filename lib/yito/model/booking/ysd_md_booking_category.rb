@@ -77,8 +77,8 @@ module Yito
         alias_method :ready, :ready?
 
         def self.types
-          [{:id => 1, :description => BookingDataSystem.r18n.t.booking_category_type.category},
-           {:id => 2, :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
+          [{:id => 'category_of_resources', :description => BookingDataSystem.r18n.t.booking_category_type.category},
+           {:id => 'resource', :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
         end
 
         def rates_template_code
