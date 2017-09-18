@@ -16,7 +16,7 @@ module Yito
 
         storage_names[:default] = 'bookds_rental_locations'
 
-        property :id, Serial
+        property :code, String, length: 50, key: true
         property :name, String, length: 255
 
       end
