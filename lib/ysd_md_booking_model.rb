@@ -128,6 +128,7 @@ module BookingDataSystem
      include BookingDataSystem::BookingFlight
      include Yito::Model::UserAgentData     
      include Yito::Model::Booking::BookingExternalInvoice
+     include BookingDataSystem::BookingFuel
 
      extend BookingNotificationTemplates
      extend Yito::Model::Booking::Queries
