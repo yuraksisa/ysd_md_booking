@@ -17,6 +17,7 @@ module Yito
         property :is_return, Boolean
         property :price, Decimal, :scale => 2, :precision => 10
         belongs_to :pickup_return_place_definition, :child_key => [:place_definition_id], :parent_key => [:id]
+        belongs_to :rental_location, required: false
 
         def save
           check_pickup_return_place_definition! if self.pickup_return_place_definition

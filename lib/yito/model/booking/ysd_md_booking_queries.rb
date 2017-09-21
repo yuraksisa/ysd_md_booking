@@ -1354,14 +1354,17 @@ module Yito
           #
           # Pickup in a date
           #
-          def pickup_list(from, to, include_journal=false)
+          def pickup_list(from, to, rental_location_code=nil, include_journal=false)
 
             # Get reservations
+
+            conditions = {:date_from.gte => from,
+                          :date_from.lte => to,
+                          :status => [:confirmed, :in_progress, :done]}
+            conditions.store(:rental_location_code, rental_location_code) if rental_location_code
             
             data = BookingDataSystem::Booking.all(
-                :date_from.gte => from,
-                :date_from.lte => to,
-                :status => [:confirmed, :in_progress, :done],
+                :conditions => conditions,
                 :order => [:date_from.asc, :time_from.asc]).map do |item|
               product = item.booking_lines.inject('') do |result, b_l|
                 result << b_l.item_id
@@ -1380,7 +1383,7 @@ module Yito
               {id: item.id, date_from: item.date_from.to_date.to_datetime, time_from: item.time_from, pickup_place: item.pickup_place, product: product,
                customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
                customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
-               total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days}
+               total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days, rental_location_code: item.rental_location_code}
             end
             
             # Include journal
@@ -1418,14 +1421,17 @@ module Yito
           #
           # Return list (including journal)
           #
-          def return_list(from, to, include_journal=false)
+          def return_list(from, to, rental_location_code=nil, include_journal=false)
 
             # Get reservations
+            conditions = {:date_to.gte => from,
+                          :date_to.lte => to,
+                          :status => [:confirmed, :in_progress, :done]}
+            conditions.store(:rental_location_code, rental_location_code) if rental_location_code
+
 
             data = BookingDataSystem::Booking.all(
-                :date_to.gte => from,
-                :date_to.lte => to,
-                :status => [:confirmed, :in_progress, :done],
+                :conditions => conditions,
                 :order => [:date_to.asc, :time_to.asc]).map do |item|
               product = item.booking_lines.inject('') do |result, b_l|
                 result << b_l.item_id

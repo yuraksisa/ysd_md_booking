@@ -1,8 +1,5 @@
 require 'data_mapper' unless defined?DataMapper
 require 'ysd_md_yito' unless defined?Yito::Model::Finder
-require 'ysd_md_calendar' unless defined?Yito::Model::Calendar::Calendar
-require 'ysd_md_rates' unless defined?Yito::Model::Rates::PriceDefinition
-require 'aspects/ysd-plugins_applicable_model_aspect' unless defined?Plugins::ApplicableModelAspect
 
 module Yito
   module Model
@@ -18,6 +15,23 @@ module Yito
 
         property :code, String, length: 50, key: true
         property :name, String, length: 255
+
+        has n, :rental_location_users, 'RentalLocationUser', child_key: [:rental_location_code], parent_key: [:code]
+
+        #
+        # Exporting to json
+        #
+        def as_json(options={})
+
+          if options.has_key?(:only)
+            super(options)
+          else
+            relationships = options[:relationships] || {}
+            relationships.store(:rental_location_users, {})
+            super(options.merge({:relationships => relationships}))
+          end
+
+        end
 
       end
     end

@@ -430,6 +430,14 @@ module BookingDataSystem
        booking.total_pending ||= 0
        booking.booking_amount ||= 0
        booking.total_pending = booking.total_cost - booking.total_paid
+       # Assign the rental location depending on the pickup place
+       multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
+       if multiple_rental_locations
+         if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: booking.pickup_place) and
+            !_pickup_place.rental_location.nil?
+           booking.rental_location = _pickup_place.rental_location
+         end
+       end
      end
 
      #
