@@ -61,7 +61,15 @@ module Yito
               self.save
 
               # Update the shopping cart cost
-              self.update_shopping_cart_cost(old_item_cost, old_item_deposit)
+              #self.update_shopping_cart_cost(old_item_cost, old_item_deposit)
+              self.shopping_cart_item_cost_variation(old_item_cost, old_item_deposit)
+              self.shopping_cart.calculate_cost(false, true)
+              begin
+                self.shopping_cart.save
+              rescue DataMapper::SaveFailureError => error
+                p "Error saving shopping cart: #{self.shopping_cart.errors.full_messages.inspect}"
+                raise error
+              end
 
               # Add or shopping cart item resources
               if quantity < old_quantity
@@ -93,13 +101,21 @@ module Yito
             # Updates the item cost
             self.item_unit_cost_base = item_unit_cost_base
             self.item_unit_cost = item_unit_cost
-            self.item_cost = item_unit_cost * quantity
+            self.item_cost = item_unit_cost * self.quantity
             self.product_deposit_unit_cost = product_deposit_unit_cost
             self.product_deposit_cost = product_deposit_unit_cost * quantity
             self.save
 
             # Updates the shopping cart cost
-            update_shopping_cart_cost(old_item_cost, old_item_deposit)
+            #update_shopping_cart_cost(old_item_cost, old_item_deposit)
+            self.shopping_cart_item_cost_variation(old_item_cost, old_item_deposit)
+            self.shopping_cart.calculate_cost(false, true)
+            begin
+              self.shopping_cart.save
+            rescue DataMapper::SaveFailureError => error
+              p "Error saving shopping cart: #{self.shopping_cart.errors.full_messages.inspect}"
+              raise error
+            end
 
           end
 
@@ -107,33 +123,87 @@ module Yito
 
         protected
 
+        def shopping_cart_item_cost_variation(old_item_cost, old_item_deposit)
+          item_cost_variation = ((self.item_cost || 0) - (old_item_cost || 0)).round
+          item_deposit_variation = ((self.product_deposit_cost || 0) - (old_item_deposit || 0)).round
+          self.shopping_cart.item_cost ||= 0
+          self.shopping_cart.item_cost += item_cost_variation
+          self.shopping_cart.product_deposit_cost ||= 0
+          self.shopping_cart.product_deposit_cost += item_deposit_variation
+        end
+
         #
         # Update the shoping cart cost (in quantity or product update)
         #
-        def update_shopping_cart_cost(old_item_cost, old_item_deposit)
-          item_cost_variation = ((self.item_cost || 0) - (old_item_cost || 0)).round(2)
-          item_deposit_variation = ((self.product_deposit_cost || 0) - (old_item_deposit || 0)).round(2)
-          if item_cost_variation != 0 || item_deposit_variation != 0
-            # Item cost
-            self.shopping_cart.item_cost ||= 0
-            self.shopping_cart.item_cost += item_cost_variation
-            # Deposit cost
-            self.shopping_cart.product_deposit_cost ||= 0
-            self.shopping_cart.product_deposit_cost += item_deposit_variation
-            # Total cost
-            self.shopping_cart.total_cost ||= 0
-            self.shopping_cart.total_cost += (item_cost_variation + item_deposit_variation)
-            # Booking amount
-            self.shopping_cart.booking_amount = (self.shopping_cart.total_cost *
-              SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round(2)
-            begin
-              self.shopping_cart.save
-            rescue DataMapper::SaveFailureError => error
-              p "Error saving shopping cart: #{self.shopping_cart.errors.full_messages.inspect}"
-              raise error
-            end  
-          end
-        end
+        #def update_shopping_cart_cost(old_item_cost, old_item_deposit)
+        #
+        #  item_cost_variation = ((self.item_cost || 0) - (old_item_cost || 0)).round
+        #  item_deposit_variation = ((self.product_deposit_cost || 0) - (old_item_deposit || 0)).round
+        #
+        #  p "old_item_deposit: #{old_item_deposit} item_deposit_variation: #{item_deposit_variation} product deposit cost #{self.shopping_cart.product_deposit_cost} driver age deposit: #{self.shopping_cart.driver_age_deposit} (#{self.shopping_cart.driver_age_rule_deposit}) rule: #{self.shopping_cart.driver_age_rule_apply_if_prod_deposit}"
+        #
+        #  # Check if there was product deposit and now there is not product deposit and should be apply driver age deposit
+        #  apply_driver_age_rule_deposit = false
+        #  if old_item_deposit > 0 and
+        #     self.shopping_cart.product_deposit_cost == 0 and
+        #     !self.shopping_cart.driver_age_rule_apply_if_prod_deposit and
+        #     self.shopping_cart.driver_age_rule_deposit > 0 and
+        #    p "now include driver age deposit #{self.shopping_cart.driver_age_rule_deposit}"
+        #    self.shopping_cart.driver_age_deposit = self.shopping_cart.driver_age_rule_deposit
+        #    item_deposit_variation += self.shopping_cart.driver_age_rule_deposit
+        #    apply_driver_age_rule_deposit = true
+        #  end
+        #
+        #  # Check if there was a driver age deposit and now there is a product deposit that should be applied instead
+        #  unapply_driver_age_rule_deposit = false
+        #  if item_deposit_variation > 0 and
+        #     self.shopping_cart.driver_age_deposit > 0 and
+        #     !self.shopping_cart.driver_age_rule_apply_if_prod_deposit and
+        #     self.shopping_cart.driver_age_rule_deposit > 0
+        #    p "now include product deposit #{item_deposit_variation}"
+        #    self.shopping_cart.driver_age_deposit = 0
+        #    item_deposit_variation -= self.shopping_cart.driver_age_rule_deposit
+        #    unapply_driver_age_rule_deposit = true
+        #  end
+        #
+        #  p "update shopping cart cost: #{self.shopping_cart.total_cost} #{item_cost_variation} #{item_deposit_variation} #{apply_driver_age_rule_deposit} #{unapply_driver_age_rule_deposit}"
+        #
+        #  if item_cost_variation != 0 || item_deposit_variation != 0 || apply_driver_age_rule_deposit || unapply_driver_age_rule_deposit
+        #    # Item cost
+        #    self.shopping_cart.item_cost ||= 0
+        #    self.shopping_cart.item_cost += item_cost_variation
+        #    # Deposit cost
+        #    self.shopping_cart.product_deposit_cost ||= 0
+        #    self.shopping_cart.product_deposit_cost += item_deposit_variation
+        #    if self.shopping_cart.product_deposit_cost > 0 and
+        #       !self.shopping_cart.driver_age_rule_apply_if_prod_deposit
+        #      self.shopping_cart.total_deposit -= self.shopping_cart.driver_age_deposit
+        #      self.shopping_cart.driver_age_deposit = 0
+        #    end
+        #    self.shopping_cart.total_deposit += item_deposit_variation
+        #    # Total cost
+        #    total_cost_includes_deposit = SystemConfiguration::Variable.get_value('booking.total_cost_includes_deposit', 'false').to_bool
+        #    self.shopping_cart.total_cost ||= 0
+        #    self.shopping_cart.total_cost += item_cost_variation
+        #    self.shopping_cart.total_cost_includes_deposit = total_cost_includes_deposit
+        #    self.shopping_cart.total_cost += item_deposit_variation if total_cost_includes_deposit
+        #    # Booking amount
+        #    booking_amount_includes_deposit = SystemConfiguration::Variable.get_value('booking.booking_amount_includes_deposit', 'true').to_bool
+        #    deposit_percentage = SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i
+        #    if booking_amount_includes_deposit
+        #      self.shopping_cart.booking_amount += ((item_cost_variation + item_deposit_variation) * deposit_percentage / 100).round
+        #    else
+        #      self.shopping_cart.booking_amount += (item_cost_variation * deposit_percentage / 100).round
+        #    end
+        #    self.shopping_cart.booking_amount_includes_deposit = booking_amount_includes_deposit
+        #    begin
+        #      self.shopping_cart.save
+        #    rescue DataMapper::SaveFailureError => error
+        #      p "Error saving shopping cart: #{self.shopping_cart.errors.full_messages.inspect}"
+        #      raise error
+        #    end
+        #  end
+        #end
 
       end
     end

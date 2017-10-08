@@ -10,6 +10,9 @@ module Yito
      	  include BookingDataSystem::BookingDriver
      	  include BookingDataSystem::BookingPickupReturn
      	  include BookingDataSystem::BookingFlight
+				include Yito::Model::Booking::SupplementsCalculation
+				include Yito::Model::Booking::DepositCalculation
+				include Yito::Model::Booking::CostCalculation
 
       storage_names[:default] = 'bookds_shopping_cart_renting'
       
@@ -24,9 +27,15 @@ module Yito
      	property :extras_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      	property :time_from_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      	property :time_to_cost, Decimal, :scale => 2, :precision => 10, :default => 0
-     	property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      	property :total_cost, Decimal, :scale => 2, :precision => 10, :default => 0
-	    property :booking_amount, Decimal, :scale => 2, :precision => 10, :default => 0
+
+			property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
+			property :total_deposit, Decimal, scale: 2, precision: 10, default: 0
+
+			property :booking_amount, Decimal, :scale => 2, :precision => 10, :default => 0
+
+			property :total_cost_includes_deposit, Boolean, default: false
+			property :booking_amount_includes_deposit, Boolean, default: false
 
 	    property :date_to_price_calculation, DateTime
     	property :days, Integer
@@ -140,7 +149,8 @@ module Yito
 				end
 
 				before :create do
-					self.calculate_supplements
+					#self.calculate_supplements
+					self.calculate_cost
 					self.free_access_id = Digest::MD5.hexdigest("#{rand}#{date_from.to_time.iso8601}#{date_to.to_time.iso8601}#{rand}")
 				end
 
@@ -152,7 +162,7 @@ module Yito
 				def change_selection_data(date_from, time_from, date_to, time_to,
 																	pickup_place, return_place,
 																	number_of_adults, number_of_children,
-				                          driver_under_age)
+																	driver_age_rule_id=nil)
 
 					transaction do
 					  self.date_from = date_from
@@ -163,8 +173,11 @@ module Yito
 						self.return_place = return_place
 						self.number_of_adults = number_of_adults
 						self.number_of_children = number_of_children
-						self.driver_under_age = driver_under_age
-						self.calculate_supplements
+						if !driver_age_rule_id.nil?
+							self.driver_age_rule_id = driver_age_rule_id
+						end
+						#self.calculate_supplements
+						self.calculate_cost
 					  self.save
 
 						# Recalculate items
@@ -179,33 +192,6 @@ module Yito
 						end
 
 					end
-
-				end
-
-				#
-				# Calculate supplements (time to/from, pickup/return place, ...)
-				#
-				def calculate_supplements
-
-					self.total_cost -= (self.time_from_cost + self.time_to_cost + self.pickup_place_cost +
-							                self.return_place_cost + self.driver_age_cost)
-
-					calculator = RentingCalculator.new(self.date_from, self.time_from,
-					                                    self.date_to, self.time_to,
-					                                   self.pickup_place, self.return_place,
-																						 self.driver_date_of_birth, self.driver_under_age)
-
-					self.days = calculator.days
-					self.date_to_price_calculation = calculator.date_to_price_calculation
-					self.time_from_cost = calculator.time_from_cost
-					self.time_to_cost = calculator.time_to_cost
-					self.pickup_place_cost = calculator.pickup_place_cost
-					self.return_place_cost = calculator.return_place_cost
-					self.driver_age = calculator.age
-					self.driver_age_cost = calculator.age_cost
-
-					self.total_cost += (self.time_from_cost + self.time_to_cost + self.pickup_place_cost +
-							                self.return_place_cost + self.driver_age_cost)
 
 				end
 
@@ -224,6 +210,8 @@ module Yito
 						self.item_cost = 0
 						self.extras_cost = 0
 						self.product_deposit_cost = 0
+						self.driver_age_deposit = 0
+						self.total_deposit = 0
 						self.booking_amount = 0
 						self.customer_name = nil
 						self.customer_surname = nil
@@ -276,8 +264,8 @@ module Yito
 				def set_item(product_code, quantity=1, multiple_items=false)
 
 					if multiple_items
-  					  # Shopping cart contains item
-		  			  if shopping_cart_item = items.select { |item| item.item_id == product_code }.first
+  				  # Shopping cart contains item
+		  		  if shopping_cart_item = items.select { |item| item.item_id == product_code }.first
 				  		shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
 					  # Shopping cart does not contain item
 					  else 
@@ -290,10 +278,10 @@ module Yito
 					  product = RentingSearch.search(date_from, date_to, days, false, product_code)
 					  # Shopping cart empty
 					  if items.size == 0
-						add_item(product.code, product.name, quantity,
+						  add_item(product.code, product.name, quantity,
 								 product.base_price, product.price, product.deposit)
 					  else
-						items.first.set_item(product.code, product.name, quantity,
+						  items.first.set_item(product.code, product.name, quantity,
 											 product.base_price, product.price, product.deposit)
 					  end
 					end

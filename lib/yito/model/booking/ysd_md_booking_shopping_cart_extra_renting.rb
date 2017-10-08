@@ -52,7 +52,7 @@ module Yito
                self.extra_cost = self.extra_unit_cost * quantity
                self.save
                shopping_cart.extras_cost += (self.extra_cost - old_cost)
-               shopping_cart.total_cost += (self.extra_cost - old_cost)
+               shopping_cart.calculate_cost
                shopping_cart.save
             end
           end
@@ -69,7 +69,7 @@ module Yito
               self.extra_cost = extra_unit_cost * quantity
               self.save
               shopping_cart.extras_cost = (shopping_cart.extras_cost || 0) + (self.extra_cost - old_cost)
-              shopping_cart.total_cost = (shopping_cart.total_cost || 0) + (self.extra_cost - old_cost)
+              shopping_cart.calculate_cost
               shopping_cart.save
             end
           end

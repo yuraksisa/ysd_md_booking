@@ -2,28 +2,41 @@ module Yito
   module Model
     module Booking
       #
-      # Helpers to calculate booking reservation information
+      # Helpers to calculate the supplements and deposit based on reservation search attributes
+      #
+      # - date_from
+      # - time_from
+      # - date_to
+      # - time_to
+      # - pickup_place
+      # - return_place
       #
       class RentingCalculator
 
         attr_reader :days, :date_to_price_calculation,
                     :time_from_cost, :time_to_cost,
                     :pickup_place_cost, :return_place_cost,
-                    :age, :under_age, :age_cost, :age_valid, :supplements_cost, :valid, :error
+                    :age, :driving_license_years, :age_allowed, :age_cost, :age_deposit,
+                    :age_apply_age_deposit_if_product_deposit,
+                    :age_rule_id, :age_rule_description, :age_rule_text,
+                    :supplements_cost, :valid, :error
 
         def initialize(date_from, time_from, date_to,
                        time_to, pickup_place=nil, return_place=nil,
-                       date_of_birth=nil, under_age=false)
+                       driver_age_data=nil)
 
+          # Item family
+          @item_family = nil
+          item_family_id = SystemConfiguration::Variable.get_value('booking.item_family', nil)
+          @item_family =  ProductFamily.get(item_family_id) unless item_family_id.nil?
+
+          # Date from/to and pick up and return place
           @date_from = date_from
           @time_from = time_from
           @date_to = date_to
           @time_to = time_to
           @pickup_place = pickup_place
           @return_place = return_place
-          @date_of_birth = date_of_birth
-          @under_age = under_age
-          @age = age_in_completed_years unless date_of_birth.nil?
 
           @days = 0
           @date_to_price_calculation = date_to
@@ -31,33 +44,41 @@ module Yito
           @time_to_cost = BigDecimal.new("0")
           @pickup_place_cost = BigDecimal.new("0")
           @return_place_cost = BigDecimal.new("0")
-          @age_cost = BigDecimal.new("0")
-          @age_valid = true
           @supplements_cost = BigDecimal.new("0")
+          @deposit = BigDecimal.new("0")
 
           @valid = true
           @error = nil
 
-          @item_family = nil
-          item_family_id = SystemConfiguration::Variable.get_value('booking.item_family', nil)
-          unless item_family_id.nil?
-            @item_family =  ProductFamily.get(item_family_id)
+          # Driver age
+          @driver_age_mode = @driver_age_rule = @driver_date_of_birth = @driver_driving_license_date = @age =
+          @driving_license_years = nil
+
+          if !driver_age_data.nil? and driver_age_data.is_a?(Hash)
+            @driver_age_mode = driver_age_data[:driver_age_mode]
+            @driver_age_rule = driver_age_data[:driver_age_rule]
+            @driver_age_rule_definition = driver_age_data[:driver_age_rule_definition]
+            @date_of_birth = driver_age_data[:driver_date_of_birth]
+            @driver_driving_license_date = driver_age_data[:driver_driving_license_date]
+            @age = BookingDataSystem::Booking.completed_years(@date_from, @date_of_birth) unless @date_of_birth.nil?
+            @driving_license_years = BookingDataSystem::Booking.completed_years(@date_from, @driver_driving_license_date) unless @driver_driving_license_date.nil?
           end
 
-          if @item_family.driver
-            @min_age = SystemConfiguration::Variable.get_value('booking.driver_min_age', '0').to_i
-            @min_age_allowed = SystemConfiguration::Variable.get_value('booking.driver_min_age.allowed', 'false').to_bool
-            @min_age_cost = BigDecimal.new(SystemConfiguration::Variable.get_value('booking.driver_min_age.cost', '99'))
-          end
+          @age_allowed = true
+          @age_cost = BigDecimal.new("0")
+          @age_deposit = BigDecimal.new("0")
+          @age_apply_age_deposit_if_product_deposit = false
+          @age_rule_id = nil
+          @age_rule_description = nil
+          @age_rule_text = nil
 
           if !@item_family.nil?
             calculate_days
             calculate_time_from_to_cost if @valid && @item_family.pickup_return_place
             calculate_pickup_return_place_cost if @valid && @item_family.pickup_return_place
-            @age_valid = check_age_valid if @valid && @item_family.driver && !@date_of_birth.nil?
-            @age_cost = calculate_age_cost if @valid && @item_family.driver && !@date_of_birth.nil?
-            @age_cost = @min_age_cost if @valid && @age_cost == 0 && @under_age
+            calculate_driver_age_cost if @valid and @item_family.driver and SystemConfiguration::Variable.get_value('booking.driver_min_age.rules', 'false').to_bool
             @supplements_cost = @time_from_cost + @time_to_cost + @pickup_place_cost + @return_place_cost + @age_cost
+            @deposit = @age_deposit
           else
             @valid = false
             @error = "Booking item family is not setup"
@@ -74,8 +95,15 @@ module Yito
               time_to_cost: @time_to_cost,
               pickup_place_cost: @pickup_place_cost,
               return_place_cost: @return_place_cost,
+              age: @age,
+              driving_license_years: @driving_license_years,
+              age_allowed: @age_allowed,
               age_cost: @age_cost,
-              age_valid: @age_valid,
+              age_deposit: @age_deposit,
+              age_apply_age_deposit_if_product_deposit: @age_apply_age_deposit_if_product_deposit,
+              age_rule_id: @age_rule_id,
+              age_rule_description: @age_rule_description,
+              age_rule_text: @age_rule_text,
               valid: @valid,
               error: @error
           }
@@ -87,17 +115,6 @@ module Yito
         end
 
         private
-
-        #
-        # Calculate the age
-        #
-        def age_in_completed_years
-          d = DateTime.now
-          a = d.year - @date_of_birth.year
-          a = a - 1 if (@date_of_birth.month > d.month or
-                       (@date_of_birth.month >= d.month and @date_of_birth.day > d.day))
-          a
-        end
 
         #
         # Calculate the reservation days
@@ -162,25 +179,47 @@ module Yito
         end
 
         #
-        # Check if age is valid
+        # Calculates the driver age cost
         #
-        def check_age_valid
-          if !@min_age_allowed && (@age < @min_age)
-            return false
+        def calculate_driver_age_cost
+
+          case @driver_age_mode
+
+            when :rule
+              if @driver_age_rule
+                @age_allowed = @driver_age_rule.allowed
+                @age_cost = @driver_age_rule.suplement * @days
+                @age_deposit = @driver_age_rule.deposit
+                @age_apply_age_deposit_if_product_deposit = @driver_age_rule.apply_if_product_deposit
+                @age_rule_id = @driver_age_rule.id
+                @age_rule_description = @driver_age_rule.description.first
+                @age_rule_text = @driver_age_rule.to_json
+              else
+                @valid = false
+                @error = 'Not a valid driver age rule'
+              end
+            when :dates
+              if @age and @driving_license_years
+                rules = @driver_age_rule_definition.find_rule(@age, @driving_license_years)
+                if rules.size > 0
+                  driver_age_rule = rules.first
+                  @age_allowed = driver_age_rule.allowed
+                  @age_cost = driver_age_rule.suplement * @days
+                  @age_deposit = driver_age_rule.deposit
+                  @age_apply_age_deposit_if_product_deposit = driver_age_rule.apply_if_product_deposit
+                  @age_rule_id = driver_age_rule.id
+                  @age_rule_description = driver_age_rule.description.first
+                  @age_rule_text = driver_age_rule.to_json
+                else
+                  @valid = false
+                  @error = 'Not a matching rule for driver age'
+                end
+              end
+            else
+              @valid = false
+              @error = 'Driver age mode not valid. Allowed :rule or :dates'
           end
 
-          return true
-        end
-
-        #
-        # Calculate age cost
-        #
-        def calculate_age_cost
-          if @age < @min_age
-            return @min_age_cost
-          end
-
-          return BigDecimal.new("0")
         end
 
         # --------------------------------------------------------------------------------------------------------

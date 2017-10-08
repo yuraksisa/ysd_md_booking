@@ -43,21 +43,23 @@ module BookingDataSystem
      #
      def change_item(new_item_id, price_modification='update')
 
-       if new_item_id && new_item_id != booking_line.item_id
+       old_item_id = self.item_id
+       
+       if new_item_id && new_item_id != self.item_id
         if product = ::Yito::Model::Booking::BookingCategory.get(new_item_id)
-           booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
            item_description = product.name
            old_price = new_price = self.item_unit_cost
            old_product_deposit = new_product_deposit = self.product_deposit_unit_cost
+           item_cost_increment = 0
+           deposit_cost_increment = 0
            if price_modification == 'update'
              new_price = product.unit_price(booking.date_from, booking.days).round
              new_product_deposit = product.deposit
-           end
-           # Update the booking line and the booking
-           self.transaction do
              item_cost_increment = new_price - old_price
              deposit_cost_increment = new_product_deposit - old_product_deposit
-             total_cost_increment = item_cost_increment + deposit_cost_increment
+           end
+           # Update the booking line and the booking
+           transaction do
              # Update booking line
              self.item_id = new_item_id
              self.item_description = item_description
@@ -74,11 +76,15 @@ module BookingDataSystem
              if item_cost_increment > 0 || deposit_cost_increment > 0
                booking.item_cost += item_cost_increment
                booking.product_deposit_cost += deposit_cost_increment
-               booking.total_cost += total_cost_increment
-               booking.total_pending += total_cost_increment
-               booking.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+               booking.calculate_cost(false, false)
                booking.save
              end
+             # Create newsfeed
+             ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                            action: 'change_item',
+                                            identifier: self.booking.id.to_s,
+                                            description: BookingDataSystem.r18n.t.booking_news_feed.changed_item(new_item_id, self.id, old_item_id),
+                                            attributes_updated: {item_id: new_item_id}.merge({booking: booking.newsfeed_summary}).to_json)
              booking.reload
            end
          end
@@ -91,16 +97,11 @@ module BookingDataSystem
      def update_quantity(new_quantity)
 
        if product = ::Yito::Model::Booking::BookingCategory.get(self.item_id)
-         booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
-         product_deposit_cost = product.deposit
          old_quantity = self.quantity
          old_booking_line_item_cost = self.item_cost
-         old_booking_line_product_deposit_cost = self.product_deposit_cost
-         self.transaction do
-           self.quantity = quantity
+         transaction do
+           self.quantity = new_quantity
            self.item_cost = self.item_unit_cost * new_quantity
-           self.product_deposit_unit_cost = product_deposit_cost
-           self.product_deposit_cost = product_deposit_cost * new_quantity
            self.save
            # Add or remove booking line resources
            if new_quantity < old_quantity
@@ -116,14 +117,15 @@ module BookingDataSystem
            end
            # Update the booking (cost)
            item_cost_increment = self.item_cost - old_booking_line_item_cost
-           deposit_cost_increment = self.product_deposit_cost - old_booking_line_product_deposit_cost
-           total_cost_increment = item_cost_increment + deposit_cost_increment
            booking.item_cost += item_cost_increment
-           booking.product_deposit_cost += deposit_cost_increment
-           booking.total_cost += total_cost_increment
-           booking.total_pending += total_cost_increment
-           booking.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+           booking.calculate_cost(false, false)
            booking.save
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'updated_item_quantity',
+                                          identifier: self.booking.id.to_s,
+                                          description: BookingDataSystem.r18n.t.booking_news_feed.updated_item_quantity(new_quantity, self.item_id, old_quantity),
+                                          attributes_updated: {quantity: new_quantity}.merge({booking: booking.newsfeed_summary}).to_json)
          end
          booking.reload
        end
@@ -135,8 +137,7 @@ module BookingDataSystem
      #
      def update_item_cost(new_item_unit_cost)
 
-       if product = ::Yito::Model::Booking::BookingCategory.get(booking_line.item_id)
-         booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
+       if product = ::Yito::Model::Booking::BookingCategory.get(self.item_id)
          old_booking_line_item_cost = self.item_cost
          self.transaction do
            self.item_unit_cost = new_item_unit_cost
@@ -144,12 +145,15 @@ module BookingDataSystem
            self.save
            # Update the booking (cost)
            item_cost_increment = self.item_cost - old_booking_line_item_cost
-           total_cost_increment = item_cost_increment
            booking.item_cost += item_cost_increment
-           booking.total_cost += total_cost_increment
-           booking.total_pending += total_cost_increment
-           booking.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+           booking.calculate_cost(false, false)
            booking.save
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'updated_item_cost',
+                                          identifier: self.booking.id.to_s,
+                                          description: BookingDataSystem.r18n.t.booking_news_feed.updated_item_cost("%.2f" % new_item_unit_cost, self.item_id, "%.2f" % old_booking_line_item_cost),
+                                          attributes_updated: {item_unit_cost: new_item_unit_cost}.merge({booking: booking.newsfeed_summary}).to_json)
          end
          booking.reload
        end
@@ -161,25 +165,27 @@ module BookingDataSystem
      #
      def update_item_deposit(new_item_deposit)
 
-       booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
        old_booking_line_product_deposit_cost = self.product_deposit_cost
        self.transaction do
-         self.product_deposit_unit_cost = (new_item_deposit / booking_line.quantity).round
-         self.product_deposit_cost = new_item_deposit
+         # Update the booking line
+         self.product_deposit_unit_cost = new_item_deposit
+         self.product_deposit_cost = new_item_deposit * self.quantity
          self.save
          # Update the booking (cost)
          deposit_cost_increment = self.product_deposit_cost - old_booking_line_product_deposit_cost
-         total_cost_increment = deposit_cost_increment
-         booking.total_cost += total_cost_increment
-         booking.total_pending += total_cost_increment
-         booking.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+         booking.product_deposit_cost += deposit_cost_increment
+         booking.calculate_cost(false, false)
          booking.save
+         # Create newsfeed
+         ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                        action: 'updated_item_deposit',
+                                        identifier: self.booking.id.to_s,
+                                        description: BookingDataSystem.r18n.t.booking_news_feed.updated_item_deposit("%.2f" % new_item_deposit, self.item_id, "%.2f" % old_booking_line_product_deposit_cost),
+                                        attributes_updated: {product_deposit_unit_cost: new_item_deposit}.merge({booking: booking.newsfeed_summary}).to_json)
        end
        booking.reload
 
      end
-
-     # -----------------------------------------------------------------------------------------------------------
 
   end
 end

@@ -45,3 +45,53 @@ booking_category_warnings:
   description_empty: Descripción no informada
   price_definition_empty: No ha definido precios
 booking_activities_warnings:
+booking_driver_age:
+  driver_under_age_literal: Conductor %1
+  driver_under_age_driving_license_literal: Conductor %1 y con %2
+  driver_under_age_not_authorized: Lo sentimos. No permitimos realizar reserva si el conductor es %1
+  driver_under_age_driving_license_not_authorized: Lo sentimos. No permitimos realizar reserva si el conductor es %1 y tiene %2
+  younger: menor de %1 años
+  older: mayor de %1 años
+  same_age: de %1 años
+  between_age: entre %1 y %2 años
+  less_driving_license: menos de %1 año(s) de carnet
+  more_driving_license: más de %1 año(s) de carnet
+  between_driving_license: entre %1 y %2 año(s) de carnet
+  same_driving_license: con %1 año(s) de carnet
+booking_news_feed:
+  created_booking: Creada reserva
+  updated_booking: Modificados datos de la reserva
+  created_booking_line: Añadido producto %1 (cantidad %2)
+  created_booking_extra: Añadido extra %1 (cantidad %2)
+  destroyed_booking_extra: Eliminado extra %1 (cantidad %2)
+  updated_booking_extra_quantity: Modificada cantidad %1 extra %2 (ant. %3)
+  updated_booking_extra_cost: Modificado coste %1 extra %2 (ant. %3)
+  added_booking_charge: Registrado cobro %1 (forma de pago %2)
+  destroyed_booking_charge: Eliminado cobro %1 (forma de pago %2)
+  changed_item: Modificado producto %1 de la línea %2 (anterior %3)
+  updated_item_quantity: Modificada cantidad %1 del producto %2 (ant. %3)
+  updated_item_cost: Modificado el precio %1 del producto %2 (ant. %3)
+  updated_item_deposit: Modificado la fianza %1 del producto %2 (ant. %3)
+  updated_driver_age_deposit: Actualizada la fianza por edad del conductor %1 (ant. %2)
+  updated_driver_dates: Actualizadas fechas del conductor. Fecha nacimiento %1. Fecha carnet %2
+  confirmed_booking: Reserva confirmada
+  picked_up_item: Producto(s) entregado(s)
+  returned_item: Producto(s) devuelto(s)
+  canceled_booking: Reserva cancelada
+  change_dates: Cambiadas fecha y/o lugar de entrega/devolución. Entrega %1. Devolución %2. Coste total %3 (ant. %4)
+  updated_supplements: Modificados suplementos. %1
+  updated_pickup_place_cost: Lugar entrega %1 (ant. %2)
+  updated_return_place_cost: Lugar devolución %1 (ant. %2)
+  updated_time_from_cost: Hora entrega %1 (ant. %2)
+  updated_time_to_cost: Hora devolución %1 (ant. %2)
+  updated_driver_age_cost: Edad conductor %1 (ant. %2)
+  updated_booking_resource: Modificado recurso de la reserva (línea %1 producto %2). %3
+  updated_stock_model: Modelo %1 (ant. %2)
+  updated_stock_plate: Matrícula %1 (ant. %2)
+  updated_characteristic_1: Carac. 1 %1 (ant. %2)
+  updated_characteristic_2: Carac. 2 %1 (ant. %2)
+  updated_characteristic_3: Carac. 3 %1 (ant. %2)
+  updated_characteristic_4: Carac. 4 %1 (ant. %2)
+  updated_km_on_pickup: Km en entrega %1 (ant. %2)
+  updated_km_on_return: Km en devolución %1 (ant. %2)
+  assign_booking_resource: Asignado recurso %1 a la reserva (línea %2 producto %3)

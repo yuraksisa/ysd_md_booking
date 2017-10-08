@@ -42,10 +42,15 @@ module BookingDataSystem
            extra_cost_increment = self.extra_cost - old_booking_extra_extra_cost
            total_cost_increment = extra_cost_increment
            booking.extras_cost += extra_cost_increment
-           booking.total_cost += total_cost_increment
-           booking.total_pending += total_cost_increment
-           booking.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+           booking.calculate_cost(false, false)
            booking.save
+           # Newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                    action: 'updated_booking_extra_quantity',
+                                                    identifier: booking.id.to_s,
+                                                    description: BookingDataSystem.r18n.t.booking_news_feed.updated_booking_extra_quantity(new_quantity, self.extra_id, old_quantity),
+                                                    attributes_updated: {extras_cost: booking.extras_cost, total_cost: booking.total_cost}.merge({booking: booking.newsfeed_summary}).to_json)
+
          end
          booking.reload
        end
@@ -62,16 +67,21 @@ module BookingDataSystem
          old_booking_extra_extra_cost = self.extra_cost
          self.transaction do
            self.extra_unit_cost = new_extra_unit_cost
-           self.extra_cost = booking_extra.extra_unit_cost * booking_extra.quantity
+           self.extra_cost = self.extra_unit_cost * self.quantity
            self.save
            # Update the booking (cost)
            extra_cost_increment = self.extra_cost - old_booking_extra_extra_cost
            total_cost_increment = extra_cost_increment
            booking.extras_cost += extra_cost_increment
-           booking.total_cost += total_cost_increment
-           booking.total_pending += total_cost_increment
-           booking.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+           booking.calculate_cost(false, false)
            booking.save
+           # Newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                    action: 'updated_booking_extra_cost',
+                                                    identifier: booking.id.to_s,
+                                                    description: BookingDataSystem.r18n.t.booking_news_feed.updated_booking_extra_cost("%.2f" % new_extra_unit_cost, self.extra_id, "%.2f" % old_booking_extra_extra_cost),
+                                                    attributes_updated: {extras_cost: booking.extras_cost, total_cost: booking.total_cost}.merge({booking: booking.newsfeed_summary}).to_json)
+
          end
          booking.reload
        end

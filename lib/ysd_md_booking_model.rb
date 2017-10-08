@@ -63,16 +63,23 @@ module BookingDataSystem
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10, :default => 0
      property :time_from_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      property :time_to_cost, Decimal, :scale => 2, :precision => 10, :default => 0
-     property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10, :default => 0
-     
+
+     property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
+     property :total_deposit, Decimal, :scale => 2, :precision => 10, :default => 0
+
+     # quantity to pay in deposit (in order to confirm the reservation)
+     property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10, :default => 0
+
+     property :total_cost_includes_deposit, Boolean, default: false
+     property :booking_amount_includes_deposit, Boolean, default: false
+
      property :total_paid, Decimal, :field => 'total_paid', :scale => 2, :precision => 10, :default => 0
      property :total_pending, Decimal, :field => 'total_pending', :scale => 2, :precision => 10, :default => 0
 
      property :pay_now, Boolean, :field => 'pay_now', :default => false
      property :force_allow_payment, Boolean, :field => 'force_allow_payment', :default => false
      property :payment, String, :field => 'payment', :length => 10
-     property :booking_amount, Decimal, :field => 'booking_amount', :scale => 2, :precision => 10, :default => 0
      property :payment_method_id, String, :field => 'payment_method_id', :length => 30
      has n, :booking_charges, 'BookingCharge', :child_key => [:booking_id], :parent_key => [:id]
      has n, :charges, 'Payments::Charge', :through => :booking_charges
@@ -129,12 +136,26 @@ module BookingDataSystem
      include Yito::Model::UserAgentData     
      include Yito::Model::Booking::BookingExternalInvoice
      include BookingDataSystem::BookingFuel
+     include Yito::Model::Booking::SupplementsCalculation
+     include Yito::Model::Booking::DepositCalculation
+     include Yito::Model::Booking::CostCalculation
 
      extend BookingNotificationTemplates
      extend Yito::Model::Booking::Queries
      extend Yito::Model::Finder
      
      # --------------------------  CLASS METHODS -----------------------------------------------------------
+
+     #
+     # Calculate completed years between two dates
+     #
+     def self.completed_years(to_date, from_date)
+       d = to_date
+       a = d.year - from_date.year
+       a = a - 1 if (from_date.month > d.month or
+           (from_date.month >= d.month and from_date.day > d.day))
+       a
+     end
 
      #
      # Create a reservation from a shopping cart
@@ -159,8 +180,11 @@ module BookingDataSystem
                           time_from_cost: shopping_cart.time_from_cost,
                           time_to_cost: shopping_cart.time_to_cost,
                           product_deposit_cost: shopping_cart.product_deposit_cost,
+                          total_deposit: shopping_cart.total_deposit,
                           total_cost: shopping_cart.total_cost,
                           booking_amount: shopping_cart.booking_amount,
+                          total_cost_includes_deposit: shopping_cart.total_cost_includes_deposit,
+                          booking_amount_includes_deposit: shopping_cart.booking_amount_includes_deposit,
                           pay_now: shopping_cart.pay_now,
                           payment_method_id: shopping_cart.payment_method_id,
                           date_to_price_calculation: shopping_cart.date_to_price_calculation,
@@ -183,9 +207,17 @@ module BookingDataSystem
                           driver_document_id_expiration_date: shopping_cart.driver_document_id_expiration_date,
                           driver_origin_country: shopping_cart.driver_origin_country,
                           driver_date_of_birth: shopping_cart.driver_date_of_birth,
-                          driver_age_cost: shopping_cart.driver_age_cost,
-                          driver_under_age: shopping_cart.driver_under_age,
                           driver_age: shopping_cart.driver_age,
+                          driver_driving_license_years: shopping_cart.driver_driving_license_years,
+                          driver_age_allowed: shopping_cart.driver_age_allowed,
+                          driver_age_cost: shopping_cart.driver_age_cost,
+                          driver_age_deposit: shopping_cart.driver_age_deposit,
+                          driver_under_age: shopping_cart.driver_under_age,
+                          driver_age_rule_id: shopping_cart.driver_age_rule_id,
+                          driver_age_rule_text: shopping_cart.driver_age_rule_text,
+                          driver_age_rule_description: shopping_cart.driver_age_rule_description,
+                          driver_age_rule_apply_if_prod_deposit: shopping_cart.driver_age_rule_apply_if_prod_deposit,
+                          driver_age_rule_deposit: shopping_cart.driver_age_rule_deposit,
                           driver_driving_license_number: shopping_cart.driver_driving_license_number,
                           driver_driving_license_date: shopping_cart.driver_driving_license_date,
                           driver_driving_license_country: shopping_cart.driver_driving_license_country,
@@ -197,7 +229,6 @@ module BookingDataSystem
                           additional_driver_1_document_id_expiration_date: shopping_cart.additional_driver_1_document_id_expiration_date,
                           additional_driver_1_origin_country: shopping_cart.additional_driver_1_origin_country,
                           additional_driver_1_date_of_birth: shopping_cart.additional_driver_1_date_of_birth,
-                          additional_driver_1_under_age: shopping_cart.additional_driver_1_under_age,
                           additional_driver_1_age: shopping_cart.additional_driver_1_age,
                           additional_driver_1_driving_license_number: shopping_cart.additional_driver_1_driving_license_number,
                           additional_driver_1_driving_license_date: shopping_cart.additional_driver_1_driving_license_date,
@@ -212,7 +243,6 @@ module BookingDataSystem
                           additional_driver_2_document_id_expiration_date: shopping_cart.additional_driver_2_document_id_expiration_date,
                           additional_driver_2_origin_country: shopping_cart.additional_driver_2_origin_country,
                           additional_driver_2_date_of_birth: shopping_cart.additional_driver_2_date_of_birth,
-                          additional_driver_2_under_age: shopping_cart.additional_driver_2_under_age,
                           additional_driver_2_age: shopping_cart.additional_driver_2_age,
                           additional_driver_2_driving_license_number: shopping_cart.additional_driver_2_driving_license_number,
                           additional_driver_2_driving_license_date: shopping_cart.additional_driver_2_driving_license_date,
@@ -227,7 +257,6 @@ module BookingDataSystem
                           additional_driver_3_document_id_expiration_date: shopping_cart.additional_driver_3_document_id_expiration_date,
                           additional_driver_3_origin_country: shopping_cart.additional_driver_3_origin_country,
                           additional_driver_3_date_of_birth: shopping_cart.additional_driver_3_date_of_birth,
-                          additional_driver_3_under_age: shopping_cart.additional_driver_3_under_age,
                           additional_driver_3_age: shopping_cart.additional_driver_3_age,
                           additional_driver_3_driving_license_number: shopping_cart.additional_driver_3_driving_license_number,
                           additional_driver_3_driving_license_date: shopping_cart.additional_driver_3_driving_license_date,
@@ -321,6 +350,14 @@ module BookingDataSystem
 
            booking.reload
            booking.send_new_booking_request_notifications
+
+           # Create the newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                    action: 'new_booking',
+                                                    identifier: booking.id.to_s,
+                                                    description: BookingDataSystem.r18n.t.booking_news_feed.created_booking,
+                                                    attributes_updated: booking.newsfeed_summary.to_json)
+
            booking
 
          end
@@ -425,6 +462,7 @@ module BookingDataSystem
        booking.time_from_cost ||= 0
        booking.time_to_cost ||= 0
        booking.product_deposit_cost ||= 0
+       booking.total_deposit ||= 0
        booking.total_cost ||= 0
        booking.total_paid ||= 0
        booking.total_pending ||= 0
@@ -507,7 +545,6 @@ module BookingDataSystem
        end
        if product_lines.empty?
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
-           booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
            product_unit_cost = product.unit_price(self.date_from, self.days)
            product_deposit_cost = product.deposit
            transaction do
@@ -530,15 +567,16 @@ module BookingDataSystem
                booking_line_resource.save
              end
              # Update booking cost
-             item_cost_increment = product_unit_cost * quantity
-             deposit_cost_increment = product_deposit_cost * quantity
-             total_cost_increment = item_cost_increment + deposit_cost_increment
-             self.item_cost += item_cost_increment
-             self.product_deposit_cost += deposit_cost_increment
-             self.total_cost += total_cost_increment
-             self.total_pending += total_cost_increment
-             self.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+             self.item_cost += (product_unit_cost * quantity)
+             self.product_deposit_cost += (product_deposit_cost * quantity)
+             self.calculate_cost(false, false)
              self.save
+             # Create newsfeed
+             ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                            action: 'add_booking_line',
+                                            identifier: self.id.to_s,
+                                            description: BookingDataSystem.r18n.t.booking_news_feed.created_booking_line(item_id, quantity),
+                                            attributes_updated: {item_id: item_id, quantity: quantity}.merge({booking: newsfeed_summary}).to_json)
            end
          end
        end
@@ -557,7 +595,7 @@ module BookingDataSystem
          if extra = ::Yito::Model::Booking::BookingExtra.get(extra_id)
            booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
            extra_unit_cost = extra.unit_price(self.date_from, self.days)
-           self.transaction do
+           transaction do
              # Create the booking extra line
              booking_extra = BookingDataSystem::BookingExtra.new
              booking_extra.booking = self
@@ -568,13 +606,15 @@ module BookingDataSystem
              booking_extra.extra_cost = extra_unit_cost * quantity
              booking_extra.save
              # Updates the booking
-             extra_cost_increment = extra_unit_cost * quantity
-             total_cost_increment = extra_cost_increment
-             self.extras_cost += extra_cost_increment
-             self.total_cost += total_cost_increment
-             self.total_pending += total_cost_increment
-             self.booking_amount += (total_cost_increment * booking_deposit / 100).round unless booking_deposit == 0
+             self.extras_cost += (extra_unit_cost * quantity)
+             self.calculate_cost(false, false)
              self.save
+             # Create newsfeed
+             ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                            action: 'add_booking_extra',
+                                            identifier: self.id.to_s,
+                                            description: BookingDataSystem.r18n.t.booking_news_feed.created_booking_extra(extra_id, quantity),
+                                            attributes_updated: {extra_id: extra_id, quantity: quantity}.merge({booking: newsfeed_summary}).to_json)
            end
          end
        end
@@ -591,18 +631,17 @@ module BookingDataSystem
        end
 
        if booking_extra = booking_extras.first
-         booking_extra.transaction do
+         transaction do
            self.extras_cost -= booking_extra.extra_cost
-           self.total_cost -= booking_extra.extra_cost
-           if self.total_pending < booking_extra.extra_cost
-             self.total_pending = 0
-           else
-             self.total_pending -= booking_extra.extra_cost
-           end
-           booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
-           self.booking_amount -= (booking_extra.extra_cost * booking_deposit / 100).round unless booking_deposit == 0
+           self.calculate_cost(false, false)
            self.save
            booking_extra.destroy
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'destroy_booking_extra',
+                                          identifier: self.id.to_s,
+                                          description: BookingDataSystem.r18n.t.booking_news_feed.destroyed_booking_extra(extra_id),
+                                          attributes_updated: {extra_id: item_id, quantity: quantity}.merge({booking: newsfeed_summary}).to_json)
          end
          self.reload
        end
@@ -614,7 +653,7 @@ module BookingDataSystem
      #
      def add_booking_charge(date, amount, payment_method_id)
 
-       self.transaction do
+       transaction do
          charge = Payments::Charge.new
          charge.date = date
          charge.amount = amount
@@ -628,6 +667,12 @@ module BookingDataSystem
          booking_charge.save
          charge.update(:status => :done)
          self.reload
+         # Create newsfeed
+         ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                        action: 'add_booking_charge',
+                                        identifier: self.id.to_s,
+                                        description: BookingDataSystem.r18n.t.booking_news_feed.added_booking_charge(".2f" % amount, payment_method_id),
+                                        attributes_updated: {date: date, amount: amount, payment_method_id: payment_method_id}.merge({booking: newsfeed_summary}).to_json)
        end
 
      end
@@ -640,7 +685,7 @@ module BookingDataSystem
        if booking_charge = BookingDataSystem::BookingCharge.first(:booking_id => self.id,
                                                                   :charge_id => charge_id)
          charge = booking_charge.charge
-         booking_charge.transaction do
+         transaction do
            if charge.status == :done
              self.total_paid -= charge.amount
              self.total_pending += charge.amount
@@ -648,6 +693,12 @@ module BookingDataSystem
            end
            charge.destroy
            booking_charge.destroy
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'destroy_booking_charge',
+                                          identifier: self.id.to_s,
+                                          description: BookingDataSystem.r18n.t.booking_news_feed.destroyed_booking_charge(".2f" % charge.amount, charge.payment_method_id),
+                                          attributes_updated: {amount: charge.amount, payment_method_id: charge.payment_method_id}.to_json)
          end
          self.reload
        end
@@ -721,7 +772,8 @@ module BookingDataSystem
      #
      def booking_deposit
 
-       (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+       #(total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+       booking_amount
 
      end
      
@@ -776,7 +828,7 @@ module BookingDataSystem
 
          amount = case charge_payment.to_sym
                     when :deposit
-                      (total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+                      booking_deposit #(total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
                     when :total
                       total_cost
                     when :pending
@@ -801,8 +853,17 @@ module BookingDataSystem
      def confirm
        if status == :pending_confirmation and
           not charges.select { |charge| charge.status == :done }.empty?
-         self.status = :confirmed
-         self.save
+         transaction do
+           self.status = :confirmed
+           self.save
+           # Assign available stock
+           assign_available_stock if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation', 'false').to_bool
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                    action: 'confirm_booking',
+                                                    identifier: self.id.to_s,
+                                                    description: BookingDataSystem.r18n.t.confirmed_booking)
+         end
          send_booking_confirmation_notifications
        else
          p "Could not confirm booking #{id} #{status}"
@@ -817,8 +878,17 @@ module BookingDataSystem
      # @return [Booking]
      #
      def confirm!
-       if status == :pending_confirmation 
-         update(:status => :confirmed)
+       if status == :pending_confirmation
+         transaction do
+           update(:status => :confirmed)
+           # Assign available stock
+           assign_available_stock if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation', 'false').to_bool
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'confirm_booking',
+                                          identifier: self.id.to_s,
+                                          description: BookingDataSystem.r18n.t.confirmed_booking)
+         end
          send_booking_confirmation_notifications
        end
        self
@@ -831,7 +901,14 @@ module BookingDataSystem
      #
      def pickup_item
        if status == :confirmed 
-         update(:status => :in_progress)
+         transaction do
+           update(:status => :in_progress)
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'pickup_item',
+                                          identifier: self.id.to_s,
+                                          description: BookingDataSystem.r18n.t.picked_up_item)
+         end  
        end
        self
      end
@@ -845,7 +922,14 @@ module BookingDataSystem
      #
      def return_item 
        if status == :in_progress
-         update(:status => :done)
+         transaction do
+           update(:status => :done)
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'return_item',
+                                          identifier: self.id.to_s,
+                                          description: BookingDataSystem.r18n.t.returned_item)
+         end  
        end
        self
      end
@@ -868,6 +952,11 @@ module BookingDataSystem
            else 
              update(:status => :cancelled)
            end
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                          action: 'cancel_booking',
+                                          identifier: self.id.to_s,
+                                          description: BookingDataSystem.r18n.t.canceled_booking)
            charges.each do |charge|
              charge.refund
            end
@@ -929,6 +1018,69 @@ module BookingDataSystem
        extras_s.store('lugar', {quantity: 1, cost: pickup_place_cost + return_place_cost})
 
        return extras_s
+     end
+
+     #
+     # Get a newsfeed summary
+     #
+     def newsfeed_summary
+       items = []
+       extras = []
+       booking_lines.each do |booking_item|
+         items << {item_id: booking_item.item_id,
+                   item_unit_cost: booking_item.item_unit_cost,
+                   item_cost: booking_item.item_cost,
+                   quantity: booking_item.quantity,
+                   product_deposit_unit_cost: booking_item.product_deposit_unit_cost,
+                   product_deposit_cost: booking_item.product_deposit_cost}
+       end
+       booking_extras.each do |booking_extra|
+         extras << {extra_id: booking_extra.extra_id,
+                    extra_unit_cost: booking_extra.extra_unit_cost,
+                    extra_cost: booking_extra.extra_cost,
+                    quantity: booking_extra.quantity}
+       end
+       {items: items,
+        extras: extras,
+        status: status,
+        item_cost: item_cost,
+        extras_cost: extras_cost,
+        time_from_cost: time_from_cost,
+        time_to_cost: time_to_cost,
+        pickup_place_cost: pickup_place_cost,
+        return_place_cost: return_place_cost,
+        driver_age_cost: driver_age_cost,
+        total_cost: total_cost,
+        total_paid: total_paid,
+        total_pending: total_pending,
+        booking_amount: booking_amount,
+        product_deposit_cost: product_deposit_cost,
+        driver_age_deposit: driver_age_deposit,
+        total_deposit: total_deposit}
+     end
+
+     #
+     # Assign available stock to unassigned items
+     #
+     def assign_available_stock
+
+       stock_detail, category_occupation = BookingDataSystem::Booking.resources_occupation(self.date_from, self.date_to)
+
+       transaction do
+
+         booking_lines.each do |booking_line|
+           booking_line.booking_line_resources.each do |booking_line_resource|
+             if booking_line_resource.booking_item_reference.nil?
+               if booking_item_reference = category_occupation[booking_line.item_id][:available_stock].first and !booking_item_reference.nil?
+                 booking_line_resource.assign_resource(booking_item_reference)
+                 category_occupation[booking_line.item_id][:available_stock].delete_at(0)
+               end
+             end
+           end
+         end
+
+       end
+
      end
 
      private
