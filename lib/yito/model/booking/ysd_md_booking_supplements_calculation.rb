@@ -64,16 +64,18 @@ module Yito
           driver_rule = nil
           driver_age_data = nil
 
-          p "date of birth #{self.driver_date_of_birth} driving license date : #{self.driver_driving_license_date}"
+          #p "date of birth #{self.driver_date_of_birth} driving license date : #{self.driver_driving_license_date}"
 
           if self.driver_date_of_birth and self.driver_driving_license_date
+            self.driver_age = BookingDataSystem::Booking.completed_years(self.date_from, self.driver_date_of_birth) if self.driver_age.nil?
+            self.driver_driving_license_years = BookingDataSystem::Booking.completed_years(self.date_from, self.driver_driving_license_date) if self.driver_driving_license_years.nil?
             driver_rule_definition_id = SystemConfiguration::Variable.get_value('booking.driver_min_age.rule_definition')
             driver_rule_definition = driver_rule_definition_id ? ::Yito::Model::Booking::BookingDriverAgeRuleDefinition.get(driver_rule_definition_id) : nil
             driver_rule = driver_rule_definition.find_rule(self.driver_age, self.driver_driving_license_years)
             driver_age_data = {
                                 driver_age_mode: :dates,
-                                driver_date_of_birth: driver_date_of_birth,
-                                driver_driving_license_date: driver_driving_license_date,
+                                driver_date_of_birth: self.driver_date_of_birth,
+                                driver_driving_license_date: self.driver_driving_license_date,
                                 driver_age_rule_definition: driver_rule_definition
                               }
           elsif self.driver_age_rule_id
