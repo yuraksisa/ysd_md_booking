@@ -39,6 +39,10 @@ module Yito
         property :named_resources, Boolean, :field => 'named_resources', :default => false
         property :fuel, Boolean, :field => 'fuel', :default => false
 
+        def multiple_items?
+          self.frontend == :shopcart
+        end
+        
       end
     end
   end
