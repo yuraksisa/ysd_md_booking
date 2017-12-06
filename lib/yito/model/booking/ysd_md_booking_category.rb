@@ -50,7 +50,7 @@ module Yito
         end
 
         after :create do
-          if type = :resource
+          if type == :resource
             BookingItem.create(reference: self.code, name: self.name, category: self)
           end
         end

@@ -14,7 +14,8 @@ module Yito
         property :id, Serial
         property :name, String, length: 256
 
-        has n, :driver_age_rules, 'BookingDriverAgeRule', :child_key => [:driver_age_rule_definition_id], :parent_key => [:id], :constraint => :destroy
+        has n, :driver_age_rules, 'BookingDriverAgeRule', :child_key => [:driver_age_rule_definition_id],
+               :parent_key => [:id], :constraint => :destroy, :order => [:rule_order]
 
         #
         # Find a rule that matches the driver age and driving license years

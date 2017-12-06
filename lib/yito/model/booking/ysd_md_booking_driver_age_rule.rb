@@ -22,6 +22,7 @@ module Yito
         property :suplement, Decimal, scale: 2, precision: 10, default: 0
         property :deposit, Decimal, scale: 2, precision: 10, default: 0
         property :apply_if_product_deposit, Boolean, default: false
+        property :rule_order, Integer, default: 0
 
         belongs_to :driver_age_rule_definition, 'BookingDriverAgeRuleDefinition', :child_key => [:driver_age_rule_definition_id], :parent_key => [:id]
 
