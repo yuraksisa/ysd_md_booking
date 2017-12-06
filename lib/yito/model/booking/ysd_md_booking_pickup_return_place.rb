@@ -8,6 +8,7 @@ module Yito
       #
       class PickupReturnPlace
         include DataMapper::Resource
+        include Yito::Model::Booking::PickupReturnPlaceTranslation
         
         storage_names[:default] = 'bookds_pickup_places'
 

@@ -182,12 +182,12 @@ module Yito
 
 						# Recalculate items
 						self.items.each do |sc_item|
-							product = RentingSearch.search(date_from, date_to, self.days,  false, sc_item.item_id)
+							product = RentingSearch.search(date_from, date_to, self.days, nil, false, sc_item.item_id)
 							sc_item.update_item_cost(product.base_price, product.price, product.deposit)
 						end
 						# Recalcute extras
 						self.extras.each do |sc_extra|
-							extra = RentingExtraSearch.search(date_from, date_to, self.days, sc_extra.extra_id)
+							extra = RentingExtraSearch.search(date_from, date_to, self.days, nil, sc_extra.extra_id)
 							sc_extra.update_extra_cost(extra.unit_price)
 						end
 
@@ -269,13 +269,13 @@ module Yito
 				  		shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
 					  # Shopping cart does not contain item
 					  else 
-					  	if product = RentingSearch.search(date_from, date_to, days, false, product_code)
+					  	if product = RentingSearch.search(date_from, date_to, days, nil, false, product_code)
 						  add_item(product.code, product.name, quantity,
 								   product.base_price, product.price, product.deposit)
 					    end
 					  end  
 					else
-					  product = RentingSearch.search(date_from, date_to, days, false, product_code)
+					  product = RentingSearch.search(date_from, date_to, days, nil, false, product_code)
 					  # Shopping cart empty
 					  if items.size == 0
 						  add_item(product.code, product.name, quantity,
@@ -297,7 +297,7 @@ module Yito
 					if shopping_cart_extra = extras.select { |extra| extra.extra_id == extra_code }.first
 						shopping_cart_extra.update_quantity(quantity) if shopping_cart_extra.quantity != quantity
 						# Shopping cart does not contain extra
-					elsif extra = RentingExtraSearch.search(date_from, date_to, days, extra_code)
+					elsif extra = RentingExtraSearch.search(date_from, date_to, days, nil, extra_code)
 						add_extra(extra.code, extra.name, quantity, extra.unit_price)
 					end
 

@@ -38,8 +38,20 @@ module Yito
         belongs_to :booking_catalog, 'BookingCatalog', :required => false
 
         before :create do
+          # Get the alias
           if self.alias.nil? or self.alias.empty?     
-            self.alias = File.join('/', Time.now.strftime('%Y%m%d') , UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))
+            self.alias = File.join('/', UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))[0..79]
+          end
+          # Setup depending on the type
+          if type == :resource
+            stock_control = true
+            stock = 1
+          end
+        end
+
+        after :create do
+          if type = :resource
+            BookingItem.create(reference: self.code, name: self.name, category: self)
           end
         end
 

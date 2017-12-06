@@ -90,8 +90,8 @@ module BookingDataSystem
      property :customer_name, String, :field => 'customer_name', :required => true, :length => 40
      property :customer_surname, String, :field => 'customer_surname', :required => true, :length => 40
      property :customer_document_id, String, :length => 50
-     property :customer_email, String, :field => 'customer_email', :required => true, :length => 40
-     property :customer_phone, String, :field => 'customer_phone', :required => true, :length => 15 
+     property :customer_email, String, :field => 'customer_email', :length => 40
+     property :customer_phone, String, :field => 'customer_phone', :length => 15
      property :customer_mobile_phone, String, :field => 'customer_mobile_phone', :length => 15
      property :customer_language, String, :field => 'customer_language', :length => 3
 
@@ -110,7 +110,7 @@ module BookingDataSystem
      property :payment_status, Enum[:none, :deposit, :total, :refunded], 
        :field => 'payment_status', :default => :none
 
-     property :planning_color, String, :length => 9
+     property :planning_color, String, :length => 9, default: '#66ff66'
      belongs_to :main_booking, 'Booking', :child_key => [:main_booking_id], :parent_key => [:id],
        :required => false
      property :promotion_code, String, :length => 256
@@ -136,6 +136,7 @@ module BookingDataSystem
      include Yito::Model::UserAgentData     
      include Yito::Model::Booking::BookingExternalInvoice
      include BookingDataSystem::BookingFuel
+     include BookingDataSystem::BookingCrew
      include Yito::Model::Booking::SupplementsCalculation
      include Yito::Model::Booking::DepositCalculation
      include Yito::Model::Booking::CostCalculation
@@ -468,6 +469,7 @@ module BookingDataSystem
        booking.total_pending ||= 0
        booking.booking_amount ||= 0
        booking.total_pending = booking.total_cost - booking.total_paid
+       booking.planning_color = '#66ff66' if booking.planning_color.nil?
        # Assign the rental location depending on the pickup place
        multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
        if multiple_rental_locations

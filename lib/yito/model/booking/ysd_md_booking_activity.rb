@@ -142,7 +142,7 @@ module Yito
 
         before :create do
           if self.alias.nil? or self.alias.empty?     
-            self.alias = File.join('/', Time.now.strftime('%Y%m%d') , UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))
+            self.alias = File.join('/', UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))[0..79]
           end
         end
 
@@ -358,7 +358,29 @@ module Yito
           return result
 
         end
-        
+
+        #
+        # Get the tickets
+        #
+        def tickets(occupation_date, occupation_time, occupation_price_type=nil)
+
+          occupation = self.occupation(occupation_date, occupation_time, occupation_price_type)
+          price_definition_detail = self.price_definition_detail
+          rates = self.rates_hash(occupation_date)
+
+          result = {}
+          price_definition_detail.each do |id, description|
+            tickets = [{number: 0, total: 0, description: "Número de tickets (#{description})"}]
+            (1..(occupation[:occupation_capacity]-([:occupation_detail][id]||0))).each do |item|
+              tickets << {number:item, total:rates[id][item], description: "#{item} X #{description} #{rates[id][item]}€"}
+            end
+            result.store(id, tickets)
+          end
+
+          return result
+
+        end
+
         # Get the occupation for a price type
         # @Return [Hash] :total_occupation holds the total occupation
         #                :occupation_detail is a Hash where key is the item_price_type and value is the occupation

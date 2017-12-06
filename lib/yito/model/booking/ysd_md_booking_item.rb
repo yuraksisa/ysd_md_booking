@@ -34,8 +34,8 @@ module Yito
         property :planning_order, Integer, :default => 0   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]
-        belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
-        belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
+        #belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
+        #belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
 
         #
         # Override the save method to check the category
@@ -43,8 +43,8 @@ module Yito
         def save
           
           check_category! if self.category
-          check_calendar! if self.calendar
-          check_price_definition! if self.price_definition
+          #check_calendar! if self.calendar
+          #check_price_definition! if self.price_definition
 
           super
 
@@ -58,21 +58,21 @@ module Yito
           end
         end
 
-        def check_calendar!
-          if self.calendar and (not self.calendar.saved?) and loaded = ::Yito::Model::Calendar::Calendar.get(self.calendar.id)
-            self.calendar = loaded
-          end
-          
-          if self.calendar and self.calendar.id.nil?
-            self.calendar.save
-          end          
-        end
+        #def check_calendar!
+        # if self.calendar and (not self.calendar.saved?) and loaded = ::Yito::Model::Calendar::Calendar.get(self.calendar.id)
+        #    self.calendar = loaded
+        #  end
+        #
+        #  if self.calendar and self.calendar.id.nil?
+        #    self.calendar.save
+        #  end
+        #end
 
-        def check_price_definition!
-          if self.price_definition and (not self.price_definition.saved?) and loaded = ::Yito::Model::Rates::PriceDefinition.get(self.price_definition.id)
-            self.price_definition = loaded
-          end
-        end
+        #def check_price_definition!
+        #  if self.price_definition and (not self.price_definition.saved?) and loaded = ::Yito::Model::Rates::PriceDefinition.get(self.price_definition.id)
+        #    self.price_definition = loaded
+        #  end
+        #end
 
       end
 

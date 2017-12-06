@@ -114,6 +114,9 @@ module Yito
                result.store(value.day.to_i.to_s, value.count)
                result
             end
+            (0..6).each do |item|
+              result.store(item.to_s, 0) unless result.has_key?(item.to_s)
+            end
             result
           end
 

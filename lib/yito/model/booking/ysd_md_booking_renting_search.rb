@@ -58,7 +58,7 @@ module Yito
   		 #
   		 # Search products, price and availability
   		 #
-  		 def self.search(from, to, days, full_information=false, product_code=nil)
+  		 def self.search(from, to, days, locale=nil, full_information=false, product_code=nil)
 
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
@@ -88,8 +88,11 @@ module Yito
   		   conditions.store(:code, product_code) unless product_code.nil?
 
   		   result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes,
-  		   			      conditions: conditions, order: [:code]).map do |item| 
-  		   	           
+  		   			      conditions: conditions, order: [:code]).map do |item|
+					           
+					           # Translate the product
+					           item = item.translate(locale) if locale 
+
   		   	           # Get the photos
   		   	           photo = item.album ? item.album.thumbnail_medium_url : nil
   		   	           full_photo = item.album ? item.album.image_url : nil

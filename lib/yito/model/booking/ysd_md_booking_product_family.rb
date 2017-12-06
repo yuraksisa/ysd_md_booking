@@ -17,6 +17,7 @@ module Yito
         property :code, String, :field => 'code', :length => 20, :key => true
         property :name, String, :length => 255
         property :presentation_order, Integer
+        property :product_type, Enum[:category_of_resources, :resource], :default => :category_of_resources
         property :frontend, Enum[:dates, :categories, :shopcart, :calendar], :default => :dates
         property :driver, Boolean, :field => 'driver', :default => false
         property :driver_date_of_birth, Boolean, :field => 'driver_date_of_birth', :default => false

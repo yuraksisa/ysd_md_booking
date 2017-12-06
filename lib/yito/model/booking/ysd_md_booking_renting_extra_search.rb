@@ -39,7 +39,7 @@ module Yito
   		 #
   		 # Search extras and price
   		 #
-  		 def self.search(from, to, days, extra_code=nil)
+  		 def self.search(from, to, days, locale=nil, extra_code=nil)
 
   		   # Query for products
   		   extra_attributes = [:code, :name, :description, :max_quantity]
@@ -48,8 +48,11 @@ module Yito
 
   		   result = ::Yito::Model::Booking::BookingExtra.all(fields: extra_attributes,
   		   			   conditions: conditions, 
-  		   			   order: [:code]).map do |item| 
-  		   				
+  		   			   order: [:code]).map do |item|
+
+					      # Translate the extra
+					      item = item.translate(locale) if locale 
+					 
   		   				# Get the unit price
   		   				unit_price = item.unit_price(from, days)
   		   				

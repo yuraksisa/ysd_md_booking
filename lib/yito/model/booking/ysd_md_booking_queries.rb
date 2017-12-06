@@ -381,6 +381,9 @@ module Yito
                result.store(value.day.to_i.to_s, value.count)
                result
             end
+            (0..6).each do |item|
+              result.store(item.to_s, 0) unless result.has_key?(item.to_s)
+            end
             result
           end
 
@@ -658,8 +661,81 @@ module Yito
             QUERY
             occupation = repository.adapter.select(query)
             
-          end          
-          
+          end
+
+          #
+          # Resource occupation detail
+          #
+          # Get the resources of a reference that are busy in a date
+          #
+          def resource_origin_detail(origin, id)
+
+            if origin == 'booking'
+              query = <<-QUERY
+                   SELECT l.item_id as item_id, 
+                        b.id, 
+                        b.customer_name, 
+                        b.customer_surname, 
+                        b.date_from, 
+                        b.time_from, 
+                        b.date_to, 
+                        b.time_to, 
+                        b.customer_email, 
+                        b.customer_phone, 
+                        b.customer_mobile_phone,
+                        b.planning_color,
+                        r.booking_item_reference, 
+                        r.booking_item_category,
+                        'booking' as origin,
+                        r.id as id2,
+                        CONCAT(r.resource_user_name, ' ', r.resource_user_surname) as resource_1_name,
+                        r.customer_height, 
+                        r.customer_weight,
+                        CONCAT(r.resource_user_name, ' ', r.resource_user_surname) as resource_2_name,
+                        r.customer_2_height,
+                        r.customer_2_weight,
+                        b.comments as comments,
+                        r.pax
+                   FROM bookds_bookings_lines as l
+                   JOIN bookds_bookings as b on b.id = l.booking_id
+                   JOIN bookds_bookings_lines_resources as r on r.booking_line_id = l.id
+                   WHERE r.id = #{id}
+              QUERY
+            else
+              query = <<-QUERY
+                  SELECT pr.booking_item_category as item_id,
+                          pr.id,
+                          pr.title as customer_name,
+                          '' as customer_surname,
+                          pr.date_from as date_from,
+                          pr.time_from as time_from,
+                          pr.date_to as date_to,
+                          pr.time_to as time_to,
+                          '' as customer_email,
+                          '' as customer_phone,
+                          '' as customer_mobile_phone,
+                          pr.planning_color,
+                          pr.booking_item_reference,
+                          pr.booking_item_category,
+                          'prereservation' as origin,
+                          pr.id as id2,
+                          '' as resource_1_name,
+                          '' as customer_height,
+                          '' as customer_weight,
+                          '' as resource_2_name,
+                          '' as customer_2_height,
+                          '' as customer_2_weight,
+                          pr.notes as comments,
+                          1 as pax
+                  FROM bookds_prereservations pr
+                  WHERE pr.id = #{id}
+              QUERY
+            end
+            
+            resource_origin_detail = repository.adapter.select(query)
+
+          end
+
           # Get the daily percentage occupation in a period of time 
           #
           def monthly_occupation(month, year, category=nil)
@@ -1137,14 +1213,11 @@ module Yito
           end
 
           #
-          # Get the planning detail
+          # Get planning resource
           #
-          def planning(date_from, date_to, options=nil)
+          def planning_resources(date_from, date_to, options=nil)
 
             current_year = DateTime.now.year
-
-            # 1. Get the stock 
-
             references = []
             references_hash = {}
 
@@ -1158,27 +1231,27 @@ module Yito
                 end
               elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
                 ::Yito::Model::Booking::BookingItem.all(
-                  :conditions => {category_code: options[:product], active: true},
-                  :fields => [:reference, :category_code],
-                  :order =>  [:planning_order, :category_code, :reference]).each do |item|
-                    references << item.reference
-                    references_hash.store(item.reference, item.category_code)
+                    :conditions => {category_code: options[:product], active: true},
+                    :fields => [:reference, :category_code],
+                    :order =>  [:planning_order, :category_code, :reference]).each do |item|
+                  references << item.reference
+                  references_hash.store(item.reference, item.category_code)
                 end
               else
                 ::Yito::Model::Booking::BookingItem.all(
-                  :conditions => {active: true},
-                  :fields => [:reference, :category_code],
-                  :order =>  [:planning_order, :category_code, :reference]).each do |item|
-                    references << item.reference
-                    references_hash.store(item.reference, item.category_code)
+                    :conditions => {active: true},
+                    :fields => [:reference, :category_code],
+                    :order =>  [:planning_order, :category_code, :reference]).each do |item|
+                  references << item.reference
+                  references_hash.store(item.reference, item.category_code)
                 end
               end
             else
               historic_resources = BookingDataSystem::Booking.historic_stock(date_from.year)
               historic_resources_hash = historic_resources.inject({}) do |result, item|
-                                          result.store(item.item_reference, item.item_category) unless result.has_key?(item.item_reference)
-                                          result
-                                        end
+                result.store(item.item_reference, item.item_category) unless result.has_key?(item.item_reference)
+                result
+              end
               if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
                 references << options[:reference]
                 references_hash.store(options[:reference], historic_resources_hash[options[:reference]])
@@ -1195,6 +1268,37 @@ module Yito
                 references_hash = historic_resources_hash
               end
             end
+
+            return [references, references_hash]
+          end
+
+          #
+          # Get the planning detail
+          #
+          def planning(date_from, date_to, options=nil)
+
+            # 1. Get the stock
+            references, references_hash = planning_resources(date_from, date_to, options)
+
+            # 2. Get the reservations
+            query = resources_occupation_query(date_from, date_to, options)
+            resource_occupations = repository.adapter.select(query)
+            resource_occupations.each do |item|
+              item.date_from = item.date_from.strftime('%Y-%m-%d')
+              item.date_to = item.date_to.strftime('%Y-%m-%d')
+            end
+
+            {references: references_hash, result: resource_occupations}
+          end
+
+          #
+          # Get the planning detail
+          #
+          def planning_table(date_from, date_to, options=nil)
+
+            # 1. Get the stock 
+            references, references_hash = planning_resources(date_from, date_to, options)
+
             # 2. Build the result structure
             result = {}
             days = (date_to - date_from).to_i
@@ -1459,7 +1563,7 @@ module Yito
               journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
               event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_return')
               journal_events = ::Yito::Model::Calendar::Event.all(
-                  :conditions => {:from.gte => from, :from.lt => from+1, event_type_id: event_type.id,
+                  :conditions => {:to.gte => from, :to.lt => to+1, event_type_id: event_type.id,
                                   :calendar_id => journal_calendar.id},
                   :order => [:to.asc]).map do |item|
                 {id: '.', date_to: item.from.to_date.to_datetime, time_to: item.from.strftime('%H:%M'),
@@ -1567,10 +1671,10 @@ module Yito
 
             unless options.nil?
               if options.has_key?(:mode)
-                if options[:mode] == 'stock' and options.has_key?(:reference)
+                if options[:mode].to_sym == :stock and options.has_key?(:reference)
                   extra_condition = "and r.booking_item_reference = #{options[:reference]}"
                   extra_pr_condition = "and pr.booking_item_reference = #{options[:reference]}"
-                elsif options[:mode] == 'product' and options.has_key(:product)
+                elsif options[:mode].to_sym == :product and options.has_key(:product)
                   extra_condition = "and item_id = #{options[:product]}"
                   extra_condition = "and pr.booking_item_category = #{options[:product]}"
                 end
