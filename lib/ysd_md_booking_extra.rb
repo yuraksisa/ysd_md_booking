@@ -13,6 +13,7 @@ module BookingDataSystem
      
      property :extra_id, String, :field => 'extra_id', :required => true, :length => 20
      property :extra_description, String, :field => 'extra_description', :required => false, :length => 256
+     property :extra_description_customer_translation, String, length: 256
      property :extra_unit_cost, Decimal, :field => 'extra_unit_cost', :scale => 2, :precision => 10, :default => 0
      property :extra_cost, Decimal, :field => 'extra_cost', :scale => 2, :precision => 10, :default => 0
      property :quantity, Integer, :field => 'quantity'
@@ -22,8 +23,6 @@ module BookingDataSystem
      def save
       super # Invokes the super class to achieve the chain of methods invoked       
      end
-
-     # --------------------------- Reservation items management -----------------------------------------
 
      #
      # Change the extra quantity
@@ -81,14 +80,11 @@ module BookingDataSystem
                                                     identifier: booking.id.to_s,
                                                     description: BookingDataSystem.r18n.t.booking_news_feed.updated_booking_extra_cost("%.2f" % new_extra_unit_cost, self.extra_id, "%.2f" % old_booking_extra_extra_cost),
                                                     attributes_updated: {extras_cost: booking.extras_cost, total_cost: booking.total_cost}.merge({booking: booking.newsfeed_summary}).to_json)
-
          end
          booking.reload
        end
 
      end
-
-     # -----------------------------------------------------------------------------------------------------------
 
   end
 end

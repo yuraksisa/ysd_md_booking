@@ -157,6 +157,60 @@ module Yito
 				# ----------------------------------------------------------------------------------
 
 				#
+				# Change the customer language of the shopping cart and translate all the elements
+				#
+				def change_customer_language(new_customer_language)
+
+					if new_customer_language == self.customer_language
+						return
+					end
+
+					booking_item_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+
+					# pickup_place / return_place
+					if booking_item_family.pickup_return_place
+						if p_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: self.pickup_place)
+						  pickup_place_translation = p_place.translate(new_customer_language)
+							self.pickup_place_customer_translation = pickup_place_translation.name
+						end
+						if r_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: self.return_place)
+							return_place_translation = r_place.translate(new_customer_language)
+							self.return_place_customer_translation = return_place_translation.name
+						end
+					end
+
+					# driver age information
+					if booking_item_family.driver
+						if self.driver_age_rule_id
+						  if driver_age_rule = ::Yito::Model::Booking::BookingDriverAgeRule.get(driver_age_rule_id)
+								self.driver_age_rule_description_customer_translation = driver_age_rule.description(new_customer_language).join('')
+							end
+					  end
+					end
+
+					# products translations
+					items.each do |item|
+						if product = ::Yito::Model::Booking::BookingCategory.get(item.item_id)
+						  product_translation = product.translate(new_customer_language)
+							item.item_description_customer_translation = product_translation.name
+						end
+					end
+
+					# extras translations
+          extras.each do |extra|
+						if extra = ::Yito::Model::Booking::BookingExtra.get(extra.extra_id)
+							extra_translation = extra.translate(new_customer_language)
+							extra.extra_description_customer_translation = extra_translation.name
+						end
+					end
+
+					self.customer_language = new_customer_language
+
+					self.save
+
+				end
+
+				#
 				# Change selection data : date from/to, pickup/return place
 				#
 				def change_selection_data(date_from, time_from, date_to, time_to,
@@ -169,26 +223,44 @@ module Yito
 						self.time_from = time_from
 						self.date_to = date_to
 						self.time_to = time_to
+
 						self.pickup_place = pickup_place
+						if booking_pickup_place = PickupReturnPlace.first(name: pickup_place)
+							booking_pickup_place_translation = booking_pickup_place.translate(customer_language)
+							self.pickup_place_customer_translation = (booking_pickup_place_translation.nil? ? pickup_place : booking_pickup_place_translation.name)
+						else
+							self.pickup_place_customer_translation = pickup_place
+					  end
+
 						self.return_place = return_place
+						if booking_return_place = PickupReturnPlace.first(name: return_place)
+							booking_return_place_translation = booking_return_place.translate(customer_language)
+							self.return_place_customer_translation = (booking_return_place_translation.nil? ? return_place : booking_return_place_translation.name)
+						else
+							self.return_place_customer_translation = pickup_place
+						end
+
 						self.number_of_adults = number_of_adults
 						self.number_of_children = number_of_children
 						if !driver_age_rule_id.nil?
 							self.driver_age_rule_id = driver_age_rule_id
 						end
-						#self.calculate_supplements
+
+            # Recalculate cost
 						self.calculate_cost
 					  self.save
 
 						# Recalculate items
 						self.items.each do |sc_item|
-							product = RentingSearch.search(date_from, date_to, self.days, nil, false, sc_item.item_id)
-							sc_item.update_item_cost(product.base_price, product.price, product.deposit)
+							if product = RentingSearch.search(date_from, date_to, self.days, nil, false, sc_item.item_id)
+							  sc_item.update_item_cost(product.base_price, product.price, product.deposit)
+							end
 						end
 						# Recalcute extras
 						self.extras.each do |sc_extra|
-							extra = RentingExtraSearch.search(date_from, date_to, self.days, nil, sc_extra.extra_id)
-							sc_extra.update_extra_cost(extra.unit_price)
+							if extra = RentingExtraSearch.search(date_from, date_to, self.days, nil, sc_extra.extra_id)
+							  sc_extra.update_extra_cost(extra.unit_price)
+							end
 						end
 
 					end
@@ -302,6 +374,7 @@ module Yito
 					end
 
 				end
+
 
       end
     end

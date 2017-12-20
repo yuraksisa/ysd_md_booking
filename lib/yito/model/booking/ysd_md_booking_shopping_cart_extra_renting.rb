@@ -13,6 +13,7 @@ module Yito
 
         property :extra_id, String, :required => true, :length => 20
         property :extra_description, String, :required => false, :length => 256
+        property :extra_description_customer_translation, String, length: 256
         property :extra_unit_cost, Decimal, :scale => 2, :precision => 10
         property :extra_cost, Decimal, :scale => 2, :precision => 10
         property :quantity, Integer
@@ -35,6 +36,12 @@ module Yito
           transaction do
             self.extra_id = extra_id
             self.extra_description = extra_description
+            if extra = ::Yito::Model::Booking::BookingExtra.get(extra_id)
+              extra_customer_translation = extra.translate(shopping_cart.customer_language)
+              self.extra_description_customer_translation = (extra_customer_translation.nil? ? extra_description : extra_customer_translation.name)
+            else
+              self.extra_description_customer_translation = extra_description
+            end
             self.quantity = quantity
             self.update_extra_cost(extra_unit_cost)
             self.extra_unit_cost = extra_unit_cost

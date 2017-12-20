@@ -19,8 +19,16 @@ module Yito
         property :code, String, :length => 50      
         property :name, String, :length => 80
         property :short_description, String, :length => 256
+        property :title, String, length: 100
+        property :subtitle, Text
         property :description, Text
-        property :occurence, Enum[:one_time, :multiple_dates, :cyclic, :customer_customizable]
+        property :detailed_info_what_includes, Text
+        property :detailed_info_timetable_duration, Text
+        property :detailed_info_ages, Text
+        property :detailed_info_recommendations, Text
+        property :detailed_info_meeting_point, Text
+        property :is_highlighted, Boolean, default: false
+        property :occurence, Enum[:one_time, :multiple_dates, :cyclic]
         property :mode, Enum[:full,:partial], :default => :full
         property :active, Boolean, :default => true
         property :web_public, Boolean, :default => true

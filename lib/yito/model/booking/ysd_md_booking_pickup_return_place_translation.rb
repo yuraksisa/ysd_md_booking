@@ -19,7 +19,7 @@ module Yito
 
           pickup_return_place = nil
 
-          if pickup_return_place_translation = Yito::Model::Booking::Translation::PickupReturnPlaceTranslation.get(id)
+          if pickup_return_place_translation = Yito::Model::Booking::Translation::BookingPickupReturnPlaceTranslation.get(id)
             translated_attributes = {}
             pickup_return_place_translation.get_translated_attributes(language_code).each {|term| translated_attributes.store(term.concept.to_sym, term.translated_text)}
             pickup_return_place = ::Yito::Model::Booking::PickupReturnPlace.new(attributes.merge(translated_attributes){ |key, old_value, new_value| new_value.to_s.strip.length > 0?new_value:old_value })

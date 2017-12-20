@@ -482,7 +482,32 @@ module Yito
 
           end
 
-          # Get the stock that where used in the reservations of a year
+          #
+          # Get the resource with reservation during the period
+          #
+          def resources_with_reservation(from, to)
+            query = <<-QUERY
+                select distinct(bookds_bookings_lines_resources.booking_item_reference) as item_reference,
+                       bookds_bookings_lines.item_id as item_id,
+                       bookds_bookings_lines_resources.booking_item_category as item_category   
+                FROM bookds_bookings_lines_resources
+                JOIN bookds_bookings_lines on bookds_bookings_lines_resources.booking_line_id = bookds_bookings_lines.id
+                JOIN bookds_bookings on bookds_bookings.id = bookds_bookings_lines.booking_id
+                where ((bookds_bookings.date_from <= '#{from}' and bookds_bookings.date_to >= '#{from}') or 
+                       (bookds_bookings.date_from <= '#{to}' and bookds_bookings.date_to >= '#{to}') or 
+                       (bookds_bookings.date_from = '#{from}' and bookds_bookings.date_to = '#{to}') or
+                       (bookds_bookings.date_from >= '#{from}' and bookds_bookings.date_to <= '#{to}')) and
+                      status NOT IN (1,5) and 
+                      bookds_bookings_lines_resources.booking_item_reference is not NULL
+                order by bookds_bookings_lines_resources.booking_item_reference
+            QUERY
+
+            repository.adapter.select(query)
+          end
+
+          #
+          # Get the stock that where used in the reservations for a period
+          #
           def historic_stock(year)
 
             data = query_strategy.historic_stock(year)
@@ -1221,53 +1246,59 @@ module Yito
             references = []
             references_hash = {}
 
-            if current_year == date_from.year
-              if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
-                references << options[:reference]
-                if item = ::Yito::Model::Booking::BookingItem.get(options[:reference])
-                  references_hash.store(item.reference, item.category_code)
-                else
-                  references_hash.store(options[:reference], nil)
-                end
-              elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
-                ::Yito::Model::Booking::BookingItem.all(
-                    :conditions => {category_code: options[:product], active: true},
-                    :fields => [:reference, :category_code],
-                    :order =>  [:planning_order, :category_code, :reference]).each do |item|
-                  references << item.reference
-                  references_hash.store(item.reference, item.category_code)
-                end
+            # Current stock
+
+            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+              references << options[:reference]
+              if item = ::Yito::Model::Booking::BookingItem.get(options[:reference])
+                references_hash.store(item.reference, item.category_code)
               else
-                ::Yito::Model::Booking::BookingItem.all(
-                    :conditions => {active: true},
-                    :fields => [:reference, :category_code],
-                    :order =>  [:planning_order, :category_code, :reference]).each do |item|
-                  references << item.reference
-                  references_hash.store(item.reference, item.category_code)
+                references_hash.store(options[:reference], nil)
+              end
+            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+              ::Yito::Model::Booking::BookingItem.all(
+                  :conditions => {category_code: options[:product], active: true},
+                  :fields => [:reference, :category_code],
+                  :order =>  [:planning_order, :category_code, :reference]).each do |item|
+                references << item.reference
+                references_hash.store(item.reference, item.category_code)
+              end
+            else
+              ::Yito::Model::Booking::BookingItem.all(
+                  :conditions => {active: true},
+                  :fields => [:reference, :category_code],
+                  :order =>  [:planning_order, :category_code, :reference]).each do |item|
+                references << item.reference
+                references_hash.store(item.reference, item.category_code)
+              end
+            end
+
+            # Historic stock (from assigned reservations)
+
+            historic_resources = BookingDataSystem::Booking.resources_with_reservation(date_from, date_to)
+            historic_resources_hash = historic_resources.inject({}) do |result, item|
+              result.store(item.item_reference, item.item_category) unless result.has_key?(item.item_reference)
+              result
+            end
+            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+              references << options[:reference] unless references.include?(options[:reference])
+              references_hash.store(options[:reference], historic_resources_hash[options[:reference]]) unless references_hash.has_key?(options[:reference])
+            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+              historic_resources_hash.each do |key, value|
+                if value == options[:product]
+                  references << key unless references.include?(key)
+                  references_hash.store(key, value) unless references_hash.has_key?(key)
                 end
               end
             else
-              historic_resources = BookingDataSystem::Booking.historic_stock(date_from.year)
-              historic_resources_hash = historic_resources.inject({}) do |result, item|
-                result.store(item.item_reference, item.item_category) unless result.has_key?(item.item_reference)
-                result
+              historic_resources.each do |item|
+                references << item.item_reference unless references.include?(item.item_reference)
               end
-              if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
-                references << options[:reference]
-                references_hash.store(options[:reference], historic_resources_hash[options[:reference]])
-              elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
-                historic_resources_hash.each do |key, value|
-                  if value == options[:product]
-                    references << key
-                    references_hash.store(key, value)
-                  end
-                end
-              else
-                references = historic_resources.map { |item| item.item_reference }
-                references.uniq!
-                references_hash = historic_resources_hash
+              historic_resources_hash.each do |key, value|
+                references_hash.store(key, value) unless references_hash.has_key?(key)
               end
             end
+
 
             return [references, references_hash]
           end

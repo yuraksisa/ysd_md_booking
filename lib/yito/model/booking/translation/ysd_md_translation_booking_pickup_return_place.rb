@@ -9,7 +9,7 @@ module Yito
         #
         # Pickup/return place translation
         #
-        class PickupReturnPlaceTranslation
+        class BookingPickupReturnPlaceTranslation
           include ::DataMapper::Resource
 
           storage_names[:default] = 'trans_booking_pickup_return_place_translation'
@@ -24,13 +24,13 @@ module Yito
 
             pickup_return_place_translation = nil
 
-            PickupReturnPlaceTranslation.transaction do
-              pickup_return_place_translation = PickupReturnPlaceTranslation.get(pickup_return_place_id)
+            BookingPickupReturnPlaceTranslation.transaction do
+              pickup_return_place_translation = BookingPickupReturnPlaceTranslation.get(pickup_return_place_id)
               if pickup_return_place_translation
                 pickup_return_place_translation.set_translated_attributes(language_code, attributes)
               else
                 translation = ::Model::Translation::Translation.create_with_terms(language_code, attributes)
-                pickup_return_place_translation = PickupReturnPlaceTranslation.create({
+                pickup_return_place_translation = BookingPickupReturnPlaceTranslation.create({
                                  :pickup_return_place => ::Yito::Model::Booking::PickupReturnPlace.get(pickup_return_place_id),
                                  :translation => translation})
               end

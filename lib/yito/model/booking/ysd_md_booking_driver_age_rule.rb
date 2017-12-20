@@ -71,36 +71,36 @@ module Yito
         #
         # Textual description
         #
-        def description
+        def description(locale=nil)
 
           age_condition_literal = case age_condition
                                     when '<'
-                                      BookingDataSystem.r18n.t.booking_driver_age.younger(age_from)
+                                      BookingDataSystem.r18n(locale).t.booking_driver_age.younger(age_from)
                                     when '>'
-                                      BookingDataSystem.r18n.t.booking_driver_age.older(age_from)
+                                      BookingDataSystem.r18n(locale).t.booking_driver_age.older(age_from)
                                     when '='
-                                      BookingDataSystem.r18n.t.booking_driver_age.same_age(age_from)
+                                      BookingDataSystem.r18n(locale).t.booking_driver_age.same_age(age_from)
                                     when '<->'
-                                      BookingDataSystem.r18n.t.booking_driver_age.between_age(age_from, age_to)
+                                      BookingDataSystem.r18n(locale).t.booking_driver_age.between_age(age_from, age_to)
                                   end
 
           driving_license_years_literal = case driving_license_years_condition
                                             when '<'
-                                              BookingDataSystem.r18n.t.booking_driver_age.less_driving_license(driving_license_years_from)
+                                              BookingDataSystem.r18n(locale).t.booking_driver_age.less_driving_license(driving_license_years_from)
                                             when '>'
-                                              BookingDataSystem.r18n.t.booking_driver_age.more_driving_license(driving_license_years_from)
+                                              BookingDataSystem.r18n(locale).t.booking_driver_age.more_driving_license(driving_license_years_from)
                                             when '='
-                                              BookingDataSystem.r18n.t.booking_driver_age.same_driving_license(driving_license_years_from)
+                                              BookingDataSystem.r18n(locale).t.booking_driver_age.same_driving_license(driving_license_years_from)
                                             when '<->'
-                                              BookingDataSystem.r18n.t.booking_driver_age.between_driving_license(driving_license_years_from, driving_license_years_to)
+                                              BookingDataSystem.r18n(locale).t.booking_driver_age.between_driving_license(driving_license_years_from, driving_license_years_to)
                                           end
 
           if driving_license_years_condition.nil?
-            [BookingDataSystem.r18n.t.booking_driver_age.driver_under_age_literal(age_condition_literal),
-             allowed ? '' : BookingDataSystem.r18n.t.booking_driver_age.driver_under_age_not_authorized(age_condition_literal)]
+            [BookingDataSystem.r18n(locale).t.booking_driver_age.driver_under_age_literal(age_condition_literal),
+             allowed ? '' : BookingDataSystem.r18n(locale).t.booking_driver_age.driver_under_age_not_authorized(age_condition_literal)]
           else
-            [BookingDataSystem.r18n.t.booking_driver_age.driver_under_age_driving_license_literal(age_condition_literal, driving_license_years_literal),
-             allowed ? '' : BookingDataSystem.r18n.t.booking_driver_age.driver_under_age_driving_license_not_authorized(age_condition_literal, driving_license_years_literal)
+            [BookingDataSystem.r18n(locale).t.booking_driver_age.driver_under_age_driving_license_literal(age_condition_literal, driving_license_years_literal),
+             allowed ? '' : BookingDataSystem.r18n(locale).t.booking_driver_age.driver_under_age_driving_license_not_authorized(age_condition_literal, driving_license_years_literal)
             ]
           end
 

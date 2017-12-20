@@ -96,6 +96,14 @@ module Yito
   		   	           # Get the photos
   		   	           photo = item.album ? item.album.thumbnail_medium_url : nil
   		   	           full_photo = item.album ? item.album.image_url : nil
+										 photo_path = nil
+										 if photo
+											 photo_path = (photo.match(/^https?:/) ? photo : File.join(domain, photo))
+										 end
+										 full_photo_path = nil
+										 if full_photo
+											 full_photo_path = (full_photo.match(/^https?:/) ? full_photo : File.join(domain, full_photo))
+										 end
 
   		   	           # Get the price
   		   	           product_price = item.unit_price(from, days)
@@ -122,9 +130,9 @@ module Yito
 										 available = available && (stock > busy) if item.stock_control # Stock
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
+
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
-  		   	           	         photo.match(/^https?:/) ? photo : File.join(domain, photo),
-															 full_photo.match(/^https?:/) ? full_photo : File.join(domain, full_photo),
+  		   	           	         photo_path, full_photo_path,
   		   	           					 base_price, price, deposit, 
   		   	           					 available, stock, busy, payment_available, full_information)
   		   	        end

@@ -31,6 +31,7 @@ module BookingDataSystem
        model.property :driver_age_deposit, DataMapper::Property::Decimal, scale: 2, precision: 10, default: 0
        model.property :driver_age_rule_id, Integer
        model.property :driver_age_rule_description, String, length: 256
+       model.property :driver_age_rule_description_customer_translation, String, length: 256
        model.property :driver_age_rule_text, DataMapper::Property::Text
        model.property :driver_age_rule_apply_if_prod_deposit, DataMapper::Property::Boolean, default: false
        model.property :driver_age_rule_deposit, DataMapper::Property::Decimal, scale: 2, precision: 10, default: 0

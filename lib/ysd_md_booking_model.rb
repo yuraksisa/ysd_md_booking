@@ -266,7 +266,9 @@ module BookingDataSystem
                           additional_driver_3_phone: shopping_cart.additional_driver_3_phone,
                           additional_driver_3_email: shopping_cart.additional_driver_3_email,                                 
                           pickup_place: shopping_cart.pickup_place,
+                          pickup_place_customer_translation: shopping_cart.pickup_place_customer_translation,
                           return_place: shopping_cart.return_place,
+                          return_place_customer_translation: shopping_cart.return_place_customer_translation,
                           pickup_place_cost: shopping_cart.pickup_place_cost,
                           return_place_cost: shopping_cart.return_place_cost,
                           flight_company: shopping_cart.flight_company,
@@ -300,6 +302,7 @@ module BookingDataSystem
                                             booking: booking,
                                             item_id: shopping_cart_item.item_id,
                                             item_description: shopping_cart_item.item_description,
+                                            item_description_customer_translation: shopping_cart_item.item_description_customer_translation,
                                             optional: shopping_cart_item.optional,
                                             item_unit_cost_base: shopping_cart_item.item_unit_cost_base,
                                             item_unit_cost: shopping_cart_item.item_unit_cost,
@@ -343,6 +346,7 @@ module BookingDataSystem
               booking_extra = BookingExtra.new(booking: booking,
                                                   extra_id: shopping_cart_extra.extra_id,
                                                   extra_description: shopping_cart_extra.extra_description,
+                                                  extra_description_customer_translation: shopping_cart_extra.extra_description_customer_translation,
                                                   extra_unit_cost: shopping_cart_extra.extra_unit_cost,
                                                   extra_cost: shopping_cart_extra.extra_cost,
                                                   quantity: shopping_cart_extra.quantity)
@@ -547,6 +551,7 @@ module BookingDataSystem
        end
        if product_lines.empty?
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
+           product_customer_translation = product.translate(customer_language)
            product_unit_cost = product.unit_price(self.date_from, self.days)
            product_deposit_cost = product.deposit
            transaction do
@@ -555,6 +560,7 @@ module BookingDataSystem
              booking_line.booking = self
              booking_line.item_id = item_id
              booking_line.item_description = product.name
+             booking_line.item_description_customer_translation = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
              booking_line.item_unit_cost_base = product_unit_cost
              booking_line.item_unit_cost = product_unit_cost
              booking_line.item_cost = product_unit_cost * quantity
@@ -595,6 +601,7 @@ module BookingDataSystem
 
        if booking_extras.empty?
          if extra = ::Yito::Model::Booking::BookingExtra.get(extra_id)
+           extra_translation = extra.translate(customer_language)
            booking_deposit = SystemConfiguration::Variable.get_value('booking.deposit', 0).to_i
            extra_unit_cost = extra.unit_price(self.date_from, self.days)
            transaction do
@@ -603,6 +610,7 @@ module BookingDataSystem
              booking_extra.booking = self
              booking_extra.extra_id = extra_id
              booking_extra.extra_description = extra.name
+             booking_extra.extra_description_customer_language = extra_translation.nil? ? extra.name : extra_translation.name
              booking_extra.quantity = quantity
              booking_extra.extra_unit_cost = extra_unit_cost
              booking_extra.extra_cost = extra_unit_cost * quantity

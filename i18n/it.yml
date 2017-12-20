@@ -1,0 +1,40 @@
+booking_driver_age:
+  driver_under_age_literal: Conducente %1
+  driver_under_age_driving_license_literal: Conducente %1 e con %2
+  driver_under_age_not_authorized: Spiacenti, non è possibile prenotare un veicolo se il conducente è %1
+  driver_under_age_driving_license_not_authorized:  Spiacenti, non è possibile prenotare un veicolo se il conducente è %1 i %2
+  younger: minore di %1 anni
+  older: maggiore di %1 anni
+  same_age: "%1 anni"
+  between_age: tra %1 e %2 anni
+  less_driving_license: !!pl
+    1: meno di %1 anni di patente
+    n: meno di %1 anni di patente
+  more_driving_license: !!pl
+    1: piùn di %1 anni di patente
+    n: piùn di %1 anni di patente
+  between_driving_license: patente da %1 a %2 anni
+  same_driving_license: !!pl
+    1: patente da %1 anni
+    n: patente da %1 anni
+notifications:
+  customer_req_email_subject: Booking request received
+  customer_email_subject: Reservation confirmed
+  customer_payment_enabled_subject: Payment enabled
+  manager_email_subject: New booking request
+  manager_paying_email_subject: Customer paying new booking request
+  manager_confirmation_email_subject: Booking request confirmed
+booking_model:
+  charge_description: Booking %1
+order_model:
+  charge_description: Order %1
+payment_method:
+  payment_bank_transfer: Bank transfer
+  payment_redsys256: Virtual TPV
+  payment_credit_card: Credit or debit card
+  payment_paypal_standard: Paypal
+  payment_cash: Cash
+booking_category_type:
+  activity: Activity or show
+  category: Resources category
+  resource: Resource

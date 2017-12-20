@@ -21,11 +21,23 @@ module Yito
         property :code, String, :field => 'code', :length => 50, :key => true      
         property :name, String, :field => 'name', :length => 80
         property :description, Text, :field => 'description'
-        property :max_quantity, Integer, :field => 'max_quantity'
+        property :max_quantity, Integer, :field => 'max_quantity', default: 0
+        property :stock, Integer, default: 0
         property :active, Boolean, :default => true
         property :web_public, Boolean, :default => true
         
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
+
+        before :create do
+          # Create the rates associated to the extra
+          if price_definition.nil?
+            if booking_item_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+              price_definition = booking_item_family.build_extras_price_definition(self.code, self.name)
+              price_definition.save
+              self.price_definition = price_definition
+            end
+          end
+        end
 
         def save
           check_price_definition! if self.price_definition          

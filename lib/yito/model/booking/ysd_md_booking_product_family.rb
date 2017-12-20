@@ -17,7 +17,6 @@ module Yito
         property :code, String, :field => 'code', :length => 20, :key => true
         property :name, String, :length => 255
         property :presentation_order, Integer
-        property :product_type, Enum[:category_of_resources, :resource], :default => :category_of_resources
         property :frontend, Enum[:dates, :categories, :shopcart, :calendar], :default => :dates
         property :driver, Boolean, :field => 'driver', :default => false
         property :driver_date_of_birth, Boolean, :field => 'driver_date_of_birth', :default => false
@@ -39,11 +38,69 @@ module Yito
         property :driver_literal, Enum[:driver, :contact], :field => 'driver_literal', :default  => :driver
         property :named_resources, Boolean, :field => 'named_resources', :default => false
         property :fuel, Boolean, :field => 'fuel', :default => false
+        # Product type
+        property :product_type, Enum[:category_of_resources, :resource], :default => :category_of_resources
+        # Product price builder
+        property :product_price_definition_type, Enum[:season, :no_season], default: :season
+        belongs_to :product_price_definition_season_definition, 'Yito::Model::Rates::SeasonDefinition',
+                   :child_key => [:product_price_definition_season_definition_id], :parent_key => [:id], :required => false
+        belongs_to :product_price_definition_factor_definition, 'Yito::Model::Rates::FactorDefinition',
+                   :child_key => [:product_price_definition_factor_definition_id], :parent_key => [:id], :required => false
+        property :product_price_definition_units_management, Enum[:unitary, :detailed], default: :detailed
+        property :product_price_definition_units_management_value, Integer, default: 7
+        # Extras price builder
+        property :extras_price_definition_type, Enum[:season, :no_season], default: :no_season
+        property :extras_price_definition_units_management, Enum[:unitary, :detailed], default: :unitary
+        property :extras_price_definition_units_management_value, Integer, default: 1
+        belongs_to :extras_price_definition_season_definition, 'Yito::Model::Rates::SeasonDefinition',
+                   :child_key => [:extras_price_definition_season_definition_id], :parent_key => [:id], :required => false
+        belongs_to :extras_price_definition_factor_definition, 'Yito::Model::Rates::FactorDefinition',
+                   :child_key => [:extras_price_definition_factor_definition_id], :parent_key => [:id], :required => false
+        # Characteristics
+        property :stock_characteristic_1, String, length: 80
+        property :stock_characteristic_2, String, length: 80
+        property :stock_characteristic_3, String, length: 80
+        property :stock_characteristic_4, String, length: 80
 
+        #
+        # Check if the product allows multiple items
+        #
         def multiple_items?
           self.frontend == :shopcart
         end
-        
+
+        #
+        # Build a generic product price
+        #
+        def build_product_price_definition(name, description)
+
+          price_definition = Yito::Model::Rates::PriceDefinition.new(
+                     name: name,
+                              description: description,
+                              type: product_price_definition_type,
+                              units_management: product_price_definition_units_management,
+                              units_management_value: product_price_definition_units_management_value,
+                              season_definition: product_price_definition_season_definition,
+                              factor_definition: product_price_definition_factor_definition)
+
+        end
+
+        #
+        # Build a generic extra price
+        #
+        def build_extras_price_definition(name, description)
+
+          price_definition = Yito::Model::Rates::PriceDefinition.new(
+              name: name,
+              description: description,
+              type: extras_price_definition_type,
+              units_management: extras_price_definition_units_management,
+              units_management_value: extras_price_definition_units_management_value,
+              season_definition: extras_price_definition_season_definition,
+              factor_definition: extras_price_definition_factor_definition)
+
+        end
+
       end
     end
   end

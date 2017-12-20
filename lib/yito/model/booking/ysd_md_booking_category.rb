@@ -19,11 +19,13 @@ module Yito
         
         storage_names[:default] = 'bookds_categories'
 
-        property :code, String, :field => 'code', :length => 20, :key => true      
+        property :code, String, :length => 20, :key => true
         property :type, Enum[:category_of_resources, :resource], :default => :category_of_resources
-        property :name, String, :field => 'name', :length => 80
-        property :short_description, String, :field => 'short_description', :length => 80
-        property :description, Text, :field => 'description'
+        property :name, String, :length => 80
+        property :short_description, String, :length => 80
+        property :title, String, length: 100
+        property :subtitle, Text
+        property :description, Text
         property :stock_control, Boolean, :default => false
         property :stock, Integer, :default => 0
         property :sort_order, Integer, :default => 0
@@ -47,12 +49,43 @@ module Yito
             stock_control = true
             stock = 1
           end
+          # Create the calendar associated to the category
+          if calendar.nil?
+            calendar = Yito::Model::Calendar::Calendar.new(name: self.code, description: self.name)
+            calendar.event_type_calendars << Yito::Model::Calendar::EventTypeCalendar.new(
+                event_type: Yito::Model::Calendar::EventType.first_or_create({name: 'not_available'}, {name: 'not_available', description: 'No disponible'}))
+            calendar.event_type_calendars << Yito::Model::Calendar::EventTypeCalendar.new(
+                event_type: Yito::Model::Calendar::EventType.first_or_create({name: 'payment_enabled'}, {name: 'payment_enabled', description: 'Permitir pago'}))
+            calendar.save
+            self.calendar = calendar
+          end
+          # Create the rates associated to the category
+          if price_definition.nil?
+            if booking_item_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+              price_definition = booking_item_family.build_product_price_definition(self.code, self.name)
+              price_definition.save
+              self.price_definition = price_definition
+            end
+          end
         end
 
         after :create do
+          # If the type is a resource, create and item that represents the resource
           if type == :resource
             BookingItem.create(reference: self.code, name: self.name, category: self)
           end
+
+          # Create the rates associated to the category
+        end
+
+        after :destroy do
+
+          # Delete the calendar
+          self.calendar.destroy if calendar
+
+          # Delete the rates
+          self.price_definition.destroy if price_definition
+
         end
 
         #
@@ -68,9 +101,7 @@ module Yito
         def ready?
           !code.nil? and !code.empty? and 
           !name.nil? and !name.empty? and 
-          !short_description.nil? and !short_description.empty? and
-          !description.nil? and !description.empty? and
-          !price_definition.nil? 
+          !price_definition.nil?
         end
         
         #
@@ -80,8 +111,6 @@ module Yito
           warnings = []
           warnings << BookingDataSystem.r18n.t.code_empty if code.nil? or code.empty?
           warnings << BookingDataSystem.r18n.t.name_empty if name.nil? or name.empty?
-          warnings << BookingDataSystem.r18n.t.short_description_empty if short_description.nil? or short_description.empty?
-          warnings << BookingDataSystem.r18n.t.description_empty if description.nil? or description.empty?
           warnings << BookingDataSystem.r18n.t.price_definition_empty if price_definition.nil?
           return warnings
         end
