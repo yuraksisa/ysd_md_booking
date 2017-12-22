@@ -197,10 +197,10 @@ module Yito
 					end
 
 					# extras translations
-          extras.each do |extra|
-						if extra = ::Yito::Model::Booking::BookingExtra.get(extra.extra_id)
+          extras.each do |booking_extra|
+						if extra = ::Yito::Model::Booking::BookingExtra.get(booking_extra.extra_id)
 							extra_translation = extra.translate(new_customer_language)
-							extra.extra_description_customer_translation = extra_translation.name
+							booking_extra.extra_description_customer_translation = extra_translation.name
 						end
 					end
 
