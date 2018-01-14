@@ -1516,7 +1516,7 @@ module Yito
                 result
               end
               {id: item.id, date_from: item.date_from.to_date.to_datetime, time_from: item.time_from, pickup_place: item.pickup_place, product: product,
-               customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
+               status: item.status, customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
                customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
                total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days, rental_location_code: item.rental_location_code}
             end
@@ -1530,7 +1530,8 @@ module Yito
                   :conditions => {:from.gte => from, :from.lt => to+1, event_type_id: event_type.id,
                                   :calendar_id => journal_calendar.id},
                   :order => [:from.asc]).map do |item|
-                {id: '.', date_from: item.from.to_date.to_datetime, time_from: item.from.strftime('%H:%M'), pickup_place: '', product: item.description, customer: '', customer_phone: '', customer_mobile_phone: '',
+                {id: '.', date_from: item.from.to_date.to_datetime, time_from: item.from.strftime('%H:%M'), pickup_place: '', product: item.description,
+                 status: '', customer: '', customer_phone: '', customer_mobile_phone: '',
                  customer_email: '', flight: '', total_pending: 0, extras: '', notes: '', days: 0}
               end
               data.concat(journal_events)
@@ -1583,7 +1584,7 @@ module Yito
                 result
               end
               {id: item.id, date_to: item.date_to.to_date.to_datetime, time_to: item.time_to, return_place: item.return_place, product: product,
-               customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
+               status: item.status, customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
                customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
                total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days}
             end
@@ -1598,7 +1599,7 @@ module Yito
                                   :calendar_id => journal_calendar.id},
                   :order => [:to.asc]).map do |item|
                 {id: '.', date_to: item.from.to_date.to_datetime, time_to: item.from.strftime('%H:%M'),
-                 return_place: '', product: item.description, customer: '', customer_phone: '', customer_mobile_phone: '',
+                 return_place: '', product: item.description, status: '', customer: '', customer_phone: '', customer_mobile_phone: '',
                  customer_email: '', flight: '', total_pending: 0, extras: '', notes: '', days: 0}
               end
               data.concat(journal_events)

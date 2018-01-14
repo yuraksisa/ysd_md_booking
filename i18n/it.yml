@@ -1,8 +1,10 @@
 booking_driver_age:
   driver_under_age_literal: Conducente %1
-  driver_under_age_driving_license_literal: Conducente %1 e con %2
+  driver_driving_license_literal: Conducente con %1
+  driver_under_age_driving_license_literal: Conducente %1 %2 con %3
   driver_under_age_not_authorized: Spiacenti, non è possibile prenotare un veicolo se il conducente è %1
-  driver_under_age_driving_license_not_authorized:  Spiacenti, non è possibile prenotare un veicolo se il conducente è %1 i %2
+  driver_driving_license_not_authorized: Spiacenti, non è possibile prenotare un veicolo se il conducente con %1
+  driver_under_age_driving_license_not_authorized:  Spiacenti, non è possibile prenotare un veicolo se il conducente è %1 %2 con %3
   younger: minore di %1 anni
   older: maggiore di %1 anni
   same_age: "%1 anni"
@@ -17,6 +19,8 @@ booking_driver_age:
   same_driving_license: !!pl
     1: patente da %1 anni
     n: patente da %1 anni
+  or_condition: o
+  and_condition: e
 notifications:
   customer_req_email_subject: Booking request received
   customer_email_subject: Reservation confirmed

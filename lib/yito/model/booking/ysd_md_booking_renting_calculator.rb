@@ -76,7 +76,8 @@ module Yito
             calculate_days
             calculate_time_from_to_cost if @valid && @item_family.pickup_return_place
             calculate_pickup_return_place_cost if @valid && @item_family.pickup_return_place
-            calculate_driver_age_cost if @valid and @item_family.driver and SystemConfiguration::Variable.get_value('booking.driver_min_age.rules', 'false').to_bool
+            calculate_driver_age_cost if !driver_age_data.nil? and @valid and @item_family.driver and
+                                         SystemConfiguration::Variable.get_value('booking.driver_min_age.rules', 'false').to_bool
             @supplements_cost = @time_from_cost + @time_to_cost + @pickup_place_cost + @return_place_cost + @age_cost
             @deposit = @age_deposit
           else

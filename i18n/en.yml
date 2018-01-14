@@ -1,8 +1,10 @@
 booking_driver_age:
   driver_under_age_literal: Driver %1
-  driver_under_age_driving_license_literal: Driver %1 and %2
+  driver_driving_license_literal: Driver %1
+  driver_under_age_driving_license_literal: Driver %1 %2 %3
   driver_under_age_not_authorized: We\'re sorry. We don\'t allow to book if driver is %1
-  driver_under_age_driving_license_not_authorized: We\'re sorry. We don\'t allow to book if driver is %1 and holds driving license for %2
+  driver_driving_license_not_authorized:  We\'re sorry. We don\'t allow to book if driver holds driving license for %1
+  driver_under_age_driving_license_not_authorized: We\'re sorry. We don\'t allow to book if driver is %1 %2 holds driving license for %3
   younger: under %1
   older: over %1
   same_age: "%1"
@@ -17,6 +19,8 @@ booking_driver_age:
   same_driving_license: !!pl
     1: "%1 year"
     n: "%1 year"
+  or_condition: or
+  and_condition: and
 notifications:
   customer_req_email_subject: Booking request received
   customer_email_subject: Reservation confirmed

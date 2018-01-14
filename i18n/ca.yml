@@ -1,8 +1,10 @@
 booking_driver_age:
   driver_under_age_literal: Conductor %1
-  driver_under_age_driving_license_literal: Conductor %1 i amb %2
+  driver_driving_license_literal: Conductor amb %1
+  driver_under_age_driving_license_literal: Conductor %1 %2 amb %3
   driver_under_age_not_authorized: Ho sentim. No permitim realitzar la reserva si el conductor és %1
-  driver_under_age_driving_license_not_authorized: Ho sentim. No permitim realitzar reserva si el conductor és %1 i té %2
+  driver_driving_license_not_authorized:  Ho sentim. No permitim realitzar la reserva si el conductor té %1
+  driver_under_age_driving_license_not_authorized: Ho sentim. No permitim realitzar reserva si el conductor és %1 %2 té %3
   younger: menor de %1 anys
   older: major de %1 anys
   same_age: de %1 anys
@@ -17,6 +19,8 @@ booking_driver_age:
   same_driving_license: !!pl
     1: amb %1 any de carnet
     n: amb %1 anys de carnet
+  or_condition: o
+  and_condition: i
 notifications:
   customer_req_email_subject: Solicitud de reserva rebuda
   customer_email_subject: Reserva confirmada

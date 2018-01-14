@@ -102,7 +102,7 @@ module Yito
                 data << booking.pickup_place if product_family.pickup_return_place
                 data << booking.product
                 data << booking.extras
-                data << booking.notes
+                data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} #{booking.notes}"
                 data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.flight if product_family.flight
                 data <<  (booking.id == '.' ? '' : "%.2f" % booking.total_pending)
@@ -187,7 +187,7 @@ module Yito
                 data << booking.return_place if product_family.pickup_return_place
                 data << booking.product
                 data << booking.extras
-                data << booking.notes
+                data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} #{booking.notes}"
                 data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.rental_location_code if multiple_locations
                 no_span_rows << idx
