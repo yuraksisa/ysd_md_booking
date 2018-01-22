@@ -20,7 +20,9 @@ module Yito
           self.date_to_price_calculation = calculator.date_to_price_calculation
 
           # driver information
-          assign_calculator_driver_data(calculator)
+          if driver_age_data
+            assign_calculator_driver_data(calculator)
+          end
 
           # time_from supplement
           self.time_from_cost = calculator.time_from_cost
@@ -94,8 +96,8 @@ module Yito
         # Assign calculator driver data
         #
         def assign_calculator_driver_data(calculator)
-          self.driver_age = calculator.age
-          self.driver_driving_license_years = calculator.driving_license_years
+          self.driver_age = calculator.age if calculator.age
+          self.driver_driving_license_years = calculator.driving_license_years if calculator.driving_license_years
           self.driver_age_allowed = calculator.age_allowed
           self.driver_under_age = !calculator.age_allowed
           self.driver_age_rule_id = calculator.age_rule_id
