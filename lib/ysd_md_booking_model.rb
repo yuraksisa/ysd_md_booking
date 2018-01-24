@@ -729,7 +729,7 @@ module BookingDataSystem
      #
      def expired?
          conf_item_hold_time = SystemConfiguration::Variable.get_value('booking.item_hold_time', '0').to_i
-         hold_time_diff_in_hours = (DateTime.now.to_time - self.creation_date.to_time) / 3600
+         hold_time_diff_in_hours = ((DateTime.now.to_time - self.creation_date.to_time).to_f * 24).to_i
          expired = (hold_time_diff_in_hours > conf_item_hold_time)
          expired && !force_allow_payment
      end
@@ -742,7 +742,7 @@ module BookingDataSystem
            config_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence').to_i
            _date_from_str = "#{self.date_from.strftime('%Y-%m-%d')}T#{self.time_from}:00#{self.date_from.strftime("%:z")}"
            _date_from = DateTime.strptime(_date_from_str,'%Y-%m-%dT%H:%M:%S%:z')
-           diff_in_hours = (_date_from.to_time - self.creation_date.to_time).to_i * 24
+           diff_in_hours = ((_date_from.to_time - self.creation_date.to_time).to_f * 24).to_i
            allowed = diff_in_hours > 0 && (diff_in_hours >= config_payment_cadence)
            allowed || force_allow_payment
          rescue => error
