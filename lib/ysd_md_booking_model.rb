@@ -742,7 +742,7 @@ module BookingDataSystem
            config_payment_cadence = SystemConfiguration::Variable.get_value('booking.payment_cadence').to_i
            _date_from_str = "#{self.date_from.strftime('%Y-%m-%d')}T#{self.time_from}:00#{self.date_from.strftime("%:z")}"
            _date_from = DateTime.strptime(_date_from_str,'%Y-%m-%dT%H:%M:%S%:z')
-           diff_in_hours = (_date_from.to_time - self.creation_date.to_time) / 3600
+           diff_in_hours = (_date_from.to_time - self.creation_date.to_time).to_i * 24
            allowed = diff_in_hours > 0 && (diff_in_hours >= config_payment_cadence)
            allowed || force_allow_payment
          rescue => error
