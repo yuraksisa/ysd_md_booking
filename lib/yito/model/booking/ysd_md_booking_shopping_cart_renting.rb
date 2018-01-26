@@ -252,7 +252,7 @@ module Yito
 
 						# Recalculate items
 						self.items.each do |sc_item|
-							if product = RentingSearch.search(date_from, date_to, self.days, nil, false, sc_item.item_id)
+							if product = RentingSearch.search(date_from, date_to, self.days, nil, false, sc_item.item_id, false)
 							  sc_item.update_item_cost(product.base_price, product.price, product.deposit)
 							end
 						end
@@ -341,13 +341,13 @@ module Yito
 				  		shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
 					  # Shopping cart does not contain item
 					  else 
-					  	if product = RentingSearch.search(date_from, date_to, days, nil, false, product_code)
+					  	if product = RentingSearch.search(date_from, date_to, days, nil, false, product_code, false)
 						  add_item(product.code, product.name, quantity,
 								   product.base_price, product.price, product.deposit)
 					    end
 					  end  
 					else
-					  product = RentingSearch.search(date_from, date_to, days, nil, false, product_code)
+					  product = RentingSearch.search(date_from, date_to, days, nil, false, product_code, false)
 					  # Shopping cart empty
 					  if items.size == 0
 						  add_item(product.code, product.name, quantity,

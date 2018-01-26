@@ -940,7 +940,8 @@ module Yito
               stock_detail.store(stock_item.reference, {category: stock_item.category_code,
                                                         own_property: stock_item.own_property,
                                                         assignable: stock_item.assignable,
-                                                        available: true, 
+                                                        available: true,
+                                                        real_stock: true,
                                                         detail: [],
                                                         estimation: []})
               # Register the item in the required_categories hash
@@ -961,6 +962,7 @@ module Yito
                                                own_property: true,
                                                assignable: true,
                                                available: true,
+                                               real_stock: false,
                                                detail: [],
                                                estimation: []})
                  end
@@ -1054,7 +1056,8 @@ module Yito
               stock = required_category_value[:category_stock]
               occupation = (stock_detail.select {|k,v| v[:category] == required_category_key && (!v[:detail].empty? || !v[:estimation].empty?) }).keys.count
               occupation_assigned = (stock_detail.select {|k,v| v[:category] == required_category_key && !v[:detail].empty? }).keys.count
-              available_stock = (stock_detail.select {|k,v| v[:category] == required_category_key && v[:detail].empty? && v[:estimation].empty?}).keys
+              available_stock = (stock_detail.select {|k,v| v[:category] == required_category_key && v[:real_stock] && v[:detail].empty? && v[:estimation].empty?}).keys
+              available_assignable_stock =  (stock_detail.select {|k,v| v[:category] == required_category_key && v[:real_stock] && v[:assignable] && v[:detail].empty? && v[:estimation].empty?}).keys
               automatically_preassigned_stock = (stock_detail.select {|k,v| v[:category] == required_category_key && !v[:estimation].empty? }).keys
               available_assignable_resource = (stock_detail.select do
                                                   |k,v| v[:category] == required_category_key && v[:detail].empty? && v[:estimation].empty? && stock_detail[k][:assignable]
@@ -1063,11 +1066,12 @@ module Yito
               stock = occupation + available_assignable_resource if (stock <= occupation)
 
               category_occupation.store(required_category_key,
-                                       {stock: stock,
-                                        occupation: occupation,
-                                        occupation_assigned: occupation_assigned,
-                                        available_stock: available_stock ,
-                                        automatically_preassigned_stock: automatically_preassigned_stock,
+                                       {stock: stock, # Number that represents category total stock (take into account available assignable resources)
+                                        occupation: occupation, # Number that represents the category total occupation
+                                        occupation_assigned: occupation_assigned, # Number that represents the category occupation that have been assigned
+                                        available_stock: available_stock, # Array of available stock item references
+                                        available_assignable_stock: available_assignable_stock, # Array of available and assignable stock item references
+                                        automatically_preassigned_stock: automatically_preassigned_stock, # Array of automatically pre-assigned stock item references
                                         assignation_pending: required_category_value[:original_assignation_pending]})
 
             end

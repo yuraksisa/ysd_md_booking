@@ -50,7 +50,7 @@ module BookingDataSystem
         if product = ::Yito::Model::Booking::BookingCategory.get(new_item_id)
            product_customer_translation = product.translate(booking.customer_language)
            item_description = product.name
-           item_description_customer_language = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
+           item_description_customer_translation = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
            old_price = new_price = self.item_unit_cost
            old_product_deposit = new_product_deposit = self.product_deposit_unit_cost
            item_cost_increment = 0
@@ -66,7 +66,7 @@ module BookingDataSystem
              # Update booking line
              self.item_id = new_item_id
              self.item_description = item_description
-             self.item_description_customer_language = item_description_customer_language
+             self.item_description_customer_translation = item_description_customer_translation
              if item_cost_increment != 0
                self.item_unit_cost += item_cost_increment
                self.item_cost = self.item_unit_cost * self.quantity

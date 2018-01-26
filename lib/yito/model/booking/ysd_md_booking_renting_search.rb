@@ -58,7 +58,15 @@ module Yito
   		 #
   		 # Search products, price and availability
   		 #
-  		 def self.search(from, to, days, locale=nil, full_information=false, product_code=nil)
+			 # from   : date from
+			 # to     : date to
+			 # days   : number of days
+			 # locale : locale to show descriptions
+			 # full_information : show stock and busy for any product
+			 # product_code : Search only one product
+			 # web_public: The search if for web public
+			 # 
+  		 def self.search(from, to, days, locale=nil, full_information=false, product_code=nil, web_public=false)
 
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
@@ -84,7 +92,8 @@ module Yito
   		   # Query for products
   		   prod_attributes = [:code, :name, :short_description, :description,
   		   					          :stock_control, :stock, :album_id, :deposit, :price_definition_id]
-  		   conditions = {active: true, web_public: true}
+  		   conditions = {active: true}
+				 conditions.store(:web_public, true) if web_public
   		   conditions.store(:code, product_code) unless product_code.nil?
 
   		   result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes,

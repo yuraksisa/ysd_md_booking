@@ -610,7 +610,7 @@ module BookingDataSystem
              booking_extra.booking = self
              booking_extra.extra_id = extra_id
              booking_extra.extra_description = extra.name
-             booking_extra.extra_description_customer_language = extra_translation.nil? ? extra.name : extra_translation.name
+             booking_extra.extra_description_customer_translation = extra_translation.nil? ? extra.name : extra_translation.name
              booking_extra.quantity = quantity
              booking_extra.extra_unit_cost = extra_unit_cost
              booking_extra.extra_cost = extra_unit_cost * quantity
@@ -1081,9 +1081,9 @@ module BookingDataSystem
          booking_lines.each do |booking_line|
            booking_line.booking_line_resources.each do |booking_line_resource|
              if booking_line_resource.booking_item_reference.nil?
-               if booking_item_reference = category_occupation[booking_line.item_id][:available_stock].first and !booking_item_reference.nil?
+               if booking_item_reference = category_occupation[booking_line.item_id][:available_assignable_stock].first and !booking_item_reference.nil?
                  booking_line_resource.assign_resource(booking_item_reference)
-                 category_occupation[booking_line.item_id][:available_stock].delete_at(0)
+                 category_occupation[booking_line.item_id][:available_assignable_stock].delete_at(0)
                end
              end
            end
