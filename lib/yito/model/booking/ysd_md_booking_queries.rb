@@ -1252,14 +1252,14 @@ module Yito
 
             # Current stock
 
-            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
+            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference) # Reference
               references << options[:reference]
               if item = ::Yito::Model::Booking::BookingItem.get(options[:reference])
                 references_hash.store(item.reference, item.category_code)
               else
                 references_hash.store(options[:reference], nil)
               end
-            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product) # Product references
               ::Yito::Model::Booking::BookingItem.all(
                   :conditions => {category_code: options[:product], active: true},
                   :fields => [:reference, :category_code],
@@ -1267,7 +1267,7 @@ module Yito
                 references << item.reference
                 references_hash.store(item.reference, item.category_code)
               end
-            else
+            else # All
               ::Yito::Model::Booking::BookingItem.all(
                   :conditions => {active: true},
                   :fields => [:reference, :category_code],
@@ -1284,10 +1284,10 @@ module Yito
               result.store(item.item_reference, item.item_category) unless result.has_key?(item.item_reference)
               result
             end
-            if !options.nil? and options[:mode] == :stock and options.has_key?(:reference)
-              references << options[:reference] unless references.include?(options[:reference])
-              references_hash.store(options[:reference], historic_resources_hash[options[:reference]]) unless references_hash.has_key?(options[:reference])
-            elsif !options.nil? and options[:mode] == :product and options.has_key?(:product)
+
+            # Append the historic stock
+
+            if !options.nil? and options[:mode] == :product and options.has_key?(:product) # Product
               historic_resources_hash.each do |key, value|
                 if value == options[:product]
                   references << key unless references.include?(key)
@@ -1303,6 +1303,9 @@ module Yito
               end
             end
 
+            # Historic stock blocking (from stock blocking)
+
+            p "references: #{references_hash.inspect}"
 
             return [references, references_hash]
           end
