@@ -33,12 +33,29 @@ module Yito
         property :capacity, Integer, :default => 0
         property :active, Boolean, :default => true
         property :web_public, Boolean, :default => true
-        property :alias, String, :length => 80       
- 
+        property :alias, String, :length => 80
+
+        property :from_price, Decimal, :scale => 2, :precision => 10, :default => 0
+        property :from_price_offer, Decimal, :scale => 2, :precision => 10, :default => 0
+        
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
         belongs_to :booking_catalog, 'BookingCatalog', :required => false
+        
+        include Yito::Model::Booking::SalesManagement
+        
+        # -------------------------------- Hooks ----------------------------------------------
 
+        #
+        # Before create
+        #
+        #   - build the alias
+        #   - initialitzation depending on type
+        #      a. category_of_resources : none
+        #      b. resource: 1 item in stock (and stock control)
+        #   - setup a calendar
+        #   - setup the price definition
+        #
         before :create do
           # Get the alias
           if self.alias.nil? or self.alias.empty?     
@@ -69,13 +86,18 @@ module Yito
           end
         end
 
+        #
+        # After create
+        # 
+        #  - post-initialitzation depending on type
+        #      a. category_of_resources : none
+        #      b. resource: create an stock item
+        # 
         after :create do
           # If the type is a resource, create and item that represents the resource
           if type == :resource
             BookingItem.create(reference: self.code, name: self.name, category: self)
           end
-
-          # Create the rates associated to the category
         end
 
         after :destroy do
@@ -88,8 +110,121 @@ module Yito
 
         end
 
+        # ----------------------------   Class methods  -------------------------------------
+
         #
-        # Count the defined stock
+        # Get the category types
+        #
+        # category_of_resources : It represents a category (for example rent a car categories ...)
+        # resource : It represents a resource (for example accomodation, boat charter, ...)
+        #
+        def self.types
+          [{:id => 'category_of_resources', :description => BookingDataSystem.r18n.t.booking_category_type.category},
+           {:id => 'resource', :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
+        end
+
+        #
+        # Search for products (availability and categories)
+        #
+        # == Parameters:
+        # from::
+        #   The reservation starting date
+        # to::
+        #   The reservation ending date
+        # days::
+        #   The reservation number of days
+        # options::
+        #   A hash with some options
+        #   :locale -> The locale for the translations
+        #   :full_information -> Shows the stock information (total and available)
+        #   :product_code -> The product code (for a specific category search)
+        #   :web_public -> Include only web_public categories
+        #
+        # == Returns:
+        # An array of RentingSearch items
+        #
+        def self.search(from, to, days, options={})
+          
+          RentingSearch.search(from, to, days, options)
+
+        end
+
+        # ---------------------------- Instance methods -------------------------------------
+
+        def save
+          check_calendar! if self.calendar
+          check_booking_catalog! if self.booking_catalog
+          check_price_definition! if self.price_definition
+          super # Invokes the super class to achieve the chain of methods invoked
+        end
+        
+        #
+        # Search for products (availability and categories)
+        #
+        # == Parameters:
+        # from::
+        #   The reservation starting date
+        # to::
+        #   The reservation ending date
+        # days::
+        #   The reservation number of days
+        # options::
+        #   A hash with some options
+        #   :locale -> The locale for the translations
+        #   :full_information -> Shows the stock information (total and available)
+        #   :web_public -> Include only web_public categories
+        #   :sales_channel_code -> The sales channel code  
+        #
+        # == Returns:
+        # An array of RentingSearch items
+        #        
+        def search(from, to, days, options={})
+          RentingSearch.search(from, to, days, options.merge({product_code: self.code}))          
+        end
+
+        #
+        # Calculate the unit cost for a date and a number of days
+        # ==Parameters:
+        # date_from:: 
+        #   The reservation starting date
+        # ndays:: 
+        #   Number of days
+        # mode:: 
+        #   Calculation mode: :first_season_day or :season_days_average
+        # sales_channel_code::
+        #   The sales channel code
+        #
+        # ==Returns:
+        # A Number that represents the category price for the number of days starting from date
+        #
+        def unit_price(date_from, ndays, mode=nil, sales_channel_code=nil)
+          
+          unit_price_definition = self.price_definition
+
+          # Get the price definition from the sales channel booking category (in case there is a price definition for it)
+          if sales_channel_code
+            if unit_price_bc_sales_channel = ::Yito::Model::Booking::BookingCategoriesSalesChannel.first(:booking_category_code => self.code,
+                                                                                                         'sales_channel.code'.to_sym => sales_channel_code )
+              unit_price_definition = unit_price_bc_sales_channel.price_definition if unit_price_bc_sales_channel.price_definition
+            end
+          end
+
+          # Calculate the price using the price_definition
+          if unit_price_definition
+            if mode.nil?
+              mode = SystemConfiguration::Variable.get_value('booking.renting_calendar_season_mode',
+                                                             'first_day')
+              mode = (mode == 'first_day' ? :first_season_day : :season_days_average)
+            end
+            unit_price_definition.calculate_price(date_from.to_date, ndays, mode)
+          else
+            return 0
+          end
+        
+        end
+        
+        #
+        # Count the defined (active and assignable) stock 
         #
         def defined_stock
           BookingItem.all(category_code: code, active: true, assignable: true).count
@@ -116,22 +251,7 @@ module Yito
         end
         
         alias_method :ready, :ready?
-
-        def self.types
-          [{:id => 'category_of_resources', :description => BookingDataSystem.r18n.t.booking_category_type.category},
-           {:id => 'resource', :description => BookingDataSystem.r18n.t.booking_category_type.resource}]
-        end
-
-        def rates_template_code
-          booking_catalog ? "booking_tmpl_cat_#{booking_catalog.code}_js" : 'booking_js'
-        end 
-
-        def save
-          check_calendar! if self.calendar
-          check_booking_catalog! if self.booking_catalog
-          check_price_definition! if self.price_definition
-          super # Invokes the super class to achieve the chain of methods invoked       
-        end
+        
         
         #
         # Exporting to json
@@ -149,21 +269,6 @@ module Yito
             super(options.merge({:relationships => relationships, :methods => methods}))
           end
 
-        end
-        
-        #
-        # Calculate the unit cost for a date and a number of days
-        #
-        def unit_price(date_from, ndays, mode=nil)
-          if price_definition
-            if mode.nil?
-              mode = SystemConfiguration::Variable.get_value('booking.renting_calendar_season_mode','first_day')
-              mode = (mode == 'first_day' ? :first_season_day : :season_days_average)
-            end
-            price_definition.calculate_price(date_from.to_date, ndays, mode)
-          else
-            return 0
-          end
         end
 
         private

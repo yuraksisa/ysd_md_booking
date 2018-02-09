@@ -11,7 +11,7 @@ module BookingDataSystem
     # Notifies the manager that a new request has been received
     #
     def self.notify_manager(to, subject, message, booking_id)
-      
+
       PostalService.post(build_message(message).merge(:to => to, :subject => subject))
   
       if booking = BookingDataSystem::Booking.get(booking_id)
@@ -49,9 +49,23 @@ module BookingDataSystem
     #
     def self.notify_request_to_customer(to, subject, message, booking_id)
 
-      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+      message_and_settings = build_message(message).merge(:to => to, :subject => subject)
 
+      # Get the settings from the sales channel
       if booking = BookingDataSystem::Booking.get(booking_id)
+        unless booking.sales_channel_code.nil?
+          if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
+            scb_smtp_settings = scb.smtp_configuration
+            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+          end
+        end
+      end
+
+      # Send the mail
+      PostalService.post(message_and_settings)
+
+      # Update the booking status
+      if booking
         booking.update(:customer_req_notification_sent => true)
       end
 
@@ -62,9 +76,23 @@ module BookingDataSystem
     #
     def self.notify_request_to_customer_pay_now(to, subject, message, booking_id)
 
-      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+      message_and_settings = build_message(message).merge(:to => to, :subject => subject)
 
+      # Get the settings from the sales channel
       if booking = BookingDataSystem::Booking.get(booking_id)
+        unless booking.sales_channel_code.nil?
+          if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
+            scb_smtp_settings = scb.smtp_configuration
+            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+          end
+        end
+      end
+      
+      # Send the mail
+      PostalService.post(message_and_settings)
+
+      # Update the booking status
+      if booking 
         booking.update(:customer_req_notification_p_sent => true)
       end      
 
@@ -75,9 +103,23 @@ module BookingDataSystem
     #
     def self.notify_customer(to, subject, message, booking_id)
 
-      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+      message_and_settings = build_message(message).merge(:to => to, :subject => subject)
 
+      # Get the settings from the sales channel
       if booking = BookingDataSystem::Booking.get(booking_id)
+        unless booking.sales_channel_code.nil?
+          if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
+            scb_smtp_settings = scb.smtp_configuration
+            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+          end
+        end
+      end      
+      
+      # Send the mail
+      PostalService.post(message_and_settings)
+
+      # Update the booking status
+      if booking
         booking.update(:customer_notification_sent => true)
       end
 
@@ -88,9 +130,23 @@ module BookingDataSystem
     #
     def self.notify_customer_payment_enabled(to, subject, message, booking_id)
 
-      PostalService.post(build_message(message).merge(:to => to, :subject => subject))
+      message_and_settings = build_message(message).merge(:to => to, :subject => subject)
 
+      # Get the settings from the sales channel
       if booking = BookingDataSystem::Booking.get(booking_id)
+        unless booking.sales_channel_code.nil?
+          if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
+            scb_smtp_settings = scb.smtp_configuration
+            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+          end
+        end
+      end      
+      
+      # Send the mail
+      PostalService.post(message_and_settings)
+
+      # Update the booking status
+      if booking
         booking.update(:customer_payment_enabled_sent => true)
       end
 
@@ -267,8 +323,8 @@ module BookingDataSystem
 
       if force_send || send_notifications?
         if notification_email = SystemConfiguration::Variable.get_value('booking.notification_email')
-          bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
 
+          bmn_template = ContentManagerSystem::Template.first(:name => 'booking_manager_notification_pay_now')
           template = if bmn_template
                        ERB.new bmn_template.text
                      else
@@ -328,7 +384,16 @@ module BookingDataSystem
       if force_send || send_notifications?
         unless customer_email.empty?
 
-          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification')
+          # Try to get sales channel template
+          bcn_template = nil
+          unless self.sales_channel_code.nil?
+            if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => self.sales_channel_code)
+              bcn_template = scb.customer_notification_booking_request_template
+            end
+          end
+
+          # Try to get the default custom template
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification') if bcn_template.nil?
         
           if bcn_template
             template = ERB.new bcn_template.translate(customer_language).text
@@ -358,7 +423,17 @@ module BookingDataSystem
 
       if force_send || send_notifications?
         unless customer_email.empty?
-          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification')
+
+          # Try to get sales channel template
+          bcn_template = nil
+          unless self.sales_channel_code.nil?
+            if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => self.sales_channel_code)
+              bcn_template = scb.customer_notification_request_pay_now_template
+            end
+          end
+
+          # Try to get the default custom template
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification') if bcn_template.nil?
         
           if bcn_template
             template = ERB.new bcn_template.translate(customer_language).text
@@ -390,7 +465,17 @@ module BookingDataSystem
 
       if force_send || send_notifications?
         unless customer_email.empty?
-          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification')
+
+          # Try to get sales channel template
+          bcn_template = nil
+          unless self.sales_channel_code.nil?
+            if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => self.sales_channel_code)
+              bcn_template = scb.customer_notification_booking_confirmed_template
+            end
+          end
+
+          # Try to get the default custom template
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification') if bcn_template.nil?
         
           if bcn_template
             template = ERB.new bcn_template.translate(customer_language).text
@@ -416,7 +501,17 @@ module BookingDataSystem
 
       if force_send || send_notifications?
         unless customer_email.empty?
-          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled')
+
+          # Try to get sales channel template
+          bcn_template = nil
+          unless self.sales_channel_code.nil?
+            if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => self.sales_channel_code)
+              bcn_template = scb.customer_notification_payment_enabled_template
+            end
+          end
+
+          # Try to get the default custom template
+          bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled') if bcn_template.nil?
         
           if bcn_template
             template = ERB.new bcn_template.translate(customer_language).text

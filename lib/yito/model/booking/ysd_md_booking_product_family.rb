@@ -74,14 +74,36 @@ module Yito
         #
         def build_product_price_definition(name, description)
 
+          season_definition = nil
+          factor_definition = nil
+          
+          # The season definition
+          if product_price_definition_type == :season
+            if new_season_definition_instance = SystemConfiguration::Variable.get_value('booking.new_season_definition_instance_for_category','false').to_bool
+              season_definition = self.product_price_definition_season_definition.make_copy unless self.product_price_definition_season_definition.nil?
+            else
+              season_definition = self.product_price_definition_season_definition
+            end
+          end  
+          
+          # The factor definition
+          if use_factors = SystemConfiguration::Variable.get_value('booking.use_factors_in_rates', 'false').to_bool
+            if new_factor_definition_instance = SystemConfiguration::Variable.get_value('booking.new_factor_definition_instance_for_category','false').to_bool
+              factor_definition = self.product_price_definition_factor_definition.make_copy unless self.product_price_definition_factor_definition.nil?
+            else
+              factor_definition = self.product_price_definition_factor_definition
+            end
+          end
+          
+          # The price definition
           price_definition = Yito::Model::Rates::PriceDefinition.new(
-                     name: name,
+                              name: name,
                               description: description,
                               type: product_price_definition_type,
                               units_management: product_price_definition_units_management,
                               units_management_value: product_price_definition_units_management_value,
-                              season_definition: product_price_definition_season_definition,
-                              factor_definition: product_price_definition_factor_definition)
+                              season_definition: season_definition,
+                              factor_definition: factor_definition)
 
         end
 

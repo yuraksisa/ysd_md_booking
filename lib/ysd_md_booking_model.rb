@@ -124,6 +124,7 @@ module BookingDataSystem
      property :return_agent, String, :length => 256
 
      belongs_to :rental_location, 'Yito::Model::Booking::RentalLocation', required: false
+     property :sales_channel_code, String, length: 50
 
      # Booking extensions
      
@@ -274,7 +275,8 @@ module BookingDataSystem
                           flight_company: shopping_cart.flight_company,
                           flight_number: shopping_cart.flight_number,
                           flight_time: shopping_cart.flight_time,
-                          created_by_manager: created_by_manager)
+                          created_by_manager: created_by_manager,
+                          sales_channel_code: shopping_cart.sales_channel_code)
            booking.init_user_agent_data(user_agent_data) unless user_agent_data.nil?
            booking.save
 
@@ -552,7 +554,7 @@ module BookingDataSystem
        if product_lines.empty?
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
            product_customer_translation = product.translate(customer_language)
-           product_unit_cost = product.unit_price(self.date_from, self.days)
+           product_unit_cost = product.unit_price(self.date_from, self.days, nil, self.sales_channel_code)
            product_deposit_cost = product.deposit
            transaction do
              # Create booking line

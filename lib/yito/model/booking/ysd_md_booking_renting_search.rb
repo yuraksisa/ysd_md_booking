@@ -64,10 +64,19 @@ module Yito
 			 # locale : locale to show descriptions
 			 # full_information : show stock and busy for any product
 			 # product_code : Search only one product
-			 # web_public: The search if for web public
+			 # web_public: Include only web_public categories
+			 # sales_channel_code: The sales channel code (nil for default)
 			 # 
-  		 def self.search(from, to, days, locale=nil, full_information=false, product_code=nil, web_public=false)
+  		 def self.search(from, to, days, options={})
 
+				 # Retrieve the options
+				 locale = (options.has_key?(:locale) ? options[:locale] : nil)
+				 full_information = (options.has_key?(:full_information) ? options[:full_information] : false)
+				 product_code = (options.has_key?(:product_code) ? options[:product_code] : nil)
+				 web_public = (options.has_key?(:web_public) ? options[:web_public] : false)
+				 sales_channel_code = (options.has_key?(:sales_channel_code) ? options[:sales_channel_code] : nil)
+
+				 # Proceed
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
   		   result = []
@@ -95,10 +104,10 @@ module Yito
   		   conditions = {active: true}
 				 conditions.store(:web_public, true) if web_public
   		   conditions.store(:code, product_code) unless product_code.nil?
+				 conditions.store('sales_channels.code', [sales_channel_code]) unless sales_channel_code.nil?
 
   		   result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes,
   		   			      conditions: conditions, order: [:code]).map do |item|
-					           
 					           # Translate the product
 					           item = item.translate(locale) if locale 
 
@@ -115,7 +124,7 @@ module Yito
 										 end
 
   		   	           # Get the price
-  		   	           product_price = item.unit_price(from, days)
+  		   	           product_price = item.unit_price(from, days, nil, sales_channel_code)
   		   	           
   		   	           # Apply offers and discounts
   		   	           discount = 0
@@ -146,7 +155,7 @@ module Yito
   		   	           					 available, stock, busy, payment_available, full_information)
   		   	        end
 
-  		   return product_code.nil? ? result : result.first	        
+  		   return product_code.nil? ? result : result.first
 
   		 end
 

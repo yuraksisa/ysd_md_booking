@@ -59,7 +59,8 @@ module Yito
      	has n, :extras, 'ShoppingCartExtraRenting', :constraint => :destroy
      	has n, :items, 'ShoppingCartItemRenting', :constraint => :destroy
      	has n, :item_resources, 'ShoppingCartItemResourceRenting', :through => :items
-
+			property :sales_channel_code, String, length: 50
+				
 				#
 				# Get a booking by its free access id
 				#
@@ -216,7 +217,8 @@ module Yito
 				def change_selection_data(date_from, time_from, date_to, time_to,
 																	pickup_place, return_place,
 																	number_of_adults, number_of_children,
-																	driver_age_rule_id=nil)
+																	driver_age_rule_id=nil,
+																	sales_channel_code=nil)
 
 					transaction do
 					  self.date_from = date_from
@@ -246,13 +248,20 @@ module Yito
 							self.driver_age_rule_id = driver_age_rule_id
 						end
 
+						self.sales_channel_code = sales_channel_code
+
             # Recalculate cost
 						self.calculate_cost
+
 					  self.save
 
 						# Recalculate items
 						self.items.each do |sc_item|
-							if product = RentingSearch.search(date_from, date_to, self.days, nil, false, sc_item.item_id, false)
+							if product = BookingCategory.search(date_from, date_to, self.days, { locale: self.customer_language,
+																																									        full_information: false,
+																																									        product_code: sc_item.item_id,
+																																									        web_public: false,
+							                                                                            sales_channel_code: self.sales_channel_code})
 							  sc_item.update_item_cost(product.base_price, product.price, product.deposit)
 							end
 						end
@@ -341,13 +350,21 @@ module Yito
 				  		shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
 					  # Shopping cart does not contain item
 					  else 
-					  	if product = RentingSearch.search(date_from, date_to, days, nil, false, product_code, false)
+					  	if product = BookingCategory.search(date_from, date_to, days,{ locale: self.customer_language,
+																																									  full_information: false,
+																																									  product_code: product_code,
+																																									  web_public: false,
+																																						        sales_channel_code: self.sales_channel_code})
 						  add_item(product.code, product.name, quantity,
 								   product.base_price, product.price, product.deposit)
 					    end
 					  end  
 					else
-					  product = RentingSearch.search(date_from, date_to, days, nil, false, product_code, false)
+					  product = BookingCategory.search(date_from, date_to, days,{ locale: self.customer_language,
+																																				       full_information: false,
+																																				       product_code: product_code,
+																																				       web_public: false,
+																																				       sales_channel_code: self.sales_channel_code})
 					  # Shopping cart empty
 					  if items.size == 0
 						  add_item(product.code, product.name, quantity,
