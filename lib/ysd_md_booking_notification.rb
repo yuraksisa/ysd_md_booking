@@ -56,7 +56,7 @@ module BookingDataSystem
         unless booking.sales_channel_code.nil?
           if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
             scb_smtp_settings = scb.smtp_configuration
-            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+            message_and_settings.merge!(scb_smtp_settings) unless scb_smtp_settings.nil?
           end
         end
       end
@@ -83,7 +83,7 @@ module BookingDataSystem
         unless booking.sales_channel_code.nil?
           if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
             scb_smtp_settings = scb.smtp_configuration
-            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+            message_and_settings.merge!(scb_smtp_settings) unless scb_smtp_settings.nil?
           end
         end
       end
@@ -110,7 +110,7 @@ module BookingDataSystem
         unless booking.sales_channel_code.nil?
           if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
             scb_smtp_settings = scb.smtp_configuration
-            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+            message_and_settings.merge!(scb_smtp_settings) unless scb_smtp_settings.nil?
           end
         end
       end      
@@ -137,7 +137,7 @@ module BookingDataSystem
         unless booking.sales_channel_code.nil?
           if scb = ::Yito::Model::SalesChannel::SalesChannelBooking.first('sales_channel.code' => booking.sales_channel_code)
             scb_smtp_settings = scb.smtp_configuration
-            message_and_settings.merge(scb_smtp_settings) unless scb_smtp_settings.nil?
+            message_and_settings.merge!(scb_smtp_settings) unless scb_smtp_settings.nil?
           end
         end
       end      
