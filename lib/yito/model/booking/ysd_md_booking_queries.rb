@@ -1121,7 +1121,7 @@ module Yito
             extras = ::Yito::Model::Booking::BookingExtra.all(conditions: {active: true}, fields: [:code, :max_quantity], order: [:code])   
 
             required_extras = extras.inject({}) do |result, extra|
-              result.store(extra.code, {category_stock: extra.max_quantity,
+              result.store(extra.code, {category_stock: extra.stock,
                                         total: 0,
                                         assignation_pending: [],
                                         original_total: 0,
