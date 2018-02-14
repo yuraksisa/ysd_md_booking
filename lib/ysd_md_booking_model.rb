@@ -775,6 +775,27 @@ module BookingDataSystem
 
      end
 
+     #
+     # Check if the booking deposit can be paid
+     #
+     def can_pay_deposit?
+       self.can_pay? and self.total_paid == 0
+     end
+
+     #
+     # Check if the booking total can be paid
+     #
+     def can_pay_total?
+       self.can_pay? and self.total_paid == 0 and SystemConfiguration::Variable.get_value('booking.allow_total_payment','false').to_bool
+     end
+
+     #
+     # Check if the booking pending amout can be paid
+     #
+     def can_pay_pending?
+       sel.can_pay? and self.total_paid > 0
+     end
+
 
      alias_method :is_expired, :expired?
      alias_method :can_pay, :can_pay?
