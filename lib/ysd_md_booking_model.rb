@@ -114,8 +114,9 @@ module BookingDataSystem
      belongs_to :main_booking, 'Booking', :child_key => [:main_booking_id], :parent_key => [:id],
        :required => false
      property :promotion_code, String, :length => 256
-     
-     belongs_to :destination_address, 'LocationDataSystem::Address', :required => false # The driver address
+
+     property :destination_accommodation, Text
+     belongs_to :destination_address, 'LocationDataSystem::Address', :required => false # The destination address
      property :comercial_agent, String, :length => 256
 
      property :pickup_time, String, :length => 5
@@ -276,7 +277,8 @@ module BookingDataSystem
                           flight_number: shopping_cart.flight_number,
                           flight_time: shopping_cart.flight_time,
                           created_by_manager: created_by_manager,
-                          sales_channel_code: shopping_cart.sales_channel_code)
+                          sales_channel_code: shopping_cart.sales_channel_code,
+                          destination_accommodation: shopping_cart.destination_accommodation)
            booking.init_user_agent_data(user_agent_data) unless user_agent_data.nil?
            booking.save
 

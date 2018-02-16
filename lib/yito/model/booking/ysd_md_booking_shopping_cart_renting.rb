@@ -60,6 +60,8 @@ module Yito
      	has n, :items, 'ShoppingCartItemRenting', :constraint => :destroy
      	has n, :item_resources, 'ShoppingCartItemResourceRenting', :through => :items
 			property :sales_channel_code, String, length: 50
+
+			property :destination_accommodation, Text
 				
 				#
 				# Get a booking by its free access id
