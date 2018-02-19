@@ -1129,10 +1129,14 @@ module BookingDataSystem
      # @return [Payments::Charge] The created charge
      #
      def new_charge!(charge_payment_method_id, charge_amount)
-       charge = Payments::Charge.create({:date => Time.now,
-           :amount => charge_amount, 
-           :payment_method_id => charge_payment_method_id,
-           :currency => SystemConfiguration::Variable.get_value('payments.default_currency', 'EUR') }) 
+
+       charge_attributes = {:date => Time.now,
+                            :amount => charge_amount,
+                            :payment_method_id => charge_payment_method_id,
+                            :currency => SystemConfiguration::Variable.get_value('payments.default_currency', 'EUR')}
+       charge_attributes.merge!({:sales_channel_code => self.sales_chanel_code}) unless self.sales_channel_code.nil?
+
+       charge = Payments::Charge.create(charge_attributes)
        self.charges << charge
        return charge
      end
