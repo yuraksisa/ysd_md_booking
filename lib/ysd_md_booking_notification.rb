@@ -396,7 +396,7 @@ module BookingDataSystem
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_notification') if bcn_template.nil?
         
           if bcn_template
-            template = ERB.new bcn_template.translate(customer_language).text
+            template = ERB.new bcn_template.translate(self.customer_language).text
           else
             template = ERB.new Booking.customer_notification_booking_request_template
           end
@@ -404,7 +404,7 @@ module BookingDataSystem
           message = template.result(binding)
 
           Notifier.delay.notify_request_to_customer(self.customer_email, 
-            BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+            BookingDataSystem.r18n(self.customer_language).t.notifications.customer_req_email_subject.to_s,
             message, 
             self.id)
         end
@@ -436,7 +436,7 @@ module BookingDataSystem
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_req_pay_now_notification') if bcn_template.nil?
         
           if bcn_template
-            template = ERB.new bcn_template.translate(customer_language).text
+            template = ERB.new bcn_template.translate(self.customer_language).text
           else
             template = ERB.new Booking.customer_notification_request_pay_now_template
           end
@@ -444,7 +444,7 @@ module BookingDataSystem
           message = template.result(binding)
 
           Notifier.delay.notify_request_to_customer_pay_now(self.customer_email, 
-            BookingDataSystem.r18n.t.notifications.customer_req_email_subject.to_s, 
+            BookingDataSystem.r18n(self.customer_language).t.notifications.customer_req_email_subject.to_s,
             message, 
             self.id)
         end
@@ -478,7 +478,7 @@ module BookingDataSystem
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification') if bcn_template.nil?
         
           if bcn_template
-            template = ERB.new bcn_template.translate(customer_language).text
+            template = ERB.new bcn_template.translate(self.customer_language).text
           else
             template = ERB.new Booking.customer_notification_booking_confirmed_template
           end
@@ -486,7 +486,7 @@ module BookingDataSystem
           message = template.result(binding)
 
           Notifier.delay.notify_customer(self.customer_email, 
-            BookingDataSystem.r18n.t.notifications.customer_email_subject.to_s, 
+            BookingDataSystem.r18n(self.customer_language).t.notifications.customer_email_subject.to_s,
             message, 
             self.id)
         end
@@ -514,7 +514,7 @@ module BookingDataSystem
           bcn_template = ContentManagerSystem::Template.first(:name => 'booking_customer_notification_payment_enabled') if bcn_template.nil?
         
           if bcn_template
-            template = ERB.new bcn_template.translate(customer_language).text
+            template = ERB.new bcn_template.translate(self.customer_language).text
           else
             template = ERB.new Booking.customer_notification_booking_confirmed_template
           end
@@ -522,7 +522,7 @@ module BookingDataSystem
           message = template.result(binding)
 
           Notifier.delay.notify_customer_payment_enabled(self.customer_email, 
-            BookingDataSystem.r18n.t.notifications.customer_payment_enabled_subject.to_s, 
+            BookingDataSystem.r18n(self.customer_language).t.notifications.customer_payment_enabled_subject.to_s,
             message, 
             self.id)
         end  
