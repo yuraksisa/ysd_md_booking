@@ -67,19 +67,19 @@ module BookingDataSystem
              self.item_id = new_item_id
              self.item_description = item_description
              self.item_description_customer_translation = item_description_customer_translation
-             if item_cost_increment != 0
+             unless item_cost_increment == 0
                self.item_unit_cost += item_cost_increment
                self.item_cost = self.item_unit_cost * self.quantity
              end
-             if deposit_cost_increment != 0
+             unless deposit_cost_increment == 0
                self.product_deposit_unit_cost += deposit_cost_increment
                self.product_deposit_cost = self.product_deposit_unit_cost * self.quantity
              end
              self.save
              # Update booking
-             if item_cost_increment > 0 || deposit_cost_increment > 0
-               booking.item_cost += item_cost_increment
-               booking.product_deposit_cost += deposit_cost_increment
+             if item_cost_increment != 0 or deposit_cost_increment != 0
+               booking.item_cost += (item_cost_increment * self.quantity)
+               booking.product_deposit_cost += (deposit_cost_increment * self.quantity)
                booking.calculate_cost(false, false)
                booking.save
              end
@@ -88,7 +88,11 @@ module BookingDataSystem
                                             action: 'change_item',
                                             identifier: self.booking.id.to_s,
                                             description: BookingDataSystem.r18n.t.booking_news_feed.changed_item(new_item_id, self.id, old_item_id),
-                                            attributes_updated: {item_id: new_item_id}.merge({booking: booking.newsfeed_summary}).to_json)
+                                            attributes_updated: {item_id: new_item_id,
+                                                                 booking_item_cost: booking.item_cost,
+                                                                 booking_product_deposit_cost: booking.product_deposit_cost,
+                                                                 booking_total_cost: booking.total_cost,
+                                                                 booking_total_pending: booking.total_pending}.merge({booking: booking.newsfeed_summary}).to_json)
              booking.reload
            end
          end
@@ -129,7 +133,12 @@ module BookingDataSystem
                                           action: 'updated_item_quantity',
                                           identifier: self.booking.id.to_s,
                                           description: BookingDataSystem.r18n.t.booking_news_feed.updated_item_quantity(new_quantity, self.item_id, old_quantity),
-                                          attributes_updated: {quantity: new_quantity}.merge({booking: booking.newsfeed_summary}).to_json)
+                                          attributes_updated: {quantity: new_quantity,
+                                                               booking_item_cost: booking.item_cost,
+                                                               booking_product_deposit_cost: booking.product_deposit_cost,
+                                                               booking_total_cost: booking.total_cost,
+                                                               booking_total_pending: booking.total_pending
+                                                               }.merge({booking: booking.newsfeed_summary}).to_json)
          end
          booking.reload
        end
