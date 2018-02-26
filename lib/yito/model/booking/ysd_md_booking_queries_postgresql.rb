@@ -42,7 +42,7 @@ module Yito
         # Get the first booking that matches the customer
         #
         def first_customer_booking(params)
-          BookingDataSystem::Booking.by_sql{ |b| [first_customer_booking_query(b,params)] }.first
+          BookingDataSystem::Booking.by_sql{ |b| [first_customer_booking_query(b,params)] }.all(order: [:creation_date.desc], offset:0, limit: 1).first
         end
         
         #
