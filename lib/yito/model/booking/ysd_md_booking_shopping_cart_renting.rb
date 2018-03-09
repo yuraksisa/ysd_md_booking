@@ -246,7 +246,7 @@ module Yito
 
 						self.number_of_adults = number_of_adults
 						self.number_of_children = number_of_children
-						if !driver_age_rule_id.nil?
+						if !driver_age_rule_id.nil? and !driver_age_rule_id.to_s.empty?
 							self.driver_age_rule_id = driver_age_rule_id
 						end
 
@@ -254,6 +254,8 @@ module Yito
 
             # Recalculate cost
 						self.calculate_cost
+
+						#p "valid: #{self.valid?} -- #{self.errors.full_messages.inspect} #{self.errors}"
 
 					  self.save
 
