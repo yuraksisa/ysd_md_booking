@@ -13,7 +13,8 @@ module Yito
           calculator = RentingCalculator.new(self.date_from, self.time_from,
                                              self.date_to, self.time_to,
                                              self.pickup_place, self.return_place,
-                                             driver_age_data)
+                                             driver_age_data,
+                                             self.custom_pickup_place, self.custom_return_place)
 
           # days
           self.days = calculator.days
@@ -47,7 +48,8 @@ module Yito
           calculator = RentingCalculator.new(self.date_from, self.time_from,
                                              self.date_to, self.time_to,
                                              self.pickup_place, self.return_place,
-                                             driver_age_data)
+                                             driver_age_data,
+                                             self.custom_pickup_place, self.custom_return_place)
 
           # driver information
           assign_calculator_driver_data(calculator)

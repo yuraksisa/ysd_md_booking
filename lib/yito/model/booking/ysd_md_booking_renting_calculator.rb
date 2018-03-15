@@ -23,7 +23,7 @@ module Yito
 
         def initialize(date_from, time_from, date_to,
                        time_to, pickup_place=nil, return_place=nil,
-                       driver_age_data=nil)
+                       driver_age_data=nil, custom_pickup_place=false, custom_return_place=false)
 
           # Item family
           @item_family = nil
@@ -37,6 +37,8 @@ module Yito
           @time_to = time_to
           @pickup_place = pickup_place
           @return_place = return_place
+          @custom_pickup_place = custom_pickup_place
+          @custom_return_place = custom_return_place
 
           @days = 0
           @date_to_price_calculation = date_to
@@ -163,9 +165,8 @@ module Yito
         # Calculate pickup/return place cost
         #
         def calculate_pickup_return_place_cost
-          allow_custom_pickup_return_places = SystemConfiguration::Variable.get_value('booking.allow_custom_pickup_return_place','false').to_bool
-          custom_pickup_return_place_cost = SystemConfiguration::Variable.get_value('booking.custom_pickup_return_place_price', '0')
-          custom_pickup_return_place_cost = BigDecimal.new(custom_pickup_return_place_cost)
+          custom_pickup_return_place_cost = BigDecimal.new(SystemConfiguration::Variable.get_value('booking.custom_pickup_return_place_price', '0'))
+
           pickup_return_place_def_id = SystemConfiguration::Variable.get_value('booking.pickup_return_place_definition','0').to_i
           pickup_return_place_def = nil
           if pickup_return_place_def_id > 0
@@ -173,10 +174,12 @@ module Yito
           end
           pickup_return_place_def = PickupReturnPlaceDefinition.first if pickup_return_place_def.nil?
 
-          @pickup_place_cost = calculate_place_cost(@pickup_place, 'pickup', pickup_return_place_def,
-                                                    allow_custom_pickup_return_places, custom_pickup_return_place_cost) if !@pickup_place.nil? && !@pickup_place.empty?
-          @return_place_cost = calculate_place_cost(@return_place, 'return', pickup_return_place_def,
-                                                    allow_custom_pickup_return_places, custom_pickup_return_place_cost) if !@return_place.nil? && !@return_place.empty?
+          @pickup_place_cost = calculate_place_cost(@pickup_place, @custom_pickup_place, 'pickup', pickup_return_place_def,
+                                                    custom_pickup_return_place_cost) if !@pickup_place.nil? && !@pickup_place.empty?
+
+          @return_place_cost = calculate_place_cost(@return_place, @custom_return_place, 'return', pickup_return_place_def,
+                                                    custom_pickup_return_place_cost) if !@return_place.nil? && !@return_place.empty?
+
         end
 
         #
@@ -279,22 +282,24 @@ module Yito
         #
         # Calculate place cost
         #
-        def calculate_place_cost(place, mode, pickup_return_place_def, allow_custom_pickup_return_places, custom_pickup_return_place_cost)
+        def calculate_place_cost(place, custom_place, mode,
+                                 pickup_return_place_def,
+                                 custom_pickup_return_place_cost)
 
-          place = pickup_return_place_def.pickup_return_places.select { |item| item.name == place }.first
-
-          if place
-            if (mode == 'pickup' && place.is_pickup) || (mode == 'return' && place.is_return)
-              return place.price
+            if custom_place
+              return custom_pickup_return_place_cost
             else
-              @valid = false
-              @error = 'The place is not a valid pickup place'
+              place = pickup_return_place_def.pickup_return_places.select { |item| item.name == place }.first
+              if place
+                if (mode == 'pickup' && place.is_pickup) || (mode == 'return' && place.is_return)
+                  return place.price
+                else
+                  @valid = false
+                  @error = 'The place is not a valid pickup place'
+                end
+              end
+              return 0
             end
-          else
-            return custom_pickup_return_place_cost if allow_custom_pickup_return_places
-          end
-
-          return 0
 
         end
 

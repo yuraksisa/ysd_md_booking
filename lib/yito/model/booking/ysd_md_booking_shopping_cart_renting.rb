@@ -216,8 +216,10 @@ module Yito
 				#
 				# Change selection data : date from/to, pickup/return place
 				#
-				def change_selection_data(date_from, time_from, date_to, time_to,
-																	pickup_place, return_place,
+				def change_selection_data(date_from, time_from,
+																	date_to, time_to,
+																	pickup_place, custom_pickup_place,
+																	return_place, custom_return_place,
 																	number_of_adults, number_of_children,
 																	driver_age_rule_id=nil,
 																	sales_channel_code=nil)
@@ -229,19 +231,29 @@ module Yito
 						self.time_to = time_to
 
 						self.pickup_place = pickup_place
-						if booking_pickup_place = PickupReturnPlace.first(name: pickup_place)
-							booking_pickup_place_translation = booking_pickup_place.translate(customer_language)
-							self.pickup_place_customer_translation = (booking_pickup_place_translation.nil? ? pickup_place : booking_pickup_place_translation.name)
-						else
+						self.custom_pickup_place = custom_pickup_place
+						if self.custom_pickup_place
 							self.pickup_place_customer_translation = pickup_place
-					  end
+						else
+							if booking_pickup_place = PickupReturnPlace.first(name: pickup_place)
+								booking_pickup_place_translation = booking_pickup_place.translate(customer_language)
+								self.pickup_place_customer_translation = (booking_pickup_place_translation.nil? ? pickup_place : booking_pickup_place_translation.name)
+							else
+								self.pickup_place_customer_translation = pickup_place
+							end
+						end
 
 						self.return_place = return_place
-						if booking_return_place = PickupReturnPlace.first(name: return_place)
-							booking_return_place_translation = booking_return_place.translate(customer_language)
-							self.return_place_customer_translation = (booking_return_place_translation.nil? ? return_place : booking_return_place_translation.name)
+						self.custom_return_place = custom_return_place
+						if self.custom_return_place
+							if booking_return_place = PickupReturnPlace.first(name: return_place)
+								booking_return_place_translation = booking_return_place.translate(customer_language)
+								self.return_place_customer_translation = (booking_return_place_translation.nil? ? return_place : booking_return_place_translation.name)
+							else
+								self.return_place_customer_translation = return_place
+							end
 						else
-							self.return_place_customer_translation = pickup_place
+							self.return_place_customer_translation = return_place
 						end
 
 						self.number_of_adults = number_of_adults
