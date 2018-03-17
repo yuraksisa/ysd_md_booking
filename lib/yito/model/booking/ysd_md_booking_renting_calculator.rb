@@ -158,7 +158,7 @@ module Yito
             main_season_month_to = SystemConfiguration::Variable.get_value('booking.pickup_return_main_season.month_to', 12).to_i
             main_season_day_to = SystemConfiguration::Variable.get_value('booking.pickup_return_main_season.day_to', 31).to_i
 
-            if main_season_month_from == 1 and main_season_day_from = 1 and main_season_month_to = 12 and main_season_day_to = 31
+            if main_season_month_from == 1 and main_season_day_from == 1 and main_season_month_to == 12 and main_season_day_to == 31
               timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
             else
               # JAN                               DIC
