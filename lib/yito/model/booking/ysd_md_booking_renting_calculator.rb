@@ -148,16 +148,54 @@ module Yito
         # Calculate time from/to cost
         #
         def calculate_time_from_to_cost
+
           time_cost = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_price', '0')
           if time_cost != '0'
+
+            # Check if the reservation correspond to the main season or not
+            main_season_month_from = SystemConfiguration::Variable.get_value('booking.pickup_return_main_season.month_from', 1).to_i
+            main_season_day_from = SystemConfiguration::Variable.get_value('booking.pickup_return_main_season.day_from', 1).to_i
+            main_season_month_to = SystemConfiguration::Variable.get_value('booking.pickup_return_main_season.month_to', 12).to_i
+            main_season_day_to = SystemConfiguration::Variable.get_value('booking.pickup_return_main_season.day_to', 31).to_i
+
+            if main_season_month_from == 1 and main_season_day_from = 1 and main_season_month_to = 12 and main_season_day_to = 31
+              timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
+            else
+              # JAN                               DIC
+              # -------------------------------------
+              #       ^=======================^
+              #       from                    to
+              if main_season_month_from <= main_season_month_to or (main_season_day_from <= main_season_day_to)
+                if @date_from.month >= main_season_month_from and @date_from.day >= main_season_day_from and
+                   @date_to.month <= main_season_month_to and @date_to.day <= main_season_day_to # In main season
+                  timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
+                else # Out of season
+                  timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_of_season','0').to_i
+                end
+              else
+                # JAN                               DIC
+                # -------------------------------------
+                # ======^                       ^======
+                #       to                      from
+                if ((@date_from.month >= main_season_month_from and @date_from.day >= main_season_day_from) or
+                    (@date_from.month <= main_season_month_to and @date_from.day <= main_season_day_to)) and
+                   ((@date_to.month >= main_season_month_from and @date_to.day >= main_season_day_from) or
+                    (@date_to.month <= main_season_month_to and @date_to.day <= main_season_day_to))  # In main season
+                  timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
+                else # Out of season
+                  timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_of_season','0').to_i
+                end
+              end
+            end
+
             time_cost = BigDecimal.new(time_cost)
-            timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
             if timetable_id > 0
               if timetable = ::Yito::Model::Calendar::Timetable.get(timetable_id)
                 @time_from_cost = calculate_time_cost(@date_from, @time_from, time_cost, timetable)
                 @time_to_cost = calculate_time_cost(@date_to, @time_to, time_cost, timetable)
               end
             end
+
           end
         end
 
