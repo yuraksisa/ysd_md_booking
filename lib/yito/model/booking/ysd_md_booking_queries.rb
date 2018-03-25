@@ -517,13 +517,22 @@ module Yito
           #
           # Check the occupation of renting items for a period
           #
-          def occupation(from, to)
+          def occupation(from, to, ignore_urge=nil, include_stock=false)
                       
             result = []
 
-            data, detail = resources_occupation(from, to)
+            data, detail = resources_occupation(from, to, nil, ignore_urge)
             detail.each do |key, value|
-              result << OpenStruct.new(item_id: key, stock: value[:stock], busy: value[:occupation])
+              if include_stock
+                result << OpenStruct.new(item_id: key,
+                                         stock: value[:stock],
+                                         busy: value[:occupation],
+                                         resources: value[:available_assignable_stock])
+              else
+                result << OpenStruct.new(item_id: key,
+                                         stock: value[:stock],
+                                         busy: value[:occupation])
+              end
             end
 
             return result
@@ -592,10 +601,11 @@ module Yito
                       '' as customer_email,
                       '' as customer_phone,
                       '' as customer_mobile_phone,
-                      pr.booking_item_reference,
-                      pr.booking_item_category,
+                      prl.booking_item_reference,
+                      prl.booking_item_category,
                       'prereservation' as origin
                FROM bookds_prereservations pr
+               JOIN bookds_prereservation_lines prl on prl.prereservation_id = pr.id
                WHERE ((pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
                    (pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
                    (pr.date_from = '#{date}' and pr.date_to = '#{date}') or
@@ -651,7 +661,7 @@ module Yito
                    b.status NOT IN (1, 5) and 
                    r.booking_item_reference = '#{reference}'
                UNION
-               SELECT pr.booking_item_category as item_id,
+               SELECT prl.booking_item_category as item_id,
                       pr.id,
                       pr.title as customer_name,
                       '' as customer_surname,
@@ -663,10 +673,10 @@ module Yito
                       '' as customer_phone,
                       '' as customer_mobile_phone,
                       pr.planning_color,
-                      pr.booking_item_reference,
-                      pr.booking_item_category,
+                      prl.booking_item_reference,
+                      prl.booking_item_category,
                       'prereservation' as origin,
-                      pr.id as id2,
+                      prl.id as id2,
                       '' as resource_1_name,
                       '' as customer_height,
                       '' as customer_weight,
@@ -676,6 +686,7 @@ module Yito
                       pr.notes as comments,
                       1 as pax
                FROM bookds_prereservations pr
+               JOIN bookds_prereservation_lines prl on prl.prereservation_id = pr.id
                WHERE ((pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
                    (pr.date_from <= '#{date}' and pr.date_to >= '#{date}') or 
                    (pr.date_from = '#{date}' and pr.date_to = '#{date}') or
@@ -728,7 +739,7 @@ module Yito
               QUERY
             else
               query = <<-QUERY
-                  SELECT pr.booking_item_category as item_id,
+                  SELECT prl.booking_item_category as item_id,
                           pr.id,
                           pr.title as customer_name,
                           '' as customer_surname,
@@ -740,10 +751,10 @@ module Yito
                           '' as customer_phone,
                           '' as customer_mobile_phone,
                           pr.planning_color,
-                          pr.booking_item_reference,
-                          pr.booking_item_category,
+                          prl.booking_item_reference,
+                          prl.booking_item_category,
                           'prereservation' as origin,
-                          pr.id as id2,
+                          prl.id as id2,
                           '' as resource_1_name,
                           '' as customer_height,
                           '' as customer_weight,
@@ -753,6 +764,7 @@ module Yito
                           pr.notes as comments,
                           1 as pax
                   FROM bookds_prereservations pr
+                  JOIN bookds_prereservation_lines prl on prl.prereservation_id = pr.id
                   WHERE pr.id = #{id}
               QUERY
             end
@@ -865,6 +877,11 @@ module Yito
           #
           # Get the resources occupation to assign stock
           #
+          # date_from   : The reservation date_from
+          # date_to     : The reservation date_to
+          # category    : The requested category (or nil for all categories)
+          # ignore_urge : Ignore urge
+          #
           # Return an array with two elements
           #
           #  - First  : stock_detail. (Hash) The stock, availability and assigned sources
@@ -886,10 +903,11 @@ module Yito
           #                 :occupation [urges]  : # of occupied stock in the category (taking into account automatically assignation)
           #                 :occupation_assigned : # of assigned urges
           #                 :available_stock     : # stock not assigned [id's of the items]
+          #                 :available_assignable_stock : # stock not assigned and available [id's of the items]
           #                 :assignation_pending : #
           # 
           #
-          def resources_occupation(date_from, date_to, category=nil)
+          def resources_occupation(date_from, date_to, category=nil, ignore_urge=nil)
               
             hours_cadency = SystemConfiguration::Variable.get_value('booking.hours_cadence','2').to_f / 24
 
@@ -989,11 +1007,20 @@ module Yito
                     required_categories[resource_urge.item_id][:stock][resource_urge.booking_item_reference] = [resource_urge]
                   end  
                 end
-              else # Not assigned resource stock 
-                if required_categories.has_key?(resource_urge.item_id)
-                  required_categories[resource_urge.item_id][:total] += 1
-                  required_categories[resource_urge.item_id][:assignation_pending] << resource_urge
+              else # Not assigned resource stock
+                # Ignore urge
+                if (!ignore_urge.nil? and ignore_urge.is_a?(Hash) and
+                    ignore_urge.has_key?(:origin) and ignore_urge.has_key?(:id) and
+                    ignore_urge[:origin] == resource_urge.origin and
+                    ignore_urge[:id] == resource_urge.id)
+                  p "Ignored urge: #{ignore_urge.inspect}"
+                else
+                  if required_categories.has_key?(resource_urge.item_id)
+                    required_categories[resource_urge.item_id][:total] += 1
+                    required_categories[resource_urge.item_id][:assignation_pending] << resource_urge
+                  end
                 end
+
               end
             end
 
@@ -1748,8 +1775,8 @@ module Yito
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
                     b.status NOT IN (1,5) #{extra_condition}
                 UNION
-                SELECT pr.booking_item_reference,
-                     pr.booking_item_category,
+                SELECT prl.booking_item_reference,
+                     prl.booking_item_category,
                      pr.id,
                      'prereservation' as origin,
                      pr.date_from, pr.time_from,
@@ -1757,9 +1784,10 @@ module Yito
                      #{date_diff_prereservations},
                      pr.title,
                      pr.notes as detail,
-                     pr.id as id2,
+                     prl.id as id2,
                      pr.planning_color              
                 FROM bookds_prereservations pr
+                JOIN bookds_prereservation_lines prl on prl.prereservation_id = pr.id
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
                    (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
                    (pr.date_from = '#{from}' and pr.date_to = '#{to}') or
@@ -1832,14 +1860,15 @@ module Yito
                    (b.date_from >= '#{from}' and b.date_to <= '#{to}')) and
                    b.status NOT IN (1,5)
                 UNION
-                SELECT pr.booking_item_category as item_id,
+                SELECT prl.booking_item_category as item_id,
                        pr.id,
                        pr.date_from as date_from,
                        pr.date_to as date_to,
                        pr.days as days,
-                       pr.booking_item_reference,
+                       prl.booking_item_reference,
                        1 as quantity
                 FROM bookds_prereservations pr
+                JOIN bookds_prereservation_lines prl on prl.prereservation_id = pr.id
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 
                    (pr.date_from <= '#{to}' and pr.date_to >= '#{to}') or 
                    (pr.date_from = '#{from}' and pr.date_to = '#{to}') or

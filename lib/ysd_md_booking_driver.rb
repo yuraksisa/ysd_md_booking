@@ -127,26 +127,6 @@ module BookingDataSystem
 
      end
 
-     #
-     # Update driver dates and apply
-     #
-     def update_driver_dates(date_of_birth, driving_license_date)
-        transaction do
-          self.driver_date_of_birth = date_of_birth if date_of_birth and !date_of_birth.nil? and !(date_of_birth.is_a?String and date_of_birth.is_empty?)
-          self.driver_driving_license_date = driving_license_date if driving_license_date and !driving_license_date.nil? and !(driving_license_date.is_a?String and driving_license_date.is_empty?)
-          self.driver_age = BookingDataSystem::Booking.completed_years(self.date_from, self.driver_date_of_birth) if self.driver_date_of_birth and !self.driver_date_of_birth.nil?
-          self.driver_driving_license_years = BookingDataSystem::Booking.completed_years(self.date_from, self.driver_driving_license_date) if self.driver_driving_license_date and !self.driver_driving_license_date.nil?
-          self.calculate_cost
-          self.save
-          # Create newsfeed
-          ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
-                                         action: 'updated_driver_dates',
-                                         identifier: self.id.to_s,
-                                         description: BookingDataSystem.r18n.t.booking_news_feed.updated_driver_dates(date_of_birth, driving_license_date),
-                                         attributes_updated: {driver_date_of_birth: self.driver_date_of_birth, driver_driving_license_date: self.driver_driving_license_date,
-                                                              total_cost: self.total_cost, total_pending: self.total_pending, booking_amount: self.booking_amount}.to_json)
-        end
-     end
 
    end
   end #BookingDriver  

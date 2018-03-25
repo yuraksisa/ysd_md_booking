@@ -152,8 +152,16 @@ module Yito
 				end
 
 				before :create do
-					#self.calculate_supplements
-					self.calculate_cost
+
+          # Calculate the days if not assigned
+          if self.days.nil? or self.date_to_price_calculation.nil?
+            days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
+						#p "calculating dates. previous: #{self.days} -- now: #{days_calculus[:days]}"
+            self.days = days_calculus[:days]
+            self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
+          end
+
+					self.calculate_cost(true, true) # The first time the shopping cart is created, make sure all the costs are calculated
 					self.free_access_id = Digest::MD5.hexdigest("#{rand}#{date_from.to_time.iso8601}#{date_to.to_time.iso8601}#{rand}")
 				end
 
@@ -225,10 +233,17 @@ module Yito
 																	sales_channel_code=nil)
 
 					transaction do
+
 					  self.date_from = date_from
 						self.time_from = time_from
 						self.date_to = date_to
 						self.time_to = time_to
+
+            # Calculate the days
+            days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
+						#p "calculating dates. previous: #{self.days} -- now: #{days_calculus[:days]}"
+						self.days = days_calculus[:days]
+            self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
 
 						self.pickup_place = pickup_place
 						self.custom_pickup_place = custom_pickup_place
@@ -265,9 +280,7 @@ module Yito
 						self.sales_channel_code = sales_channel_code
 
             # Recalculate cost
-						self.calculate_cost
-
-						#p "valid: #{self.valid?} -- #{self.errors.full_messages.inspect} #{self.errors}"
+						self.calculate_cost(true, true)
 
 					  self.save
 

@@ -72,8 +72,9 @@ booking_news_feed:
   created_booking: Creada reserva
   updated_booking: Modificados datos de la reserva
   created_booking_line: Añadido producto %1 (cantidad %2)
+  destroyed_booking_line: Eliminado producto %1
   created_booking_extra: Añadido extra %1 (cantidad %2)
-  destroyed_booking_extra: Eliminado extra %1 (cantidad %2)
+  destroyed_booking_extra: Eliminado extra %1
   updated_booking_extra_quantity: Modificada cantidad %1 extra %2 (ant. %3)
   updated_booking_extra_cost: Modificado coste %1 extra %2 (ant. %3)
   added_booking_charge: Registrado cobro %1 (forma de pago %2)

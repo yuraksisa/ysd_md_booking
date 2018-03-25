@@ -9,10 +9,10 @@ module Yito
         # @param calculate_supplements Indicate if should be calculated the supplements
         # @param calculate_depoist Indicate if should be calculated deposit
         #
-        def calculate_cost(calculate_supplements=true, calculate_deposit=true)
+        def calculate_cost(calculate_supplements, calculate_deposit)
 
-          self.calculate_supplements if calculate_supplements
-          self.calculate_deposit if calculate_deposit
+          self.calculate_supplements if calculate_supplements # Calculate age, pickup, return place calculation, driver age supplements...
+          self.calculate_deposit if calculate_deposit         # Calculate product and driver age deposits
 
           self.total_cost = 0
 

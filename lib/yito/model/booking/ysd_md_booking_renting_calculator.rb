@@ -21,8 +21,8 @@ module Yito
                     :age_rule_id, :age_rule_description, :age_rule_text,
                     :supplements_cost, :valid, :error
 
-        def initialize(date_from, time_from, date_to,
-                       time_to, pickup_place=nil, return_place=nil,
+        def initialize(date_from, time_from, date_to, time_to, days, date_to_price_calculation,
+                       pickup_place=nil, return_place=nil,
                        driver_age_data=nil, custom_pickup_place=false, custom_return_place=false)
 
           # Item family
@@ -35,13 +35,13 @@ module Yito
           @time_from = time_from
           @date_to = date_to
           @time_to = time_to
+          @days = days
+          @date_to_price_calculation = date_to_price_calculation
           @pickup_place = pickup_place
           @return_place = return_place
           @custom_pickup_place = custom_pickup_place
           @custom_return_place = custom_return_place
 
-          @days = 0
-          @date_to_price_calculation = date_to
           @time_from_cost = BigDecimal.new("0")
           @time_to_cost = BigDecimal.new("0")
           @pickup_place_cost = BigDecimal.new("0")
@@ -124,22 +124,13 @@ module Yito
         #
         def calculate_days
 
-          cadence_hours = SystemConfiguration::Variable.get_value('booking.hours_cadence',2).to_i
-          @days = (@date_to - @date_from).to_i
-          @date_to_price_calculation = @date_to
-          begin
-            _t_from = DateTime.strptime(@time_from,"%H:%M")
-            _t_to = DateTime.strptime(@time_to,"%H:%M")
-            if _t_to > _t_from
-              hours_of_difference = (_t_to - _t_from).to_f.modulo(1) * 24
-              if hours_of_difference > cadence_hours
-                @days += 1
-                @date_to_price_calculation += 1
-              end
-            end
-          rescue
-            @valid = false
-            @error = "Time from or time to are not valid #{@time_from} #{@time_to}"
+          data = BookingDataSystem::Booking.calculate_days(@date_from, @time_from, @date_to, @time_to)
+
+          @days = data[:days]
+          @date_to_price_calculation = data[:date_to_price_calculation]
+          unless data[:valid]
+            @valid = data[:valid]
+            @error = data[:error]
           end
 
         end

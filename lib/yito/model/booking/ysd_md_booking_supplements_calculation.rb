@@ -4,25 +4,22 @@ module Yito
       module SupplementsCalculation
 
         #
-        # Calculate supplements (time to/from, pickup/return place, driver age)
+        # Calculate supplements (time to/from, pickup/return place and driver age)
         #
         def calculate_supplements
 
           # Calculate the new price of the reservation
           driver_age_data = build_driver_age_data
           calculator = RentingCalculator.new(self.date_from, self.time_from,
-                                             self.date_to, self.time_to,
+                                             self.date_to, self.time_to, self.days, self.date_to_price_calculation,
                                              self.pickup_place, self.return_place,
                                              driver_age_data,
                                              self.custom_pickup_place, self.custom_return_place)
 
-          # days
-          self.days = calculator.days
-          self.date_to_price_calculation = calculator.date_to_price_calculation
-
-          # driver information
+          # driver information and supplement
           if driver_age_data
             assign_calculator_driver_data(calculator)
+            self.driver_age_cost = calculator.age_cost
           end
 
           # time_from supplement
@@ -33,8 +30,7 @@ module Yito
           self.pickup_place_cost = calculator.pickup_place_cost
           # return_place_supplement
           self.return_place_cost = calculator.return_place_cost
-          # driver supplement
-          self.driver_age_cost = calculator.age_cost
+
 
         end
 
@@ -46,7 +42,7 @@ module Yito
           # Calculate the new price of the reservation
           driver_age_data = build_driver_age_data
           calculator = RentingCalculator.new(self.date_from, self.time_from,
-                                             self.date_to, self.time_to,
+                                             self.date_to, self.time_to, self.days, self.date_to_price_calculation,
                                              self.pickup_place, self.return_place,
                                              driver_age_data,
                                              self.custom_pickup_place, self.custom_return_place)

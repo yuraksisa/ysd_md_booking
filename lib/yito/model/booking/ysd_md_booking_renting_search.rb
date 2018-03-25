@@ -7,12 +7,13 @@ module Yito
   	  class RentingSearch	
   		 attr_accessor :code, :name, :short_description, :description, :photo, :full_photo,
   		 			   :base_price, :price, :deposit, 
-  		 			   :availability, :stock, :busy, :payment_availibility
+  		 			   :availability, :stock, :busy, :payment_availibility, :include_stock, :resources
 
   		 def initialize(code, name, short_description, description,
   		 	              photo, full_photo,
   		 				        base_price=0, price=0, deposit=0,
-  		 				        availability=false,stock=0, busy=0, payment_availibility=false, full_information=false)
+  		 				        availability=false,stock=0, busy=0, payment_availibility=false, full_information=false,
+											include_stock=false, resources=nil)
   		   @code = code
   		   @name = name
   		   @short_description = short_description
@@ -27,6 +28,8 @@ module Yito
   		   @busy = busy
   		   @payment_availibility = payment_availibility
 				 @full_information = full_information
+				 @include_stock = include_stock
+				 @resources = resources
   		 end
 
   		 def as_json(options={})
@@ -42,10 +45,11 @@ module Yito
   		 		  price: @price,
   		 		  deposit: @deposit,
   		 		  availability: @availability,
-  		 		  payment_availibility: @payment_availibility
+  		 		  payment_availibility: @payment_availibility,
 					 }
 
 					 result.merge!(stock: @stock, busy: @busy) if @full_information
+					 result.merge!(resources: @resources) if @include_stock
 
 				   result
 
@@ -61,11 +65,15 @@ module Yito
 			 # from   : date from
 			 # to     : date to
 			 # days   : number of days
+			 #
 			 # locale : locale to show descriptions
 			 # full_information : show stock and busy for any product
 			 # product_code : Search only one product
 			 # web_public: Include only web_public categories
 			 # sales_channel_code: The sales channel code (nil for default)
+			 # include_stock: Include the stock references in the result (if we want to known the free resources)
+			 # ignore_urge: It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
+			 #              pending reservation. It's used when trying to assign resources to this reservation
 			 # 
   		 def self.search(from, to, days, options={})
 
@@ -75,6 +83,8 @@ module Yito
 				 product_code = (options.has_key?(:product_code) ? options[:product_code] : nil)
 				 web_public = (options.has_key?(:web_public) ? options[:web_public] : false)
 				 sales_channel_code = (options.has_key?(:sales_channel_code) ? options[:sales_channel_code] : nil)
+				 include_stock = (options.has_key?(:include_stock) ? options[:include_stock] : false)
+				 ignore_urge = (options.has_key?(:ignore_urge) ? options[:ignore_urge] : nil)
 
 				 # Proceed
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
@@ -82,8 +92,12 @@ module Yito
   		   result = []
 
   		   # Check the 'real' occupation
-         occupation = BookingDataSystem::Booking.occupation(from, to).map do |item|
-                 			  {item_id: item.item_id, stock: item.stock, busy: item.busy}
+         occupation = BookingDataSystem::Booking.occupation(from, to, ignore_urge, include_stock).map do |item|
+					              if include_stock
+													{item_id: item.item_id, stock: item.stock, busy: item.busy, resources: item.resources}
+												else
+                 			    {item_id: item.item_id, stock: item.stock, busy: item.busy}
+												end
                 		  end
 
          occupation_hash = occupation.inject({}) do |result,item|
@@ -144,6 +158,7 @@ module Yito
   		   	           # Get the availability
   		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
   		   	           busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
+										 resources = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:resources] : nil
   		   	           available = categories_available.include?(item.code) # Calendar lock
 										 available = available && (stock > busy) if item.stock_control # Stock
   		   	           payment_available = categories_payment_enabled.include?(item.code)
@@ -152,7 +167,7 @@ module Yito
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
   		   	           	         photo_path, full_photo_path,
   		   	           					 base_price, price, deposit, 
-  		   	           					 available, stock, busy, payment_available, full_information)
+  		   	           					 available, stock, busy, payment_available, full_information, include_stock, resources)
   		   	        end
 
   		   return product_code.nil? ? result : result.first

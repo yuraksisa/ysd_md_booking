@@ -32,6 +32,7 @@ module Yito
         property :pickup_return_place, Boolean, :field => 'pickup_return_place', :default => false
         property :time_to_from, Boolean, :field => 'time_to_from', :default => false
         property :cycle_of_24_hours, Boolean, :field => 'cycle_of_24_hours', :default => true
+        property :date_to_next_day, Boolean, default: true
         property :time_start, String, :field => 'time_start', :length => 5, :default => '10:00'
         property :time_end, String, :field => 'time_end', :length => 5, :default => '20:00'
         property :start_date_literal, Enum[:arrival, :pickup], :field => 'start_date_literal', :default => :arrival  

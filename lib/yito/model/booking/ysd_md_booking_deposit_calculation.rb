@@ -4,7 +4,12 @@ module Yito
       module DepositCalculation
 
         #
-        # Calculate the deposit
+        # Calculate the deposit : product_deposit_cost + driver_age_deposit
+        #
+        # Notes:
+        #
+        #  The product_deposit_cost is calculated while adding lines to the shopping_cart or the booking. This process
+        #  applies the other deposits (for example the driver age deposit)
         #
         def calculate_deposit
 

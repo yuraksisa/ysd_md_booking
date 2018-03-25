@@ -178,6 +178,8 @@ module BookingDataSystem
                           time_from: shopping_cart.time_from,
                           date_to: shopping_cart.date_to,
                           time_to: shopping_cart.time_to,
+                          days: shopping_cart.days,
+                          date_to_price_calculation: shopping_cart.date_to_price_calculation,
                           item_cost: shopping_cart.item_cost,
                           extras_cost: shopping_cart.extras_cost,
                           time_from_cost: shopping_cart.time_from_cost,
@@ -190,8 +192,6 @@ module BookingDataSystem
                           booking_amount_includes_deposit: shopping_cart.booking_amount_includes_deposit,
                           pay_now: shopping_cart.pay_now,
                           payment_method_id: shopping_cart.payment_method_id,
-                          date_to_price_calculation: shopping_cart.date_to_price_calculation,
-                          days: shopping_cart.days,
                           customer_name: shopping_cart.customer_name,
                           customer_surname: shopping_cart.customer_surname,
                           customer_email: shopping_cart.customer_email,
@@ -460,12 +460,54 @@ module BookingDataSystem
 
      end
 
+     #
+     # Check if the reservation should take into account one extra day to calculate ratings
+     #
+     # The dates are stored in the database with time 00:00:00, for example 2017-09-23 00:00:00
+     #
+     def self.calculate_days(date_from, time_from, date_to, time_to)
+
+       # Calculate days and date_to_price_calculation
+       cadence_hours = SystemConfiguration::Variable.get_value('booking.hours_cadence','2').to_i
+       days = (date_to - date_from).to_i
+       date_to_price_calculation = date_to
+       valid = true
+       error = nil
+
+       begin
+         _t_from = DateTime.strptime(time_from,"%H:%M")
+         _t_to = DateTime.strptime(time_to,"%H:%M")
+         if _t_to > _t_from
+           hours_of_difference = (_t_to - _t_from).to_f.modulo(1) * 24
+           if hours_of_difference > cadence_hours
+             days += 1
+             date_to_price_calculation += 1
+           end
+         end
+       rescue
+         p "Time from or time to are not valid #{time_from} -- #{time_to}"
+         valid = false
+         error = "Time from or time to are not valid #{time_from} #{time_to}"
+       end
+
+       return {days: days, date_to_price_calculation: date_to_price_calculation, valid: valid, error: error}
+
+     end
+
      # --------------------------  INSTANCE METHODS -------------------------------------------------------
 
      #
-     # Before create hook (initilize fields)
+     # Before create hook (initialize fields)
      #
      before :create do |booking|
+
+       # Calculate the days if not assigned
+       if self.days.nil? or self.date_to_price_calculation.nil?
+         days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
+         self.days = days_calculus[:days]
+         self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
+       end
+
        booking.creation_date = Time.now if booking.creation_date.nil?
        booking.free_access_id = Digest::MD5.hexdigest("#{rand}#{customer_name}#{customer_surname}#{customer_email}#{rand}")
        booking.item_cost ||= 0
@@ -494,24 +536,6 @@ module BookingDataSystem
      # Before save hook (clear leading and trailing whitespaces)
      #
      before :save do |booking|
-       # Calculate days and date_to_price_calculation
-       cadence_hours = SystemConfiguration::Variable.get_value('booking.hours_cadence',2).to_i
-       booking.days = (booking.date_to - booking.date_from).to_i
-       booking.date_to_price_calculation = booking.date_to
-
-       begin
-         _t_from = DateTime.strptime(booking.time_from,"%H:%M")
-         _t_to = DateTime.strptime(booking.time_to,"%H:%M")
-         if _t_to > _t_from
-           hours_of_difference = (_t_to - _t_from).to_f.modulo(1) * 24
-           if hours_of_difference > cadence_hours
-             booking.days += 1
-             booking.date_to_price_calculation += 1
-           end
-         end
-       rescue
-         p "Time from or time to are not valid #{booking.time_from} #{booking.time_from}"
-       end
 
        # Strip spaces in customer information (search purposes)
        booking.customer_name.strip! unless booking.customer_name.nil?
@@ -552,9 +576,11 @@ module BookingDataSystem
      #
      def add_booking_line(item_id, quantity)
 
+       # Check if the booking includes the item_id
        product_lines = self.booking_lines.select do |booking_line|
          booking_line.item_id == item_id
        end
+
        if product_lines.empty?
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
            product_customer_translation = product.translate(customer_language)
@@ -592,8 +618,38 @@ module BookingDataSystem
                                             description: BookingDataSystem.r18n.t.booking_news_feed.created_booking_line(item_id, quantity),
                                             attributes_updated: {item_id: item_id, quantity: quantity}.merge({booking: newsfeed_summary}).to_json)
            end
+           self.reload
          end
        end
+
+     end
+
+     #
+     # Destroy a booking line
+     #
+     def destroy_booking_line(item_id)
+
+       product_lines = self.booking_lines.select do |booking_line|
+         booking_line.item_id == item_id
+       end
+
+       if booking_line = product_lines.first
+         transaction do
+           self.item_cost -= booking_line.item_cost
+           self.product_deposit_cost -= booking_line.product_deposit_cost
+           self.calculate_cost(false, false)
+           self.save
+           booking_line.destroy
+           # Create newsfeed
+           ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                    action: 'destroy_booking_line',
+                                                    identifier: self.id.to_s,
+                                                    description: BookingDataSystem.r18n.t.booking_news_feed.destroyed_booking_line(item_id),
+                                                    attributes_updated: {item_id: item_id}.merge({booking: newsfeed_summary}).to_json)
+         end
+         self.reload
+       end
+
      end
 
      #
@@ -657,7 +713,7 @@ module BookingDataSystem
                                           action: 'destroy_booking_extra',
                                           identifier: self.id.to_s,
                                           description: BookingDataSystem.r18n.t.booking_news_feed.destroyed_booking_extra(extra_id),
-                                          attributes_updated: {extra_id: item_id, quantity: quantity}.merge({booking: newsfeed_summary}).to_json)
+                                          attributes_updated: {extra_id: item_id}.merge({booking: newsfeed_summary}).to_json)
          end
          self.reload
        end
@@ -722,6 +778,13 @@ module BookingDataSystem
      end
 
      # -----------------------------------------------------------------------------------------------------------
+
+     #
+     # Check if the reservation is confirmed
+     #
+     def confirmed?
+       [:confirmed, :in_progress, :done].include?(self.status)
+     end
 
      #
      # Get the category of the reserved items
@@ -1077,7 +1140,13 @@ module BookingDataSystem
                     extra_cost: booking_extra.extra_cost,
                     quantity: booking_extra.quantity}
        end
-       {items: items,
+       {date_from: date_from,
+        time_from: time_from,
+        date_to: date_to,
+        time_to: time_to,
+        days: days,
+        date_to_price_calculation: date_to_price_calculation,
+        items: items,
         extras: extras,
         status: status,
         item_cost: item_cost,
@@ -1101,13 +1170,22 @@ module BookingDataSystem
      #
      def assign_available_stock
 
-       stock_detail, category_occupation = BookingDataSystem::Booking.resources_occupation(self.date_from, self.date_to)
+       stock_detail, category_occupation = BookingDataSystem::Booking.resources_occupation(self.date_from,
+                                                                                           self.date_to,
+                                                                                           nil,
+                                                                                           {
+                                                                                               origin: 'booking',
+                                                                                               id: self.id})
+
+       p "stock_detail: #{stock_detail.inspect}"
+       p "category_occupation: #{category_occupation.inspect}"
 
        transaction do
 
          booking_lines.each do |booking_line|
            booking_line.booking_line_resources.each do |booking_line_resource|
              if booking_line_resource.booking_item_reference.nil?
+               p "assign_available_stock -- #{booking_line_resource.booking_item_reference} -- available: #{category_occupation[booking_line.item_id][:available_stock].inspect} --  available_assignable: #{category_occupation[booking_line.item_id][:available_assignable_stock].inspect}"
                if booking_item_reference = category_occupation[booking_line.item_id][:available_assignable_stock].first and !booking_item_reference.nil?
                  booking_line_resource.assign_resource(booking_item_reference)
                  category_occupation[booking_line.item_id][:available_assignable_stock].delete_at(0)

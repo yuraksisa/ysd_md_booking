@@ -22,22 +22,12 @@ module BookingDataSystem
      property :planning_color, String, :length => 9
      property :days, Integer
 
+     has n, :prereservation_lines, 'BookingPrereservationLine', :constraint => :destroy, :child_key => [:prereservation_id]
+
      before :save do |prereservation|
 
-       cadence_hours = SystemConfiguration::Variable.get_value('booking.hours_cadence',2).to_i
-       prereservation.days = (prereservation.date_to - prereservation.date_from).to_i
-       begin
-         _t_from = DateTime.strptime(prereservation.time_from,"%H:%M")
-         _t_to = DateTime.strptime(prereservation.time_to,"%H:%M")
-         if _t_to > _t_from
-           hours_of_difference = (_t_to - _t_from).to_f.modulo(1) * 24
-           if hours_of_difference > cadence_hours
-             prereservation.days += 1
-           end
-         end
-       rescue
-         p "Time from or time to are not valid #{prereservation.time_from} #{prereservation.time_from}"
-       end
+       data = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
+       prereservation.days = data[:days]
 
      end
 
