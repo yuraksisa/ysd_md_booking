@@ -113,14 +113,16 @@ module Yito
         #
         def build_extras_price_definition(name, description)
 
+          use_factors = SystemConfiguration::Variable.get_value('booking.use_factors_in_extras_rates', 'false').to_bool
+
           price_definition = Yito::Model::Rates::PriceDefinition.new(
               name: name,
               description: description,
               type: extras_price_definition_type,
               units_management: extras_price_definition_units_management,
               units_management_value: extras_price_definition_units_management_value,
-              season_definition: extras_price_definition_season_definition,
-              factor_definition: extras_price_definition_factor_definition)
+              season_definition: (extras_price_definition_type == :season ? extras_price_definition_season_definition : nil),
+              factor_definition: use_factors ? extras_price_definition_factor_definition : nil)
 
         end
 
