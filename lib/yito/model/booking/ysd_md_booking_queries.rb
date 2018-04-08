@@ -894,6 +894,7 @@ module Yito
           #                 :available       : Boolean that says the is available or not
           #                 :detail          : Assigned reservations
           #                 :estimation      : Automatically assigned reservations
+          #                 :real_stock      : It's real stock or dummy to manage not defined resources
           #
           #  - Second : category_occupation. (Hash) The products categories and its occupation
           #
