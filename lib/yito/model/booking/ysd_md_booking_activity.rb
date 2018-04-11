@@ -52,11 +52,12 @@ module Yito
         property :duration_hours, String, :length => 5
 
         # -- Custom payments
-        property :payment_setup, Enum[:default, :custom], default: :default
         property :custom_payment_allow_deposit_payment, Boolean, default: false
         property :custom_payment_deposit, Integer, default: 0
         property :custom_payment_allow_total_payment, Boolean, default: false
 
+        # -- Allows to request a reservation (without payment)
+        property :allow_request_reservation, Boolean, default: false
 
         # -- Pickup places
         property :custom_pickup_places, Boolean, default: false
