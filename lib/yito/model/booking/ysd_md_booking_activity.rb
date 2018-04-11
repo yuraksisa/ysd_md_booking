@@ -387,7 +387,7 @@ module Yito
           result = {}
           price_definition_detail.each do |id, description|
             tickets = [{number: 0, total: 0, description: "Número de tickets (#{description})"}]
-            (1..(occupation[:occupation_capacity]-([:occupation_detail][id]||0))).each do |item|
+            (1..(occupation[:occupation_capacity]-(occupation[:occupation_detail][id]||0))).each do |item|
               tickets << {number:item, total:rates[id][item], description: "#{item} X #{description} #{rates[id][item]}€"}
             end
             result.store(id, tickets)
