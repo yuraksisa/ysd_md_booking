@@ -49,6 +49,28 @@ module Yito
         end
 
         #
+        # Remove an item from the shopping cart
+        #
+        def remove_item
+
+          transaction do
+            self.destroy
+            self.shopping_cart.item_cost ||= 0
+            self.shopping_cart.item_cost -= self.item_cost
+            self.shopping_cart.product_deposit_cost ||= 0
+            self.shopping_cart.product_deposit_cost -= self.product_deposit_cost
+            self.shopping_cart.calculate_cost(false, true)
+            begin
+              self.shopping_cart.save
+            rescue DataMapper::SaveFailureError => error
+              p "Error saving shopping cart: #{self.shopping_cart.errors.full_messages.inspect}"
+              raise error
+            end
+          end
+
+        end
+
+        #
         # Updates the item quantity
         #
         def update_quantity(quantity)
@@ -81,11 +103,14 @@ module Yito
               if quantity < old_quantity
                 (quantity..(old_quantity-1)).each do |resource_number|
                   self.item_resources[quantity].destroy unless self.item_resources[quantity].nil?
+                  self.item_resources.reload
                 end
               elsif quantity > old_quantity
+                product = ::Yito::Model::Booking::BookingCategory.get(item_id)
                 (old_quantity..(quantity-1)).each do |resource_number|
                   shopping_cart_item_resource = ShoppingCartItemResourceRenting.new
                   shopping_cart_item_resource.item = self
+                  shopping_cart_item_resource.pax = product.capacity unless product.nil?
                   shopping_cart_item_resource.save
                 end
               end

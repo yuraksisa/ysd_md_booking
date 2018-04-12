@@ -342,7 +342,8 @@ module BookingDataSystem
                                             resource_user_2_surname: shopping_cart_item_resource.resource_user_2_surname,
                                             resource_user_2_document_id: shopping_cart_item_resource.resource_user_2_document_id,
                                             resource_user_2_phone: shopping_cart_item_resource.resource_user_2_phone,
-                                            resource_user_2_email: shopping_cart_item_resource.resource_user_2_email)
+                                            resource_user_2_email: shopping_cart_item_resource.resource_user_2_email,
+                                            pax: shopping_cart_item_resource.pax)
                booking_item_resource.save
              end
            end

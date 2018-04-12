@@ -376,7 +376,11 @@ module Yito
 					if multiple_items
   				  # Shopping cart contains item
 		  		  if shopping_cart_item = items.select { |item| item.item_id == product_code }.first
-				  		shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
+							if quantity == 0
+							  shopping_cart_item.remove_item
+							else
+				  		  shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
+						  end
 					  # Shopping cart does not contain item
 					  else 
 					  	if product = BookingCategory.search(date_from, date_to, days,{ locale: self.customer_language,
