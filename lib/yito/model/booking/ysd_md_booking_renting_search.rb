@@ -71,6 +71,8 @@ module Yito
 			 # product_code : Search only one product
 			 # web_public: Include only web_public categories
 			 # sales_channel_code: The sales channel code (nil for default)
+			 # promotion_code: The promotion code
+			 # apply_promotion_code: Apply the promotion code
 			 # include_stock: Include the stock references in the result (if we want to known the free resources)
 			 # ignore_urge: It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
 			 #              pending reservation. It's used when trying to assign resources to this reservation
@@ -83,8 +85,12 @@ module Yito
 				 product_code = (options.has_key?(:product_code) ? options[:product_code] : nil)
 				 web_public = (options.has_key?(:web_public) ? options[:web_public] : false)
 				 sales_channel_code = (options.has_key?(:sales_channel_code) ? options[:sales_channel_code] : nil)
+				 apply_promotion_code = (options.has_key?(:apply_promotion_code) ? options[:apply_promotion_code] : false)
+				 promotion_code = (options.has_key?(:promotion_code) ? options[:promotion_code] : nil)
 				 include_stock = (options.has_key?(:include_stock) ? options[:include_stock] : false)
 				 ignore_urge = (options.has_key?(:ignore_urge) ? options[:ignore_urge] : nil)
+
+				 p "apply_promotion_code:#{apply_promotion_code}--promotion_code:#{promotion_code}--options:#{options.inspect}"
 
 				 # Proceed
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
@@ -111,6 +117,17 @@ module Yito
 
   		   # General discounts (for range of dates)
   		   general_discount = ::Yito::Model::Rates::Discount.active(Date.today).first
+
+				 # Promotional code
+				 rates_promotion_code = if apply_promotion_code and promotion_code and !promotion_code.nil?
+																  if ::Yito::Model::Rates::PromotionCode.valid_code?(promotion_code)
+																	  ::Yito::Model::Rates::PromotionCode.first(promotion_code: promotion_code)
+																	else
+																		nil
+																	end
+																else
+																	nil
+																end
 
   		   # Query for products
   		   prod_attributes = [:code, :name, :short_description, :description,
@@ -139,17 +156,29 @@ module Yito
 
   		   	           # Get the price
   		   	           product_price = item.unit_price(from, days, nil, sales_channel_code)
-  		   	           
-  		   	           # Apply offers and discounts
-  		   	           discount = 0
-  		   	           if general_discount
-  		   	              case general_discount.discount_type 
-  		   	                when :percentage
-  		   	                	discount = product_price * (general_discount.value / 100)
-  		   	           	    when :amount
-  		   	           	      discount = general_discount.value 
-  		   	           	  end	
-	           		     end
+
+										 # Apply promotion code or offers
+										 discount = 0
+
+										 # Apply promotion code
+										 if rates_promotion_code
+											 case rates_promotion_code.discount_type
+												 when :percentage
+													 discount = product_price * (rates_promotion_code.value / 100)
+												 when :amount
+													 discount = rates_promotion_code.value
+											 end
+										 else
+											 # Apply offers
+											 if general_discount
+													case general_discount.discount_type
+														when :percentage
+															discount = product_price * (general_discount.value / 100)
+														when :amount
+															discount = general_discount.value
+													end
+											 end
+										 end
 
   		   	           base_price = product_price.round(0) # Make sure no decimals in prices
   		   	           price = (product_price - discount).round(0) # Make sure no decimal in prices
@@ -162,7 +191,6 @@ module Yito
   		   	           available = categories_available.include?(item.code) # Calendar lock
 										 available = available && (stock > busy) if item.stock_control # Stock
   		   	           payment_available = categories_payment_enabled.include?(item.code)
-
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
   		   	           	         photo_path, full_photo_path,

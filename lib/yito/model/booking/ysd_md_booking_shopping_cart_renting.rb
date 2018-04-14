@@ -230,7 +230,8 @@ module Yito
 																	return_place, custom_return_place,
 																	number_of_adults, number_of_children,
 																	driver_age_rule_id=nil,
-																	sales_channel_code=nil)
+																	sales_channel_code=nil,
+																	promotion_code=nil)
 
 					transaction do
 
@@ -241,10 +242,10 @@ module Yito
 
             # Calculate the days
             days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
-						#p "calculating dates. previous: #{self.days} -- now: #{days_calculus[:days]}"
 						self.days = days_calculus[:days]
             self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
 
+						# Pickup place
 						self.pickup_place = pickup_place
 						self.custom_pickup_place = custom_pickup_place
 						if self.custom_pickup_place
@@ -258,6 +259,7 @@ module Yito
 							end
 						end
 
+            # Return place
 						self.return_place = return_place
 						self.custom_return_place = custom_return_place
 						if self.custom_return_place
@@ -271,13 +273,20 @@ module Yito
 							self.return_place_customer_translation = return_place
 						end
 
+            # Number of adults and children
 						self.number_of_adults = number_of_adults
 						self.number_of_children = number_of_children
+
+						# Driver age rule
 						if !driver_age_rule_id.nil? and !driver_age_rule_id.to_s.empty?
 							self.driver_age_rule_id = driver_age_rule_id
 						end
 
+						# Sales channel
 						self.sales_channel_code = sales_channel_code
+
+						# Promotion code
+						self.promotion_code = promotion_code
 
             # Recalculate cost
 						self.calculate_cost(true, true)
@@ -286,11 +295,14 @@ module Yito
 
 						# Recalculate items
 						self.items.each do |sc_item|
-							if product = BookingCategory.search(date_from, date_to, self.days, { locale: self.customer_language,
-																																									        full_information: false,
-																																									        product_code: sc_item.item_id,
-																																									        web_public: false,
-							                                                                            sales_channel_code: self.sales_channel_code})
+							if product = BookingCategory.search(date_from, date_to, self.days,
+																				   { locale: self.customer_language,
+																						        full_information: false,
+																						        product_code: sc_item.item_id,
+																						        web_public: false,
+																						        apply_promotion_code: self.promotion_code ? true : false,
+																						        promotion_code: self.promotion_code,
+							                                      sales_channel_code: self.sales_channel_code})
 							  sc_item.update_item_cost(product.base_price, product.price, product.deposit)
 							end
 						end
@@ -387,17 +399,23 @@ module Yito
 																																									  full_information: false,
 																																									  product_code: product_code,
 																																									  web_public: false,
-																																						        sales_channel_code: self.sales_channel_code})
+																																						        sales_channel_code: self.sales_channel_code,
+																																						        apply_promotion_code: self.promotion_code ? true : false,
+																																						        promotion_code: self.promotion_code})
 						  add_item(product.code, product.name, quantity,
 								   product.base_price, product.price, product.deposit)
 					    end
 					  end  
 					else
+						p "promotion_code:#{self.promotion_code}"
 					  product = BookingCategory.search(date_from, date_to, days,{ locale: self.customer_language,
 																																				       full_information: false,
 																																				       product_code: product_code,
 																																				       web_public: false,
-																																				       sales_channel_code: self.sales_channel_code})
+																																				       sales_channel_code: self.sales_channel_code,
+																																			       	 apply_promotion_code: self.promotion_code ? true : false,
+																																				       promotion_code: self.promotion_code})
+						p "product: #{product}"
 					  # Shopping cart empty
 					  if items.size == 0
 						  add_item(product.code, product.name, quantity,

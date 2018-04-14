@@ -139,6 +139,9 @@ module Yito
         #   :full_information -> Shows the stock information (total and available)
         #   :product_code -> The product code (for a specific category search)
         #   :web_public -> Include only web_public categories
+        #   :sales_channel_code -> The sales channel code (nil for default)
+        #   :promotion_code -> The promotion code
+        #   :apply_promotion_code -> Apply the promotion code
         #   :include_stock -> Include the stock references in the result (if we want to known the free resources)
         #   :ignore_urge -> It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
         #              pending reservation. It's used when trying to assign resources to this reservation
