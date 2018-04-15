@@ -138,7 +138,7 @@ module Yito
 				 conditions.store('sales_channels.code', [sales_channel_code]) unless sales_channel_code.nil?
 
   		   result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes,
-  		   			      conditions: conditions, order: [:code]).map do |item|
+  		   			      conditions: conditions, order: [:sort_order, :code]).map do |item|
 					           # Translate the product
 					           item = item.translate(locale) if locale 
 
