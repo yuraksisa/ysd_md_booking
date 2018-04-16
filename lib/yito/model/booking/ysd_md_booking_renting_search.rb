@@ -187,7 +187,7 @@ module Yito
   		   	           busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
 										 resources = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:resources] : nil
   		   	           available = categories_available.include?(item.code) # Calendar lock
-										 available = available && (stock > busy) if item.stock_control # Stock
+										 available = (available && (stock > busy)) if item.stock_control # Stock
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
