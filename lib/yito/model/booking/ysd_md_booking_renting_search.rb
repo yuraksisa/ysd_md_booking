@@ -115,9 +115,6 @@ module Yito
   		   categories_available = Availability.instance.categories_available(from, to)
   		   categories_payment_enabled = Availability.instance.categories_payment_enabled(from, to)
 
-  		   # General discounts (for range of dates)
-  		   general_discount = ::Yito::Model::Rates::Discount.active(Date.today).first
-
 				 # Promotional code
 				 rates_promotion_code = if apply_promotion_code and promotion_code and !promotion_code.nil?
 																  if ::Yito::Model::Rates::PromotionCode.valid_code?(promotion_code)
@@ -169,13 +166,14 @@ module Yito
 													 discount = rates_promotion_code.value
 											 end
 										 else
+											 category_discount = ::Yito::Model::Booking::BookingCategoryOffer.search_offer(item.code, from, to)
 											 # Apply offers
-											 if general_discount
-													case general_discount.discount_type
+											 if category_discount
+													case category_discount.discount_type
 														when :percentage
-															discount = product_price * (general_discount.value / 100)
+															discount = product_price * (category_discount.value / 100)
 														when :amount
-															discount = general_discount.value
+															discount = category_discount.value
 													end
 											 end
 										 end

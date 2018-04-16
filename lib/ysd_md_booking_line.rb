@@ -57,6 +57,7 @@ module BookingDataSystem
            deposit_cost_increment = 0
            if price_modification == 'update'
              new_price = product.unit_price(booking.date_from, booking.days, nil, self.booking.sales_channel_code).round
+             ## TODO Apply offers
              new_product_deposit = product.deposit
              item_cost_increment = new_price - old_price
              deposit_cost_increment = new_product_deposit - old_product_deposit
