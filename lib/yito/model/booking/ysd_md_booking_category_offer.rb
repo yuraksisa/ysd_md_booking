@@ -15,12 +15,12 @@ module Yito
         property :id, Serial
         belongs_to :discount, 'Yito::Model::Rates::Discount', child_key: [:discont_id], parent_key: [:id]
         has n, :offer_booking_categories, 'BookingCategoryOfferCategory',
-               child_key: [:booking_category_offer_id, :booking_category_code], parent_key: [:id],
-               constraint: :destroy
+               :child_key => [:booking_category_offer_id, :booking_category_code], :parent_key => [:id]
         has n, :booking_categories, 'BookingCategory', :through => :offer_booking_categories
 
         after :destroy do
           discount.destroy unless discount.nil?
+          offer_booking_categories.all.destroy
         end
 
         #
