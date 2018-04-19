@@ -541,7 +541,7 @@ module BookingDataSystem
        if multiple_rental_locations
          if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: booking.pickup_place) and
             !_pickup_place.rental_location.nil?
-           booking.rental_location = _pickup_place.rental_location
+           booking.rental_location_code = _pickup_place.rental_location.code
          end
        end
      end
