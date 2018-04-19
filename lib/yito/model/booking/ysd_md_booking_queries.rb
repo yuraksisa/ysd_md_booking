@@ -1630,7 +1630,7 @@ module Yito
               journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
               event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_return')
               journal_events = ::Yito::Model::Calendar::Event.all(
-                  :conditions => {:to.gte => from, :to.lt => to+1, event_type_id: event_type.id,
+                  :conditions => {:from.gte => from, :from.lt => to+1, event_type_id: event_type.id,
                                   :calendar_id => journal_calendar.id},
                   :order => [:to.asc]).map do |item|
                 {id: '.', date_to: item.from.to_date.to_datetime, time_to: item.from.strftime('%H:%M'),

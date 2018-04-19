@@ -124,7 +124,8 @@ module BookingDataSystem
      property :return_time, String, :length => 5
      property :return_agent, String, :length => 256
 
-     belongs_to :rental_location, 'Yito::Model::Booking::RentalLocation', required: false
+     #belongs_to :rental_location, 'Yito::Model::Booking::RentalLocation', required: false
+     property :rental_location_code, String, length: 50
      property :sales_channel_code, String, length: 50
 
      # Booking extensions
@@ -412,6 +413,18 @@ module BookingDataSystem
        cadence_payment = (cadence_from.to_time - DateTime.now.to_time) / 3600
        cadence_payment > conf_payment_cadence
 
+     end
+
+     #
+     # Check if it's a valid time
+     # 
+     def self.valid_time?(time)
+       begin
+         Time.parse(time)
+         true
+       rescue
+         false
+       end
      end
 
      #
