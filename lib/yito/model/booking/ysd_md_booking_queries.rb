@@ -860,8 +860,8 @@ module Yito
           # Get the assignable resources in a date range (including reservations and prereservations)
           #
           #
-          def resource_urges(date_from, date_to)
-            query = resources_occupation_query(date_from, date_to)
+          def resource_urges(date_from, date_to, options=nil)
+            query = resources_occupation_query(date_from, date_to, options)
             resource_occupations = repository.adapter.select(query)
           end
 
@@ -910,7 +910,7 @@ module Yito
           #
           def resources_occupation(date_from, date_to, category=nil, ignore_urge=nil)
               
-            hours_cadency = SystemConfiguration::Variable.get_value('booking.hours_cadence','2').to_f / 24
+            hours_cadency = SystemConfiguration::Variable.get_value('booking.assignation_hours_return_pickup','2')
 
             #
             # 1. Build the required_categories
@@ -1035,18 +1035,44 @@ module Yito
 
               # Clones the assignation pending resource urges (because we are going to manipulate it)
               assignation_pending_sources = required_category_value[:assignation_pending].clone
-              assignation_pending_sources.each do |assignation_pending_source|
-                # Search stock items candidates
+              p "Checking assignation_pending. Category=#{required_category_key}.Total pending:#{assignation_pending_sources.size}"
+              assignation_pending_sources.each_with_index do |assignation_pending_source, index|
+                p "assignation_pending_source(#{index}):#{assignation_pending_source.inspect}"
+                # Build date from and date to
+                pending_date_from = parse_date_time_from(assignation_pending_source.date_from,
+                                                         assignation_pending_source.time_from)
+                pending_date_to = parse_date_time_to(assignation_pending_source.date_to,
+                                                     assignation_pending_source.time_to)
+                # Search for candidates (from the category's stock)
                 candidates = required_category_value[:stock].select do |item_reference, item_reference_assigned_reservations|
-                               (stock_detail[item_reference][:assignable]) and # Avoid not assignable resource
-                               item_reference_assigned_reservations.all? do |assigned|
-                                 assign_pend_d_f = parse_date_time_from(assignation_pending_source.date_from, assignation_pending_source.time_from)
-                                 assign_pend_d_t = parse_date_time_to(assignation_pending_source.date_to, assignation_pending_source.time_to)
-                                 assigned_d_f = parse_date_time_from(assigned.date_from, assigned.time_from)
-                                 assigned_d_t = parse_date_time_from(assigned.date_to, assigned.time_to)
-                                 assignation_pending_source.date_to < (assigned.date_from - hours_cadency) || assignation_pending_source.date_from > (assigned.date_to + hours_cadency)
+                               if stock_detail[item_reference][:assignable]
+                                 not_overlapped = item_reference_assigned_reservations.all? do |item_reference_assigned_reservation|
+                                   assigned_date_from = parse_date_time_from(item_reference_assigned_reservation.date_from,
+                                                                             item_reference_assigned_reservation.time_from)
+                                   assigned_date_to = parse_date_time_from(item_reference_assigned_reservation.date_to,
+                                                                           item_reference_assigned_reservation.time_to)
+                                   pending_date_to < (assigned_date_from - Rational(hours_cadency,24)) ||
+                                   pending_date_from > (assigned_date_to + Rational(hours_cadency,24))
+                                 end
+                                 if not_overlapped
+                                   free_assignations=resource_urges(assignation_pending_source.date_from,
+                                                  assignation_pending_source.date_to,
+                                                  {mode: :stock, reference: item_reference}).all? do |element|
+                                     element_date_from = parse_date_time_from(element.date_from, element.time_from)
+                                     element_date_to = parse_date_time_from(element.date_to, element.time_to)
+                                     pending_date_to < (element_date_from - Rational(hours_cadency,24)) ||
+                                     pending_date_from > (element_date_to + Rational(hours_cadency,24))
+                                   end
+                                   p "checked(#{index}).Reference:#{item_reference}.possible=#{free_assignations}-from:#{assignation_pending_source.date_from.strftime('%Y-%m-%d')}--to:#{assignation_pending_source.date_to.strftime('%Y-%m-%d')}"
+                                   free_assignations
+                                 else
+                                   false # Reservations in requested date range overlapped
+                                 end
+                               else
+                                 false # Resource is not assignable
                                end
-                             end  
+                             end
+                # Candidates found => pre-assignation
                 if candidates.size > 0
                   candidate_item_reference = candidates.keys.first
                   # Apply reassignation
@@ -1333,7 +1359,7 @@ module Yito
 
             # Historic stock blocking (from stock blocking)
 
-            p "references: #{references_hash.inspect}"
+            #p "references: #{references_hash.inspect}"
 
             return [references, references_hash]
           end
@@ -1562,10 +1588,12 @@ module Yito
               journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
               event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_pickup')
               journal_events = ::Yito::Model::Calendar::Event.all(
+                  :fields => [:id, :from, :description],
                   :conditions => {:from.gte => from, :from.lt => to+1, event_type_id: event_type.id,
                                   :calendar_id => journal_calendar.id},
-                  :order => [:from.asc]).map do |item|
-                {id: '.', date_from: item.from.to_date.to_datetime, time_from: item.from.strftime('%H:%M'), pickup_place: '', product: item.description,
+                  :order => [:from.asc]).map.each do |journal_event|
+                {id: '.', date_from: journal_event.from.to_date.to_datetime,
+                 time_from: journal_event.from.strftime('%H:%M'), pickup_place: '', product: journal_event.description,
                  status: '', customer: '', customer_phone: '', customer_mobile_phone: '',
                  customer_email: '', flight: '', total_pending: 0, extras: '', notes: '', days: 0}
               end
@@ -1630,11 +1658,12 @@ module Yito
               journal_calendar = ::Yito::Model::Calendar::Calendar.first(name: 'booking_journal')
               event_type = ::Yito::Model::Calendar::EventType.first(name: 'booking_return')
               journal_events = ::Yito::Model::Calendar::Event.all(
+                  :fields => [:id, :from, :description],
                   :conditions => {:from.gte => from, :from.lt => to+1, event_type_id: event_type.id,
                                   :calendar_id => journal_calendar.id},
-                  :order => [:to.asc]).map do |item|
-                {id: '.', date_to: item.from.to_date.to_datetime, time_to: item.from.strftime('%H:%M'),
-                 return_place: '', product: item.description, status: '', customer: '', customer_phone: '', customer_mobile_phone: '',
+                  :order => [:to.asc]).map do |journal_event|
+                {id: '.', date_to: journal_event.from.to_date.to_datetime, time_to: journal_event.from.strftime('%H:%M'),
+                 return_place: '', product: journal_event.description, status: '', customer: '', customer_phone: '', customer_mobile_phone: '',
                  customer_email: '', flight: '', total_pending: 0, extras: '', notes: '', days: 0}
               end
               data.concat(journal_events)
@@ -1739,11 +1768,11 @@ module Yito
             unless options.nil?
               if options.has_key?(:mode)
                 if options[:mode].to_sym == :stock and options.has_key?(:reference)
-                  extra_condition = "and r.booking_item_reference = #{options[:reference]}"
-                  extra_pr_condition = "and pr.booking_item_reference = #{options[:reference]}"
+                  extra_condition = "and r.booking_item_reference = '#{options[:reference]}' "
+                  extra_pr_condition = "and prl.booking_item_reference = '#{options[:reference]}' "
                 elsif options[:mode].to_sym == :product and options.has_key(:product)
-                  extra_condition = "and item_id = #{options[:product]}"
-                  extra_condition = "and pr.booking_item_category = #{options[:product]}"
+                  extra_condition = "and item_id = '#{options[:product]}' "
+                  extra_condition = "and prl.booking_item_category = '#{options[:product]}' "
                 end
               end
             end
@@ -1766,7 +1795,8 @@ module Yito
                             coalesce(r.resource_user_surname, ''), ' ', r.customer_height,
                             ' ', r.customer_weight) as detail,                     
                      r.id as id2,
-                     b.planning_color
+                     b.planning_color,
+                     b.notes as notes
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines l on l.booking_id = b.id
                 JOIN bookds_bookings_lines_resources r on r.booking_line_id = l.id
@@ -1786,7 +1816,8 @@ module Yito
                      pr.title,
                      pr.notes as detail,
                      prl.id as id2,
-                     pr.planning_color              
+                     pr.planning_color,
+                     pr.notes as notes              
                 FROM bookds_prereservations pr
                 JOIN bookds_prereservation_lines prl on prl.prereservation_id = pr.id
                 WHERE ((pr.date_from <= '#{from}' and pr.date_to >= '#{from}') or 

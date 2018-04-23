@@ -89,9 +89,7 @@ module Yito
 				 promotion_code = (options.has_key?(:promotion_code) ? options[:promotion_code] : nil)
 				 include_stock = (options.has_key?(:include_stock) ? options[:include_stock] : false)
 				 ignore_urge = (options.has_key?(:ignore_urge) ? options[:ignore_urge] : nil)
-
-				 p "apply_promotion_code:#{apply_promotion_code}--promotion_code:#{promotion_code}--options:#{options.inspect}"
-
+				 
 				 # Proceed
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
