@@ -24,32 +24,32 @@ module Yito
         #
         def self.search_offer(booking_category_code, date_from, date_to)
 
+          today = Date.today
+          offer = BookingCategoryOffer.by_sql{ |bco| [query_offer(bco), booking_category_code, today, today,
+                                              date_from, date_to,
+                                              date_from, date_from] }.first
 
-          conditions = Conditions::JoinComparison.new('$or',
-               [Conditions::JoinComparison.new('$and',
-                   [Conditions::Comparison.new('offer_booking_categories.booking_category_code','$eq', booking_category_code),
-                              Conditions::Comparison.new('discount.source_date_from','$lte', date_from),
-                              Conditions::Comparison.new('discount.source_date_to','$gte', date_to),
-                              Conditions::Comparison.new('reservation_dates_rule','$eq', :all_included)
-                             ]),
-                         Conditions::JoinComparison.new('$and',
-                   [Conditions::Comparison.new('offer_booking_categories.booking_category_code','$eq', booking_category_code),
-                             Conditions::Comparison.new('discount.source_date_from','$lte', date_from),
-                             Conditions::Comparison.new('discount.source_date_to','$gte', date_from),
-                             Conditions::Comparison.new('reservation_dates_rule','$eq', :from_included)
-                             ])
-               ])
-
-          p "conditions:#{booking_category_code}"
-
-          offer = conditions.build_datamapper(BookingCategoryOffer).first
-
+          p "conditions:#{booking_category_code}--#{offer.inspect}"
           if offer
             return offer.discount
           else
             return nil
           end
 
+        end
+        
+        protected
+        
+        def self.query_offer(bco)
+          sql = <<-QUERY
+               select #{bco.*}
+               FROM #{bco}
+                join bookds_category_offer_categories bcoc on bcoc.booking_category_offer_id = #{bco.id} 
+                join rateds_discount discount on discount.id = #{bco.discont_id}
+                where bcoc.booking_category_code = ? and discount.date_from <= ? and discount.date_to >= ? and
+                     ((discount.source_date_from <= ? and discount.source_date_to >= ? and reservation_dates_rule = 2) or 
+                      (discount.source_date_from <= ? and discount.source_date_to >= ? and reservation_dates_rule = 1))
+          QUERY
         end
 
       end
