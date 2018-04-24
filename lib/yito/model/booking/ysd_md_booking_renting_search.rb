@@ -165,6 +165,7 @@ module Yito
 											 end
 										 else
 											 category_discount = ::Yito::Model::Booking::BookingCategoryOffer.search_offer(item.code, from, to)
+											 p "category_discount:#{category_discount.inspect}--code:#{item.code}--from:#{from}--to:#{to}"
 											 # Apply offers
 											 if category_discount
 													case category_discount.discount_type
