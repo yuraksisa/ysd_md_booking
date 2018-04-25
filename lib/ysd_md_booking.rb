@@ -92,14 +92,14 @@ module BookingDataSystem
   def self.pickup_places
 
     if place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
-      pickup_places = ::Yito::Model::Booking::PickupReturnPlace.all(:conditions => {:place_definition_id => place_definition.id, :is_pickup => true}, :order => [:name.asc])
+      pickup_places = ::Yito::Model::Booking::PickupReturnPlace.all(:conditions => {:place_definition_id => place_definition.id, :is_pickup => true}, :order => [:sort_order, :name.asc])
     end
 
   end
 
   def self.return_places
     if place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
-      return_places = ::Yito::Model::Booking::PickupReturnPlace.all(conditions: {:place_definition_id => place_definition.id, :is_return => true}, order: [:name.asc])
+      return_places = ::Yito::Model::Booking::PickupReturnPlace.all(conditions: {:place_definition_id => place_definition.id, :is_return => true}, order: [:sort_order, :name.asc])
     end
   end
 
