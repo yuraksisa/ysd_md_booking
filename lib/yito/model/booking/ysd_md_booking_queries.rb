@@ -1785,6 +1785,7 @@ module Yito
               FROM (
                 SELECT r.booking_item_reference,
                      coalesce(r.booking_item_category, l.item_id) as item_id,
+                     l.item_id as requested_item_id,
                      b.id,
                      'booking' as origin,
                      b.date_from, b.time_from,
@@ -1808,6 +1809,7 @@ module Yito
                 UNION
                 SELECT prl.booking_item_reference,
                      prl.booking_item_category,
+                     prl.booking_item_category as requested_item_id,
                      pr.id,
                      'prereservation' as origin,
                      pr.date_from, pr.time_from,
