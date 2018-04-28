@@ -835,48 +835,63 @@ module BookingDataSystem
      end
 
      #
-     # Check if the customer can pay for the reservation
-     #
-     def can_pay?
-
-       conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
-       conf_allow_total_payment = SystemConfiguration::Variable.get_value('booking.allow_total_payment','false').to_bool
-
-       can_pay = (total_pending > 0 && status != :cancelled && (conf_payment_enabled || force_allow_payment)) 
-
-       if can_pay
-         if self.total_paid > 0 # It's not the first payment
-           can_pay = (can_pay && conf_allow_total_payment) 
-         else  # It's the first payment (check expiration)
-           can_pay = (can_pay && !expired? && (payment_cadence_allowed? || force_allow_payment)) || (total_pending > 0 && status == :confirmed)
-         end
-       end            
-
-       return can_pay
-
-     end
-
-     #
      # Check if the booking deposit can be paid
      #
      def can_pay_deposit?
-       self.can_pay? and self.total_paid == 0
-     end
 
-     #
-     # Check if the booking total can be paid
-     #
-     def can_pay_total?
-       self.can_pay? and self.total_paid == 0 and SystemConfiguration::Variable.get_value('booking.allow_total_payment','false').to_bool
+       conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+       conf_payment_deposit = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit') == 'deposit')
+
+       if self.status == :pending_confirmation
+         conf_payment_enabled and conf_payment_deposit and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
+       elsif self.status == :confirmed # Confirmed in the back-office without payment
+         conf_payment_enabled and conf_payment_deposit and self.total_paid == 0 and self.total_pending > 0
+       else
+         return false
+       end
+
      end
 
      #
      # Check if the booking pending amout can be paid
      #
      def can_pay_pending?
-       sel.can_pay? and self.total_paid > 0
+       conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+       conf_payment_deposit = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit') == 'deposit')
+       conf_payment_pending = SystemConfiguration::Variable.get_value('booking.allow_pending_payment', 'false').to_bool
+       if conf_payment_enabled and conf_payment_deposit and conf_payment_pending and self.status != :cancelled
+         self.total_paid > 0
+       else
+         return false
+       end
      end
 
+     #
+     # Check if the booking total can be paid
+     #
+     def can_pay_total?
+
+       conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
+       conf_payment_total = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'total') == 'total')
+
+       if self.status == :pending_confirmation
+         conf_payment_enabled and conf_payment_total and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
+       elsif self.status == :confirmed # Confirmed in the back-office without payment
+         conf_payment_enabled and conf_payment_total and self.total_paid == 0 and self.total_pending > 0
+       else
+         return false
+       end
+
+     end
+
+     #
+     # Check if the customer can pay for the reservation
+     #
+     def can_pay?
+
+       can_pay_deposit? or can_pay_pending? or can_pay_total?
+
+     end
 
      alias_method :is_expired, :expired?
      alias_method :can_pay, :can_pay?
@@ -886,7 +901,6 @@ module BookingDataSystem
      #
      def booking_deposit
 
-       #(total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
        booking_amount
 
      end
@@ -938,11 +952,12 @@ module BookingDataSystem
        
        if total_pending > 0 and 
           charge_payment_method = Payments::PaymentMethod.get(charge_payment_method_id.to_sym) and
-          not charge_payment_method.is_a?Payments::OfflinePaymentMethod 
+          not charge_payment_method.is_a?Payments::OfflinePaymentMethod and
+          !([:deposit, :pending, :total].find_index(charge_payment.to_sym)).nil?
 
          amount = case charge_payment.to_sym
                     when :deposit
-                      booking_deposit #(total_cost * SystemConfiguration::Variable.get_value('booking.deposit', '0').to_i / 100).round
+                      booking_deposit
                     when :total
                       total_cost
                     when :pending
