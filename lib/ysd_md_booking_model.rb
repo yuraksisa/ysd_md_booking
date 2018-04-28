@@ -843,9 +843,9 @@ module BookingDataSystem
        conf_payment_deposit = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit') == 'deposit')
 
        if self.status == :pending_confirmation
-         conf_payment_enabled and conf_payment_deposit and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
+         (conf_payment_enabled or force_allow_payment) and conf_payment_deposit and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
        elsif self.status == :confirmed # Confirmed in the back-office without payment
-         conf_payment_enabled and conf_payment_deposit and self.total_paid == 0 and self.total_pending > 0
+         (conf_payment_enabled or force_allow_payment) and conf_payment_deposit and self.total_paid == 0 and self.total_pending > 0
        else
          return false
        end
@@ -859,7 +859,7 @@ module BookingDataSystem
        conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
        conf_payment_deposit = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit') == 'deposit')
        conf_payment_pending = SystemConfiguration::Variable.get_value('booking.allow_pending_payment', 'false').to_bool
-       if conf_payment_enabled and conf_payment_deposit and conf_payment_pending and self.status != :cancelled
+       if (conf_payment_enabled or force_allow_payment) and conf_payment_deposit and conf_payment_pending and self.status != :cancelled
          self.total_paid > 0
        else
          return false
@@ -875,9 +875,9 @@ module BookingDataSystem
        conf_payment_total = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'total') == 'total')
 
        if self.status == :pending_confirmation
-         conf_payment_enabled and conf_payment_total and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
+         (conf_payment_enabled or force_allow_payment) and conf_payment_total and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
        elsif self.status == :confirmed # Confirmed in the back-office without payment
-         conf_payment_enabled and conf_payment_total and self.total_paid == 0 and self.total_pending > 0
+         (conf_payment_enabled or force_allow_payment) and conf_payment_total and self.total_paid == 0 and self.total_pending > 0
        else
          return false
        end
