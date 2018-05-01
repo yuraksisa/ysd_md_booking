@@ -165,7 +165,6 @@ module Yito
 											 end
 										 else
 											 category_discount = ::Yito::Model::Booking::BookingCategoryOffer.search_offer(item.code, from, to)
-											 p "category_discount:#{category_discount.inspect}--code:#{item.code}--from:#{from}--to:#{to}"
 											 # Apply offers
 											 if category_discount
 													case category_discount.discount_type
@@ -183,10 +182,14 @@ module Yito
   		   	           
   		   	           # Get the availability
   		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
-  		   	           busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
 										 resources = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:resources] : nil
   		   	           available = categories_available.include?(item.code) # Calendar lock
-										 available = (available && (stock > busy)) if item.stock_control # Stock
+										 if item.stock_control # Stock
+											 busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
+										   available = (available && (stock > busy))
+										 else
+											 busy = 0
+										 end
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
