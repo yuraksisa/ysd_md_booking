@@ -34,8 +34,6 @@ module Yito
         property :planning_order, Integer, :default => 0   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]
-        #belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
-        #belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
 
         #
         # Override the save method to check the category
@@ -43,10 +41,24 @@ module Yito
         def save
           
           check_category! if self.category
-          #check_calendar! if self.calendar
-          #check_price_definition! if self.price_definition
-
           super
+
+        end
+
+        #
+        # Change the reference
+        #
+        def change_reference(new_reference)
+
+          p "old_reference: #{reference} -- new_reference: #{new_reference}"
+          # In datamapper it's not possible to update the key value, so we use adapter
+          # https://stackoverflow.com/questions/32302407/updating-a-property-set-as-the-key-in-datamapper
+          query = <<-QUERY
+            update bookds_items set reference = ? where reference = ?
+          QUERY
+          repository.adapter.select(query, new_reference, reference)
+          # Update the item references assigned
+          BookingDataSystem::BookingLineResource.all(booking_item_reference: reference).update(booking_item_reference: new_reference)
 
         end
 
@@ -57,22 +69,6 @@ module Yito
             self.category = loaded
           end
         end
-
-        #def check_calendar!
-        # if self.calendar and (not self.calendar.saved?) and loaded = ::Yito::Model::Calendar::Calendar.get(self.calendar.id)
-        #    self.calendar = loaded
-        #  end
-        #
-        #  if self.calendar and self.calendar.id.nil?
-        #    self.calendar.save
-        #  end
-        #end
-
-        #def check_price_definition!
-        #  if self.price_definition and (not self.price_definition.saved?) and loaded = ::Yito::Model::Rates::PriceDefinition.get(self.price_definition.id)
-        #    self.price_definition = loaded
-        #  end
-        #end
 
       end
 
