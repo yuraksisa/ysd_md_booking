@@ -44,6 +44,10 @@ module Yito
         property :request_customer_allergies_intolerances, Boolean, :default => false
         property :uses_planning_resources, Boolean, :default => false
 
+        # -- Own contract
+        property :own_contract, Boolean, :default => false
+        belongs_to :contract, '::ContentManagerSystem::Template', child_key: [:contract_id], parent_key: [:id], :required => false
+
         property :from_price, Decimal, :scale => 2, :precision => 10, :default => 0
         property :from_price_offer, Decimal, :scale => 2, :precision => 10, :default => 0 
 
@@ -162,10 +166,17 @@ module Yito
           end
         end
 
+        before :save do
+          if self.own_contract and self.contract.nil?
+            self.contract = ContentManagerSystem::Template.create(name: self.code, description: self.name)
+          end
+        end
+
         #
         # Save the activity
         #
         def save
+          check_contract! if self.contract
           check_calendar! if self.calendar
           check_price_definition! if self.price_definition_1 || self.price_definition_2 || self.price_definition_3
           super # Invokes the super class to achieve the chain of methods invoked       
@@ -493,6 +504,15 @@ module Yito
             self.calendar.save
           end
 
+        end
+
+        def check_contract!
+          if self.contract and (not self.contract.saved?) and loaded = ::ContentManagerSystem::Template.get(self.contract.id)
+            self.contract = loaded
+          end
+          if self.contract and self.contract.id.nil?
+            self.contract.save
+          end
         end
 
 
