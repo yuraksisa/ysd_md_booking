@@ -1708,6 +1708,53 @@ module Yito
             
           end
 
+          #
+          # Get the resources that are returned and delivered the same day
+          #
+          def returned_delivered_same_day_resources
+            today = Date.today
+            data = repository.adapter.select(query_overbooking_conflicts, today, today, today, today).map do |item|
+              value = {}
+              if item.date_from_1 > item.date_from_2
+                value['booking_id_1'] = item.booking_id_2
+                value['date_from_1'] = item.date_from_2
+                value['time_from_1'] = item.time_from_2
+                value['date_to_1'] = item.date_to_2
+                value['time_to_1'] = item.time_to_2
+                value['resource_id_1'] = item.resource_id_2
+                value['booking_item_reference_1'] = item.booking_item_reference_2
+                value['booking_id_2'] = item.booking_id_1
+                value['date_from_2'] = item.date_from_1
+                value['time_from_2'] = item.time_from_1
+                value['date_to_2'] = item.date_to_1
+                value['time_to_2'] = item.time_to_1
+                value['resource_id_2'] = item.resource_id_1
+                value['booking_item_reference_2'] = item.booking_item_reference_1
+                OpenStruct.new(value)
+              else
+                item
+              end
+            end
+          end
+
+          #
+          # Check overbooking conflicts
+          #
+          def overbooking_conflicts
+
+            returned_delivered_same_day_resources.select do |item|
+              begin
+                t1 = DateTime.strptime(item.time_to_1,"%H:%M")
+                t2 = DateTime.strptime(item.time_from_2,"%H:%M")
+                diff = ((t2 - t1).to_f * 24).to_i
+                diff < 2
+              rescue
+                true
+              end
+            end
+
+          end
+
           private
     
           def select_pending_of_assignation(b)
@@ -1949,6 +1996,46 @@ module Yito
             QUERY
 
           end
+
+          #
+          # Retrieve information about the
+          #
+          def query_overbooking_conflicts
+
+            query = <<-QUERY
+              select b1.id as booking_id_1, b1.date_from as date_from_1, b1.time_from as time_from_1, b1.date_to as date_to_1, b1.time_to as time_to_1, r1.id as resource_id_1, r1.booking_item_reference as booking_item_reference_1,
+                     b2.id as booking_id_2, b2.date_from as date_from_2, b2.time_from as time_from_2, b2.date_to as date_to_2, b2.time_to as time_to_2, r2.id as resource_id_2, r2.booking_item_reference as booking_item_reference_2
+              from (
+                  select distinct least(r1.resource_id, r2.resource_id) as resource_id1, greatest(r1.resource_id, r2.resource_id) as resource_id2
+                  from (
+                    select b.id as booking_id, b.date_from, b.time_from, b.date_to, b.time_to, r.id as resource_id, r.booking_item_reference
+                    from bookds_bookings_lines_resources r
+                    join bookds_bookings_lines l on l.id = r.booking_line_id
+                    join bookds_bookings b on b.id = l.booking_id
+                    where (b.date_from >= ? or b.date_to >= ?) and r.booking_item_reference is not null and b.status not in (1,5)
+                  ) as r1
+                  inner join (
+                    select b.id as booking_id, b.date_from, b.time_from, b.date_to, b.time_to, r.id as resource_id, r.booking_item_reference
+                    from bookds_bookings_lines_resources r
+                    join bookds_bookings_lines l on l.id = r.booking_line_id
+                    join bookds_bookings b on b.id = l.booking_id
+                    where (b.date_from >= ? or b.date_to >= ?) and r.booking_item_reference is not null and b.status not in (1,5)
+                  ) as r2 on r2.booking_item_reference = r1.booking_item_reference and r2.resource_id != r1.resource_id
+                  group by r1.resource_id, r2.resource_id    
+                ) as x
+                join bookds_bookings_lines_resources r1 on r1.id = resource_id1
+                join bookds_bookings_lines l1 on l1.id = r1.booking_line_id
+                join bookds_bookings b1 on b1.id = l1.booking_id
+                join bookds_bookings_lines_resources r2 on r2.id = resource_id2
+                join bookds_bookings_lines l2 on l2.id = r2.booking_line_id
+                join bookds_bookings b2 on b2.id = l2.booking_id
+                join bookds_items on r1.booking_item_reference = bookds_items.reference and bookds_items.assignable 
+                where ((b1.date_from <= b2.date_from and b1.date_to >= b2.date_from) or (b1.date_from >= b2.date_from and b1.date_to <= b2.date_to) or (b1.date_from >= b2.date_from and b1.date_from <= b2.date_to))
+                order by least(b1.date_from,b2.date_from)
+            QUERY
+
+          end
+
 
           def query_strategy
 
