@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.106] - 2018-05-25
+### Added
+- Reservation occupation
+
 ## [0.4.105] - 2018-05-23
 ### Added
 - Planning conflict info

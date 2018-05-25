@@ -809,14 +809,16 @@ module Yito
                           result
                        end
             end
+            stocks.store(:total, stocks.values.inject(0) {|result, item| result+=item })
             
             # Build products occupation
-            cat_occupation =  categories.inject({}) do |result, item|
+            cat_occupation =  categories.map{|item| item.code}.concat([:total]).inject({}) do |result, item|
                                 days_hash = {}
                                 (1..(to.day)).each do |day|
-                                  days_hash.store(day, {items:[],occupation:0})
+                                  days_hash.store(day, {items:[], occupation:0, occupied: 0, total: stocks[item], percentage:0})
                                 end
-                                result.store(item.code, days_hash)
+                                days_hash.store(:total, {occupation:0, occupied: 0, total: 0, percentage:0})
+                                result.store(item, days_hash)
                                 result
                               end
 
@@ -831,27 +833,60 @@ module Yito
               date_to = reservation.date_to
               calculated_from = date_from.month < month ? 1 : date_from.day
               calculated_to = date_to.month > month ? to.day : date_to.day 
-              #calculated_to = calculated_to - 1 if product_family.cycle_of_24_hours
-              #p "reservation: #{reservation.id} #{calculated_from} - #{calculated_to} -- #{reservation.date_from} #{reservation.date_to}"
               (calculated_from..calculated_to).each do |index|
                 unless reservation.booking_item_reference.nil?
                   unless cat_occupation[reservation.item_id][index][:items].include?(reservation.booking_item_reference)
                     cat_occupation[reservation.item_id][index][:items] << reservation.booking_item_reference
                   end
                 end
-                cat_occupation[reservation.item_id][index][:occupation] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
+                cat_occupation[reservation.item_id][index][:occupied] += reservation.quantity if cat_occupation.has_key?(reservation.item_id)
               end
             end
-            
-            #p "occupation: #{cat_occupation.inspect}"
 
-            # Calculate percentage 
+            # Calculate occupation representation and percentage
             cat_occupation.each do |key, value|  
-              value.each do |day, occupation| 
-                cat_occupation[key][day][:occupation] = "#{cat_occupation[key][day][:occupation]}/#{stocks[key]}"
+              value.each do |day, occupation|
+                if cat_occupation[key][day][:total] > 0
+                  cat_occupation[key][day][:occupation] = "#{cat_occupation[key][day][:occupied]}/#{cat_occupation[key][day][:total]}"
+                  cat_occupation[key][day][:percentage] = (cat_occupation[key][day][:occupied].to_f / cat_occupation[key][day][:total].to_f * 100).round
+                else
+                  cat_occupation[key][day][:occupation] = '-'
+                  cat_occupation[key][day][:percentage] = 0
+                end
               end
             end
-   
+
+            # Calculate totals
+            # TOTAL column
+            cat_occupation.each do |key, value|
+              value.each do |day, occupation|
+                next if day == :total
+                cat_occupation[key][:total][:occupied] += occupation[:occupied]
+                cat_occupation[key][:total][:total] += occupation[:total]
+                if cat_occupation[key][:total][:total] > 0
+                  cat_occupation[key][:total][:percentage] = (cat_occupation[key][:total][:occupied].to_f / cat_occupation[key][:total][:total].to_f * 100).round
+                end
+              end
+            end
+
+            # TOTAL row
+            ((from.day)..(to.day)).each do |day|
+              cat_occupation.each do |key, value|
+                next if key == :total
+                cat_occupation[:total][day][:occupied] += value[day][:occupied]
+                if cat_occupation[:total][day][:total] > 0
+                  cat_occupation[:total][day][:percentage] = (cat_occupation[:total][day][:occupied].to_f / cat_occupation[:total][day][:total].to_f * 100).round
+                end
+              end
+            end
+
+            ((from.day)..(to.day)).each do |day|
+              cat_occupation[:total][:total][:occupied] += cat_occupation[:total][day][:occupied]
+              if cat_occupation[:total][:total][:total] > 0
+                 cat_occupation[:total][:total][:percentage] = (cat_occupation[:total][:total][:occupied].to_f / cat_occupation[:total][:total][:total].to_f * 100).round
+              end
+            end
+
             cat_occupation
 
           end
