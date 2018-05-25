@@ -59,6 +59,8 @@ module Yito
           repository.adapter.select(query, new_reference, reference)
           # Update the item references assigned
           BookingDataSystem::BookingLineResource.all(booking_item_reference: reference).update(booking_item_reference: new_reference)
+          # Update stock locking references
+          BookingDataSystem::BookingPrereservationLine.all(booking_item_reference: reference).update(booking_item_reference: new_reference)
 
         end
 

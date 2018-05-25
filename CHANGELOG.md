@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.107] - 2018-05-25
+### Updated
+- Change reference: The prereservation were not updated
+
 ## [0.4.106] - 2018-05-25
 ### Added
 - Reservation occupation
