@@ -53,15 +53,19 @@ module Yito
           p "old_reference: #{reference} -- new_reference: #{new_reference}"
           # In datamapper it's not possible to update the key value, so we use adapter
           # https://stackoverflow.com/questions/32302407/updating-a-property-set-as-the-key-in-datamapper
-          query = <<-QUERY
-            update bookds_items set reference = ? where reference = ?
-          QUERY
-          repository.adapter.select(query, new_reference, reference)
+          BookingItem.change_item_reference(new_reference, reference)
           # Update the item references assigned
           BookingDataSystem::BookingLineResource.all(booking_item_reference: reference).update(booking_item_reference: new_reference)
           # Update stock locking references
           BookingDataSystem::BookingPrereservationLine.all(booking_item_reference: reference).update(booking_item_reference: new_reference)
 
+        end
+
+        def self.change_item_reference(new_reference, reference)
+          query = <<-QUERY
+            update bookds_items set reference = ? where reference = ?
+          QUERY
+          repository.adapter.select(query, new_reference, reference)
         end
 
         private
