@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.108] - 2018-06-10
+### Updated
+- Booking payment: deposit - total - deposit and total
+
 ## [0.4.108] - 2018-05-28
 ### Updated
 - Change reference: The prereservation were not updated

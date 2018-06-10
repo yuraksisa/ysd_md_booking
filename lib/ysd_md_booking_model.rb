@@ -845,7 +845,7 @@ module BookingDataSystem
      def can_pay_deposit?
 
        conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
-       conf_payment_deposit = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit') == 'deposit')
+       conf_payment_deposit = (['deposit','deposit_and_total'].include?(SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit')))
 
        if self.status == :pending_confirmation
          (conf_payment_enabled or force_allow_payment) and conf_payment_deposit and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
@@ -862,7 +862,7 @@ module BookingDataSystem
      #
      def can_pay_pending?
        conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
-       conf_payment_deposit = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit') == 'deposit')
+       conf_payment_deposit = (['deposit','deposit_and_total'].include?(SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit')))
        conf_payment_pending = SystemConfiguration::Variable.get_value('booking.allow_pending_payment', 'false').to_bool
        if (conf_payment_enabled or force_allow_payment) and conf_payment_deposit and conf_payment_pending and self.status != :cancelled
          self.total_paid > 0
@@ -877,7 +877,7 @@ module BookingDataSystem
      def can_pay_total?
 
        conf_payment_enabled = SystemConfiguration::Variable.get_value('booking.payment', 'false').to_bool
-       conf_payment_total = (SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'total') == 'total')
+       conf_payment_total = (['total','deposit_and_total'].include?(SystemConfiguration::Variable.get_value('booking.payment_amount_setup', 'deposit')))
 
        if self.status == :pending_confirmation
          (conf_payment_enabled or force_allow_payment) and conf_payment_total and self.total_paid == 0 and ((!expired? and payment_cadence_allowed?) or force_allow_payment)
