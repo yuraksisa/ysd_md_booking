@@ -712,8 +712,12 @@ module Yito
 
         end
 
-        def pending_of_confirmation
-          orders = ::Yito::Model::Order::Order.by_sql { |o| select_pending_confirmation(o) }.all(order: :creation_date)
+        def pending_of_confirmation(opts={})
+          orders = ::Yito::Model::Order::Order.by_sql { |o| select_pending_confirmation(o) }.all({order: :creation_date}.merge(opts))
+        end
+
+        def start_on_date(date, opts={})
+          orders = ::Yito::Model::Order::Order.by_sql { |o| select_start_on_date(o, date) }.all({order: :creation_date}.merge(opts))
         end
 
         private
@@ -741,6 +745,14 @@ module Yito
             FROM #{o} 
             where #{o.status} = 1 and #{o.id} in (select order_id from orderds_order_items oi where oi.date >= '#{Date.today.strftime("%Y-%m-%d")}')
             QUERY
+        end
+
+        def select_start_on_date(o, date)
+          sql = <<-QUERY
+            select #{o.*} 
+            FROM #{o} 
+            where #{o.status} = 2 and #{o.id} in (select order_id from orderds_order_items oi where oi.date = '#{date.strftime("%Y-%m-%d")}')
+          QUERY
         end
 
       end

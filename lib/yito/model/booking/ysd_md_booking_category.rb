@@ -43,7 +43,10 @@ module Yito
         belongs_to :booking_catalog, 'BookingCatalog', :required => false
         
         include Yito::Model::Booking::SalesManagement
-        
+
+        has n, :category_classifier_terms, 'CategoryClassifierTerm', :child_key => [:category_code], :parent_key => [:code], :constraint => :destroy
+        has n, :classifier_terms, '::Yito::Model::Classifier::ClassifierTerm', :through => :category_classifier_terms, :via => :classifier_term
+
         # -------------------------------- Hooks ----------------------------------------------
 
         #
@@ -151,6 +154,38 @@ module Yito
         def self.search(from, to, days, options={})
           
           RentingSearch.search(from, to, days, options)
+
+        end
+
+        #
+        # Calcualte discount
+        #
+        def self.discount(product_price, item_id, from, to, rates_promotion_code=nil)
+
+          discount = 0
+
+          # Apply promotion code
+          if rates_promotion_code
+            case rates_promotion_code.discount_type
+              when :percentage
+                discount = product_price * (rates_promotion_code.value / 100)
+              when :amount
+                discount = rates_promotion_code.value
+            end
+          else
+            category_discount = ::Yito::Model::Booking::BookingCategoryOffer.search_offer(item_id, from, to)
+            # Apply offers
+            if category_discount
+              case category_discount.discount_type
+                when :percentage
+                  discount = product_price * (category_discount.value / 100)
+                when :amount
+                  discount = category_discount.value
+              end
+            end
+          end
+
+          return discount
 
         end
 

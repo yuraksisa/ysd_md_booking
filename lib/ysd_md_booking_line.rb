@@ -22,6 +22,9 @@ module BookingDataSystem
      belongs_to :booking, 'Booking', :child_key => [:booking_id]
      has n, :booking_line_resources, 'BookingLineResource', :constraint => :destroy 
 
+
+     # =============================== Instance methods ==================================================
+
      #
      # Exporting to json
      #
@@ -56,8 +59,18 @@ module BookingDataSystem
            item_cost_increment = 0
            deposit_cost_increment = 0
            if price_modification == 'update'
-             new_price = product.unit_price(booking.date_from, booking.days, nil, self.booking.sales_channel_code).round
-             ## TODO Apply offers
+             new_price = product.unit_price(booking.date_from, booking.days, nil, self.booking.sales_channel_code).round(0) # Make sure no decimals in price
+             ## Apply promotion code and offers
+             rates_promotion_code = if self.booking and !self.booking.promotion_code.nil?
+                                      ::Yito::Model::Rates::PromotionCode.first(promotion_code: booking.promotion_code)
+                                    else
+                                      nil
+                                    end
+             if self.booking
+               discount = ::Yito::Model::Booking::BookingCategory.discount(new_price, new_item_id, self.booking.date_from, self.booking.date_to, rates_promotion_code)
+               new_price = (new_price - discount).round(0) if discount > 0
+             end
+             ## End apply offers
              new_product_deposit = product.deposit
              item_cost_increment = new_price - old_price
              deposit_cost_increment = new_product_deposit - old_product_deposit

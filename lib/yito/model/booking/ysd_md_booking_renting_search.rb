@@ -153,29 +153,7 @@ module Yito
   		   	           product_price = item.unit_price(from, days, nil, sales_channel_code)
 
 										 # Apply promotion code or offers
-										 discount = 0
-
-										 # Apply promotion code
-										 if rates_promotion_code
-											 case rates_promotion_code.discount_type
-												 when :percentage
-													 discount = product_price * (rates_promotion_code.value / 100)
-												 when :amount
-													 discount = rates_promotion_code.value
-											 end
-										 else
-											 category_discount = ::Yito::Model::Booking::BookingCategoryOffer.search_offer(item.code, from, to)
-											 # Apply offers
-											 if category_discount
-													case category_discount.discount_type
-														when :percentage
-															discount = product_price * (category_discount.value / 100)
-														when :amount
-															discount = category_discount.value
-													end
-											 end
-										 end
-
+										 discount = ::Yito::Model::Booking::BookingCategory.discount(product_price, item.code, from, to, rates_promotion_code)
   		   	           base_price = product_price.round(0) # Make sure no decimals in prices
   		   	           price = (product_price - discount).round(0) # Make sure no decimal in prices
   		   	           deposit = item.deposit

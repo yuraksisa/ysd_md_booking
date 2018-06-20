@@ -603,7 +603,16 @@ module BookingDataSystem
        if product_lines.empty?
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
            product_customer_translation = product.translate(customer_language)
-           product_unit_cost = product.unit_price(self.date_from, self.days, nil, self.sales_channel_code)
+           product_unit_cost = product_item_cost_base = product.unit_price(self.date_from, self.days, nil, self.sales_channel_code)
+           ## Apply promotion code and offers
+           rates_promotion_code = if !self.promotion_code.nil?
+                                    ::Yito::Model::Rates::PromotionCode.first(promotion_code: self.promotion_code)
+                                  else
+                                    nil
+                                  end
+           discount = ::Yito::Model::Booking::BookingCategory.discount(product_unit_cost, item_id, self.date_from, self.date_to, rates_promotion_code)
+           product_unit_cost = (product_unit_cost - discount).round(0) if discount > 0
+           ## End apply offers
            product_deposit_cost = product.deposit
            transaction do
              # Create booking line
@@ -612,7 +621,7 @@ module BookingDataSystem
              booking_line.item_id = item_id
              booking_line.item_description = product.name
              booking_line.item_description_customer_translation = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
-             booking_line.item_unit_cost_base = product_unit_cost
+             booking_line.item_unit_cost_base = product_item_cost_base
              booking_line.item_unit_cost = product_unit_cost
              booking_line.item_cost = product_unit_cost * quantity
              booking_line.quantity = quantity

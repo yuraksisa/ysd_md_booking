@@ -160,6 +160,13 @@ module Yito
         property :price_3_step_tickets, Integer, :default => 1
         belongs_to :price_definition_3, 'Yito::Model::Rates::PriceDefinition', :required => false
 
+        # --- Classifiers
+
+        has n, :activity_classifier_terms, 'ActivityClassifierTerm', :child_key => [:activity_id], :parent_key => [:id], :constraint => :destroy
+        has n, :classifier_terms, '::Yito::Model::Classifier::ClassifierTerm', :through => :activity_classifier_terms, :via => :classifier_term
+
+        # ==================================   HOOKS   ============================================================
+
         before :create do
           if self.alias.nil? or self.alias.empty?     
             self.alias = File.join('/', UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))[0..79]
