@@ -4,7 +4,7 @@ module Yito
   module Model
     module Booking
       module Pdf
-        class PickupReturn
+        class PickupReturnV2
  
           attr_reader :from, :to, :rental_location_code, :include_journal, :product_family, :multiple_locations
 
@@ -23,10 +23,17 @@ module Yito
             returned_bookings = BookingDataSystem::Booking.return_list(from, to, rental_location_code, include_journal).map {|item| OpenStruct.new(item)}
 
             pdf = Prawn::Document.new(:page_layout => :landscape)
-            font_file = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", 
+            font_file_regular = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..",
             "fonts", "DejaVuSans.ttf"))
-            pdf.font font_file
-            
+            font_file_bold = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..",
+                                                   "fonts", "DejaVuSans-Bold.ttf"))
+
+            #pdf.font font_file
+
+            pdf.font_families.update(
+                {'DejaVuSans' => { :normal => font_file_regular, :bold => font_file_bold}})
+            pdf.font 'DejaVuSans'
+
             pdf.text "Entregas y recogidas del #{from.strftime('%d-%m-%Y')} al #{to.strftime('%d-%m-%Y')}", inline_format: true, size: 18
             pdf.move_down 20
 
@@ -62,13 +69,13 @@ module Yito
             header = []
             header << "Fecha entrega"
             header << "Días"
-            header << "Reserva"
+            header << "#"
+            header << "Cliente"
             header << "Lugar" if product_family.pickup_return_place
             header << "Producto(s)"
+            header << "Vuelo" if product_family.flight
             header << "Extra(s)"
             header << "Notas"
-            header << "Cliente"
-            header << "Vuelo" if product_family.flight
             header << "Pdte."
             header << "Oficina" if multiple_locations
             header << "Otras anotaciones" unless multiple_locations
@@ -89,7 +96,7 @@ module Yito
               date_from = booking.date_from.strftime('%d-%m-%Y')
               if product_family.time_to_from
                 date_from << ' '
-                date_from << booking.time_from
+                date_from << "<b>#{booking.time_from}</b>"
               end
               data = []
               if booking.id == '.'
@@ -100,12 +107,12 @@ module Yito
                 data << date_from
                 data << (booking.id == '.' ? '' : booking.days)
                 data << (booking.id == '.' ? '' : booking.id)
+                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.pickup_place if product_family.pickup_return_place
                 data << booking.product
+                data << booking.flight if product_family.flight
                 data << booking.extras
                 data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} #{booking.notes}"
-                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
-                data << booking.flight if product_family.flight
                 data <<  (booking.id == '.' ? '' : "%.2f" % booking.total_pending)
                 data << booking.rental_location_code if multiple_locations
                 data << '' unless multiple_locations
@@ -115,25 +122,25 @@ module Yito
               idx = idx + 1
             end
 
-            pdf.table(table_data, width: pdf.bounds.width) do |t|
+            pdf.table(table_data, {width: pdf.bounds.width, cell_style: { inline_format: true }}) do |t|
               if no_span_rows.size > 0
                 col = 0
                 t.rows(no_span_rows).column(0).style(size: 8, width: 90)
                 t.rows(no_span_rows).column(1).style(size: 8, width: 30)
-                t.rows(no_span_rows).column(2).style(size: 8, width: 50)
+                t.rows(no_span_rows).column(2).style(size: 8, width: 40)
+                t.rows(no_span_rows).column(3).style(size: 8)
                 if product_family.pickup_return_place
-                  t.rows(no_span_rows).column(3).style(size: 8) #
+                  t.rows(no_span_rows).column(4).style(size: 8) #
                   col = col + 1
                 end
-                t.rows(no_span_rows).column(3 + col).style(size: 8, width: 120)
-                t.rows(no_span_rows).column(4 + col).style(size: 8)
-                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 100)
-                t.rows(no_span_rows).column(6 + col).style(size: 8)
+                t.rows(no_span_rows).column(4 + col).style(size: 8, width: 120)
                 if product_family.flight
-                  t.rows(no_span_rows).column(7 + col).style(size: 8) #
+                  t.rows(no_span_rows).column(5 + col).style(size: 8, width: 60) #
                   col = col + 1
                 end
-                t.rows(no_span_rows).column(7 + col).style(:align => :right, size: 8, width: 60)
+                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 45)
+                t.rows(no_span_rows).column(6 + col).style(size: 8, width: 100)
+                t.rows(no_span_rows).column(7 + col).style(:align => :right, size: 8, width: 40)
                 if multiple_locations
                   t.rows(no_span_rows).column(8 + col).style(size: 8, width: 80) #
                   col = col + 1
@@ -154,12 +161,13 @@ module Yito
 
             header = []
             header << "Fecha recogida"
-            header << "Reserva"
+            header << "#"
+            header << "Cliente"
             header << "Lugar" if product_family.pickup_return_place
             header << "Producto"
+            header << "Vuelo" if product_family.flight
             header << "Extras"
             header << "Notas"
-            header << "Cliente"
             header << "Oficina" if multiple_locations
 
             table_data = []
@@ -172,13 +180,14 @@ module Yito
             colspan = 5
             colspan = colspan + 1 if product_family.pickup_return_place
             colspan = colspan + 1 if multiple_locations
+            colspan = colspan + 1 if product_family.flight
 
             returned_bookings.each do |booking|
 
               date_to = booking.date_to.strftime('%d-%m-%Y')
               if product_family.time_to_from
                 date_to << ' '
-                date_to << booking.time_to
+                date_to <<  "<b>#{booking.time_to}</b>"
               end
 
               data = []
@@ -189,11 +198,12 @@ module Yito
               else
                 data << date_to
                 data << booking.id
+                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.return_place if product_family.pickup_return_place
                 data << booking.product
+                data << booking.departure_flight if product_family.flight
                 data << booking.extras
                 data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} #{booking.notes}"
-                data << "#{booking.customer} #{booking.customer_phone} #{booking.customer_mobile_phone} #{booking.customer_email}"
                 data << booking.rental_location_code if multiple_locations
                 no_span_rows << idx
               end
@@ -201,21 +211,25 @@ module Yito
               idx = idx + 1
             end
 
-            pdf.table(table_data, width: pdf.bounds.width) do |t|
+            pdf.table(table_data, {width: pdf.bounds.width, cell_style: { inline_format: true }}) do |t|
               if no_span_rows.size > 0
                 t.rows(no_span_rows).column(0).style(size: 8, width: 90)
-                t.rows(no_span_rows).column(1).style(size: 8)
+                t.rows(no_span_rows).column(1).style(size: 8, width: 40)
+                t.rows(no_span_rows).column(2).style(size: 8, width: 100)
                 col = 0
                 if product_family.pickup_return_place
-                  t.rows(no_span_rows).column(2).style(size: 8, width: 70)
+                  t.rows(no_span_rows).column(3).style(size: 8, width: 70)
                   col = 1
                 end
-                t.rows(no_span_rows).column(2 + col).style(size: 8)
                 t.rows(no_span_rows).column(3 + col).style(size: 8)
-                t.rows(no_span_rows).column(4 + col).style(size: 8)
-                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 100)
+                if product_family.flight
+                  t.rows(no_span_rows).column(4+col).style(size: 8, width: 60)
+                  col = col + 1
+                end
+                t.rows(no_span_rows).column(4 + col).style(size: 8, width: 45)
+                t.rows(no_span_rows).column(5 + col).style(size: 8)
                 if multiple_locations
-                  t.rows(no_span_rows).columns(6 + col).style(size: 8)
+                  t.rows(no_span_rows).column(6 + col).style(size: 8)
                 end
               end
               if span_rows.size > 0

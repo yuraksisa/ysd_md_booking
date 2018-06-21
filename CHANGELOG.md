@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.112] - 2018-06-21
+### Added
+- Report pickup/return V2
+
 ## [0.4.108] - 2018-06-10
 ### Updated
 - Booking payment: deposit - total - deposit and total

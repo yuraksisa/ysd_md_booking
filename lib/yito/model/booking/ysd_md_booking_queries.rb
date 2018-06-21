@@ -1613,7 +1613,7 @@ module Yito
               end
               {id: item.id, date_from: item.date_from.to_date.to_datetime, time_from: item.time_from, pickup_place: item.pickup_place, product: product,
                status: item.status, customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
-               customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
+               customer_email: item.customer_email, flight: "#{item.flight_airport_origin} #{item.flight_company} #{item.flight_number} #{item.flight_time}",
                total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days, rental_location_code: item.rental_location_code}
             end
             
@@ -1683,7 +1683,8 @@ module Yito
               end
               {id: item.id, date_to: item.date_to.to_date.to_datetime, time_to: item.time_to, return_place: item.return_place, product: product,
                status: item.status, customer: "#{item.customer_name} #{item.customer_surname}", customer_phone: item.customer_phone, customer_mobile_phone: item.customer_mobile_phone,
-               customer_email: item.customer_email, flight: "#{item.flight_company} #{item.flight_number} #{item.flight_time}",
+               customer_email: item.customer_email, flight: "#{item.flight_airport_origin} #{item.flight_company} #{item.flight_number} #{item.flight_time}",
+               departure_flight: "#{item.flight_airport_destination} #{item.flight_company_departure} #{item.flight_number_departure} #{item.flight_time_departure}",
                total_pending: item.total_pending, extras: extras, notes: item.notes, days: item.days}
             end
 
