@@ -71,7 +71,6 @@ module Yito
             header << "Vuelo" if product_family.flight
             header << "Pdte."
             header << "Oficina" if multiple_locations
-            header << "Otras anotaciones" unless multiple_locations
 
             table_data = []
             table_data << header
@@ -108,7 +107,6 @@ module Yito
                 data << booking.flight if product_family.flight
                 data <<  (booking.id == '.' ? '' : "%.2f" % booking.total_pending)
                 data << booking.rental_location_code if multiple_locations
-                data << '' unless multiple_locations
                 no_span_rows << idx
               end
               table_data << data
@@ -136,9 +134,6 @@ module Yito
                 t.rows(no_span_rows).column(7 + col).style(:align => :right, size: 8, width: 60)
                 if multiple_locations
                   t.rows(no_span_rows).column(8 + col).style(size: 8, width: 80) #
-                  col = col + 1
-                else
-                  t.rows(no_span_rows).column(8 + col).style(size: 8, width: 80)
                   col = col + 1
                 end
               end

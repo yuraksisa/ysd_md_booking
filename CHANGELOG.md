@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.113] - 2018-06-22
+### Added
+- Error creating reservation
+
 ## [0.4.112] - 2018-06-21
 ### Added
 - Report pickup/return V2

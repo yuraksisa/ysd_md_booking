@@ -603,14 +603,14 @@ module BookingDataSystem
        if product_lines.empty?
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
            product_customer_translation = product.translate(customer_language)
-           product_unit_cost = product_item_cost_base = product.unit_price(self.date_from, self.days, nil, self.sales_channel_code)
+           product_unit_cost = product_item_cost_base = product.unit_price(self.date_from, self.days, nil, self.sales_channel_code).round(0)
            ## Apply promotion code and offers
-           rates_promotion_code = if !self.promotion_code.nil?
+           rates_promotion_code = if !self.promotion_code.nil? and !self.promotion.code.empty?
                                     ::Yito::Model::Rates::PromotionCode.first(promotion_code: self.promotion_code)
                                   else
                                     nil
                                   end
-           discount = ::Yito::Model::Booking::BookingCategory.discount(product_unit_cost, item_id, self.date_from, self.date_to, rates_promotion_code)
+           discount = ::Yito::Model::Booking::BookingCategory.discount(product_unit_cost, item_id, self.date_from, self.date_to, rates_promotion_code) || 0
            product_unit_cost = (product_unit_cost - discount).round(0) if discount > 0
            ## End apply offers
            product_deposit_cost = product.deposit
