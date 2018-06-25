@@ -67,7 +67,7 @@ module Yito
           def pickup_table(picked_up_bookings, pdf)
 
             header = []
-            header << "Fecha entrega"
+            header << "Hora"
             header << "Días"
             header << "#"
             header << "Cliente"
@@ -76,7 +76,6 @@ module Yito
             header << "Vuelo" if product_family.flight
             header << "Extra(s)"
             header << "Notas"
-            header << "Pdte."
             header << "Oficina" if multiple_locations
             header << "Otras anotaciones" unless multiple_locations
 
@@ -93,9 +92,8 @@ module Yito
             colspan = colspan + 1 if multiple_locations
 
             picked_up_bookings.each do |booking|
-              date_from = booking.date_from.strftime('%d-%m-%Y')
+              date_from = ''
               if product_family.time_to_from
-                date_from << ' '
                 date_from << "<b>#{booking.time_from}</b>"
               end
               data = []
@@ -112,8 +110,7 @@ module Yito
                 data << booking.product
                 data << booking.flight if product_family.flight
                 data << booking.extras
-                data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} #{booking.notes}"
-                data <<  (booking.id == '.' ? '' : "%.2f" % booking.total_pending)
+                data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} <b>#{booking.notes}</b>"
                 data << booking.rental_location_code if multiple_locations
                 data << '' unless multiple_locations
                 no_span_rows << idx
@@ -125,7 +122,7 @@ module Yito
             pdf.table(table_data, {width: pdf.bounds.width, cell_style: { inline_format: true }}) do |t|
               if no_span_rows.size > 0
                 col = 0
-                t.rows(no_span_rows).column(0).style(size: 8, width: 90)
+                t.rows(no_span_rows).column(0).style(size: 8, width: 50)
                 t.rows(no_span_rows).column(1).style(size: 8, width: 30)
                 t.rows(no_span_rows).column(2).style(size: 8, width: 40)
                 t.rows(no_span_rows).column(3).style(size: 8)
@@ -138,14 +135,13 @@ module Yito
                   t.rows(no_span_rows).column(5 + col).style(size: 8, width: 60) #
                   col = col + 1
                 end
-                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 45)
+                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 85)
                 t.rows(no_span_rows).column(6 + col).style(size: 8, width: 100)
-                t.rows(no_span_rows).column(7 + col).style(:align => :right, size: 8, width: 40)
                 if multiple_locations
-                  t.rows(no_span_rows).column(8 + col).style(size: 8, width: 80) #
+                  t.rows(no_span_rows).column(7 + col).style(size: 8, width: 80) #
                   col = col + 1
                 else
-                  t.rows(no_span_rows).column(8 + col).style(size: 8, width: 80)
+                  t.rows(no_span_rows).column(7 + col).style(size: 8, width: 80)
                   col = col + 1
                 end
               end
@@ -160,7 +156,7 @@ module Yito
           def return_table(returned_bookings, pdf)
 
             header = []
-            header << "Fecha recogida"
+            header << "Hora"
             header << "#"
             header << "Cliente"
             header << "Lugar" if product_family.pickup_return_place
@@ -184,9 +180,9 @@ module Yito
 
             returned_bookings.each do |booking|
 
-              date_to = booking.date_to.strftime('%d-%m-%Y')
+              date_to = ''#booking.date_to.strftime('%d-%m-%Y')
               if product_family.time_to_from
-                date_to << ' '
+                ##date_to << ' '
                 date_to <<  "<b>#{booking.time_to}</b>"
               end
 
@@ -203,7 +199,7 @@ module Yito
                 data << booking.product
                 data << booking.departure_flight if product_family.flight
                 data << booking.extras
-                data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} #{booking.notes}"
+                data << "#{BookingDataSystem.r18n.t.booking_status[booking.status]} <b>#{booking.notes}</b>"
                 data << booking.rental_location_code if multiple_locations
                 no_span_rows << idx
               end
@@ -213,23 +209,23 @@ module Yito
 
             pdf.table(table_data, {width: pdf.bounds.width, cell_style: { inline_format: true }}) do |t|
               if no_span_rows.size > 0
-                t.rows(no_span_rows).column(0).style(size: 8, width: 90)
+                t.rows(no_span_rows).column(0).style(size: 8, width: 50)
                 t.rows(no_span_rows).column(1).style(size: 8, width: 40)
-                t.rows(no_span_rows).column(2).style(size: 8, width: 100)
+                t.rows(no_span_rows).column(2).style(size: 8)
                 col = 0
                 if product_family.pickup_return_place
-                  t.rows(no_span_rows).column(3).style(size: 8, width: 70)
+                  t.rows(no_span_rows).column(3).style(size: 8, width: 100)
                   col = 1
                 end
-                t.rows(no_span_rows).column(3 + col).style(size: 8)
+                t.rows(no_span_rows).column(3 + col).style(size: 8, width: 120)
                 if product_family.flight
-                  t.rows(no_span_rows).column(4+col).style(size: 8, width: 60)
+                  t.rows(no_span_rows).column(4+col).style(size: 8, width: 80)
                   col = col + 1
                 end
-                t.rows(no_span_rows).column(4 + col).style(size: 8, width: 45)
-                t.rows(no_span_rows).column(5 + col).style(size: 8)
+                t.rows(no_span_rows).column(4 + col).style(size: 8, width: 85)
+                t.rows(no_span_rows).column(5 + col).style(size: 8, width: 70)
                 if multiple_locations
-                  t.rows(no_span_rows).column(6 + col).style(size: 8)
+                  t.rows(no_span_rows).column(6 + col).style(size: 8, width: 90)
                 end
               end
               if span_rows.size > 0

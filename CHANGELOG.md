@@ -1,5 +1,10 @@
 # Changelog
 
+
+## [0.4.114] - 2018-06-25
+### Added
+- Booking analysis
+
 ## [0.4.113] - 2018-06-22
 ### Added
 - Error creating reservation
