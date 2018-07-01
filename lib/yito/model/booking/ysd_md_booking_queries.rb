@@ -46,27 +46,6 @@ module Yito
           end
 
           #
-          # Incoming money summary
-          #
-          def incoming_money_summary(year)
-            query_strategy.incoming_money_summary(year)
-          end
-
-          #
-          # Reservations received in a year
-          #
-          def reservations_received(year)
-            query_strategy.reservations_received(year)
-          end
-
-          # 
-          # Reservations confirmed in a year
-          #
-          def reservations_confirmed(year)
-            query_strategy.reservations_confirmed(year)
-          end
-          
-          #
           # Get the number of received reservations
           #
           def count_received_reservations(year)

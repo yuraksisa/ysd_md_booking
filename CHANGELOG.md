@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.115] - 2018-07-01
+### Added
+- Category color
+### Updated
+- Refactoring analysis methods to booking analysis module
 
 ## [0.4.114] - 2018-06-25
 ### Added
