@@ -1529,6 +1529,7 @@ module Yito
           #
           # Get the reservations pending of assignation
           #
+          # Note: We can assign reservations starting or ending up to 7 days before today
           def pending_of_assignation
 
             BookingDataSystem::Booking.by_sql{ |b| [select_pending_of_assignation(b)] }.all(order: :date_from) 
@@ -1773,13 +1774,15 @@ module Yito
           private
     
           def select_pending_of_assignation(b)
-              sql = <<-QUERY
+            # We can assign reservations starting or ending up to 7 days before today
+            date = (Date.today - 7).strftime("%Y-%m-%d")
+            sql = <<-QUERY
                 select #{b.*} 
                 FROM #{b} 
                 join bookds_bookings_lines bl on bl.booking_id = #{b.id} 
                 join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
-                where #{b.status} NOT IN (1,5) and blr.booking_item_reference IS NULL and #{b.date_from} >= '#{Date.today.strftime("%Y-%m-%d")}'
-              QUERY
+                where #{b.status} NOT IN (1,5) and blr.booking_item_reference IS NULL and (#{b.date_from} >= '#{date}' or #{b.date_to} >= '#{date}')
+            QUERY
           end
 
           def select_resource_reservations(b) 

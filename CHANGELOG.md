@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.116] - 2018-07-04
+### Added
+- Pending assignation : Take into account last week confirmed reservations
+
 ## [0.4.115] - 2018-07-01
 ### Added
 - Category color
