@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.119] - 2018-07-29
+### Updated
+- Planning reassign limit
+
 ## [0.4.118] - 2018-07-28
 ### Updated
 - Resource urges query error
