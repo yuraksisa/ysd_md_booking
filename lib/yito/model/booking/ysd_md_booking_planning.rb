@@ -210,7 +210,7 @@ module Yito
             # 3. Automatically assign not assigned pending confirmation reservations
             # TODO "Not assigned confirmed"
             not_assigned = resource_occupations.select { |resource_occupation| resource_occupation.booking_item_reference.nil? } # resource_occupation.confirmed == 0
-            if not_assigned.size > 0 and not_assigned < 30 # CONTROLLED TO AVOID timeout
+            if not_assigned.size > 0 and not_assigned.size < 30 # CONTROLLED TO AVOID timeout
               automatically_assigned = []
               not_assigned.each do |not_assigned_item|
                 # Search for availability
