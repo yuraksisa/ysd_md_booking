@@ -45,19 +45,21 @@ module BookingDataSystem
      #
      # Change booking line item
      #
-     def change_item(new_item_id, price_modification='update')
+     def change_item(new_item_id, price_modification='update', assignation_review='hold')
 
        old_item_id = self.item_id
        
        if new_item_id && new_item_id != self.item_id
         if product = ::Yito::Model::Booking::BookingCategory.get(new_item_id)
-           product_customer_translation = product.translate(booking.customer_language)
+
+          product_customer_translation = product.translate(booking.customer_language)
            item_description = product.name
            item_description_customer_translation = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
            old_price = new_price = self.item_unit_cost
            old_product_deposit = new_product_deposit = self.product_deposit_unit_cost
            item_cost_increment = 0
            deposit_cost_increment = 0
+
            if price_modification == 'update'
              new_price = product.unit_price(booking.date_from, booking.days, nil, self.booking.sales_channel_code).round(0) # Make sure no decimals in price
              ## Apply promotion code and offers
@@ -75,6 +77,7 @@ module BookingDataSystem
              item_cost_increment = new_price - old_price
              deposit_cost_increment = new_product_deposit - old_product_deposit
            end
+
            # Update the booking line and the booking
            transaction do
              # Update booking line
@@ -90,6 +93,37 @@ module BookingDataSystem
                self.product_deposit_cost = self.product_deposit_unit_cost * self.quantity
              end
              self.save
+
+             # Update booking line resources : Clear or assign new resource
+             if assignation_review == 'update'
+               # Get the available stock
+               stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(self.booking.date_from,
+                                                                                                      self.booking.time_from,
+                                                                                                      self.booking.date_to,
+                                                                                                      self.booking.time_to,
+                                                                                                      new_item_id,
+                                                                                                      {
+                                                                                                        origin: 'booking',
+                                                                                                        id: self.booking.id
+                                                                                                      })
+               # Process all the line resources
+               self.booking_line_resources.each do |booking_line_resource|
+                  old_booking_item_reference = booking_line_resource.booking_item_reference
+                  p "assign_available_stock -- OLD Reference: #{old_booking_item_reference} -- category #{new_item_id} -- available_assignable: #{category_occupation[self.item_id][:available_assignable_stock].inspect}"
+
+                  # Get the first free resource
+                  new_booking_item_reference = category_occupation[self.item_id][:available_assignable_stock].first
+
+                  if !new_booking_item_reference.nil? # Assign the resource
+                    booking_line_resource.assign_resource(new_booking_item_reference)
+                    category_occupation[self.item_id][:available_assignable_stock].delete_at(0)
+                  else # Clear the assignation if there is not avaialable assignable resource
+                    booking_line_resource.clear_assignation unless old_booking_item_reference.nil?
+                  end
+
+               end
+             end
+
              # Update booking
              if item_cost_increment != 0 or deposit_cost_increment != 0
                booking.item_cost += (item_cost_increment * self.quantity)
@@ -97,6 +131,7 @@ module BookingDataSystem
                booking.calculate_cost(false, false)
                booking.save
              end
+
              # Create newsfeed
              ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
                                             action: 'change_item',

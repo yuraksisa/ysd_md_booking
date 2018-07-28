@@ -70,7 +70,37 @@ module BookingDataSystem
 
      end
 
-     # --------------------------- Reservation items management -----------------------------------------
+     # --------------------------- Resource assignation management -----------------------------------------
+
+     #
+     # Clear the assigned resource
+     #
+     def clear_assignation
+       old_resource = self.booking_item_reference
+       self.booking_item_category = nil
+       self.booking_item_reference = nil
+       self.booking_item_stock_model = nil
+       self.booking_item_stock_plate = nil
+       self.booking_item_characteristic_1 = nil
+       self.booking_item_characteristic_2 = nil
+       self.booking_item_characteristic_3 = nil
+       self.booking_item_characteristic_4 = nil
+       self.save
+       ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                action: 'clear_booking_resource',
+                                                identifier: self.booking_line.booking.id.to_s,
+                                                description: BookingDataSystem.r18n.t.booking_news_feed.clear_booking_resource(old_resource,
+                                                                                                                                self.booking_line.id,
+                                                                                                                                self.booking_line.item_id),
+                                                attributes_updated: {category: nil,
+                                                                     reference: nil,
+                                                                     stock_model: nil,
+                                                                     stock_plate: nil,
+                                                                     characteristic_1: nil,
+                                                                     characteristic_2: nil,
+                                                                     characteristic_3: nil,
+                                                                     characteristic_4: nil}.to_json)
+     end
 
      #
      # Assign a resource
@@ -91,14 +121,26 @@ module BookingDataSystem
              self.booking_item_characteristic_3 = booking_item.characteristic_3
              self.booking_item_characteristic_4 = booking_item.characteristic_4
              self.save
+             ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
+                                                      action: 'assign_booking_resource',
+                                                      identifier: self.booking_line.booking.id.to_s,
+                                                      description: BookingDataSystem.r18n.t.booking_news_feed.assign_booking_resource(self.booking_item_reference,
+                                                                                                                                      self.booking_line.id,
+                                                                                                                                      self.booking_line.item_id),
+                                                      attributes_updated: {category: self.booking_item_category,
+                                                                           reference: self.booking_item_reference,
+                                                                           stock_model: self.booking_item_stock_model,
+                                                                           stock_plate: self.booking_item_stock_plate,
+                                                                           characteristic_1: self.booking_item_characteristic_1,
+                                                                           characteristic_2: self.booking_item_characteristic_2,
+                                                                           characteristic_3: self.booking_item_characteristic_3,
+                                                                           characteristic_4: self.booking_item_characteristic_4}.to_json)
+
            end
          end
        end
 
      end
-
-     # -----------------------------------------------------------------------------------------------------------
-
 
   end
 end

@@ -1,3 +1,120 @@
+booking_business_literals:
+  business_type:
+    vehicle_rental:
+      category: Grupos
+      category_singular: Grupo
+      product: Vehículos
+      product_singular: Referencia
+      stock_model: Modelo
+      stock_reference: Matrícula
+      new_product: Nuevo grupo
+      detail_page: Página detalle grupo
+    accommodation:
+      category: Tipos de habitación
+      category_singular: Tipo de habitación
+      product: Habitaciones
+      product_singular: Número de habitación
+      stock_model: Modelo
+      stock_reference: Referencia
+      new_product: Nuevo tipo de habitación
+      detail_page: Página detalle tipo de habitación
+    ads:
+      category: Anuncios
+      category_singular: Anuncio
+      product: Productos
+      product_singular: Producto
+      stock_model: Modelo
+      stock_reference: Referencia
+      new_product: Nuevo anuncio
+      detail_page: Página detalle anuncio
+    category_resources:
+      category: Categorías
+      category_singular: Categoría
+      product: Inventario
+      product_singular: Referencia
+      stock_model: Modelo
+      stock_reference: Referencia
+      new_product: Nueva categoría
+      detail_page: Página detalle categoría
+    resources:
+      category: Productos
+      category_singular: Producto
+      product: Productos
+      product_singular: Producto
+      stock_model: Modelo
+      stock_reference: Referencia
+      new_product: Nuevo producto
+      detail_page: Página detalle producto
+    boat_charter:
+      category: Barcos
+      category_singular: Barco
+      product: Productos
+      product_singular: Producto
+      stock_model: Modelo
+      stock_reference: Referencia
+      new_product: Nuevo barco
+      detail_page: Página detalle barco
+  starting_date:
+    pickup_return_date:
+      title: Entrega/Devolución
+      pickup: Entregas
+      pickup_singular: Entrega
+      return: Devoluciones
+      return_singular: Devolución
+      date_from: Fecha de entrega
+      time_from: Hora de entrega
+      date_to: Fecha de devolución
+      time_to: Hora de devolución
+    checkin_checkout:
+      title: Check-in/Check-out
+      pickup: Check in
+      pickup_singular: Check in
+      return: Check out
+      return_singular: Check out
+      date_from: Check in
+      time_from: Hora check in
+      date_to: Check out
+      time_to: Hora check out
+    start_end:
+      title: Entrega/Devolución
+      pickup: Entregas
+      pickup_singular: Entrega
+      return: Devoluciones
+      return_singular: Devolución
+      date_from: Inicio
+      time_from: Hora de inicio
+      date_to: Fin
+      time_to: Hora de fin
+    start_end_date:
+      title: Entrega/Devolución
+      pickup: Entregas
+      pickup_singular: Entrega
+      return: Devoluciones
+      return_singular: Devolución
+      date_from: Fecha de inicio
+      time_from: Hora de inicio
+      date_to: Fecha de fin
+      time_to: Hora de fin
+    arrive_departure:
+      title: Llegadas/Salidas
+      pickup: Llegadas
+      pickup_singular: Llegada
+      return: Salidas
+      return_singular: Salida
+      date_from: Llegada
+      time_from: Hora de llegada
+      date_to: Salida
+      time_to: Hora de salida
+    arrive_departure_date:
+      title: Llegadas/Salidas
+      pickup: Llegadas
+      pickup_singular: Llegada
+      return: Salidas
+      return_singular: Salida
+      date_from: Fecha de llegada
+      time_from: Hora de llegada
+      date_to: Fecha de salida
+      time_to: Hora de salida
 booking_driver_age:
   driver_under_age_literal: Conductor %1
   driver_driving_license_literal: Conductor con %1
@@ -122,3 +239,4 @@ booking_news_feed:
   updated_customer_2_height: Altura segundo usuario %1 (ant. %2)
   updated_customer_2_weight: Peso segundo usuario %1 (ant. %2)
   assign_booking_resource: Asignado recurso %1 a la reserva (línea %2 producto %3)
+  clear_booking_resource: Desasignado recurso %1 de la reserva (línea %2 producto %3)

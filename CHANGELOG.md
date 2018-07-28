@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.117] - 2018-07-28
+### Updated
+- Refactored ysd_md_booking_queries into dashboard - occupation - occupation_extras and planning
+- Change pickup/return date-time :
+  Possibility to reassign not available products by available ones
+- Change booking line product
+  Possibility to reassign not available products by available ones
+- Booking availability :
+  - Take into account the pickup/return time, applying the time necessary to prepare the product
+  - Include the future pending reservations to avoid overbooking
+- Planning:
+  - Show future pending reservations and not assigned confirmed   
+  
+
 ## [0.4.116] - 2018-07-04
 ### Added
 - Pending assignation : Take into account last week confirmed reservations

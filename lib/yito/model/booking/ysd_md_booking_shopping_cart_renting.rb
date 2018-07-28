@@ -295,7 +295,11 @@ module Yito
 
 						# Recalculate items
 						self.items.each do |sc_item|
-							if product = BookingCategory.search(date_from, date_to, self.days,
+							if product = BookingCategory.search(date_from,
+																									time_from,
+																									date_to,
+																									time_to,
+																									self.days,
 																				   { locale: self.customer_language,
 																						        full_information: false,
 																						        product_code: sc_item.item_id,
@@ -395,27 +399,35 @@ module Yito
 						  end
 					  # Shopping cart does not contain item
 					  else 
-					  	if product = BookingCategory.search(date_from, date_to, days,{ locale: self.customer_language,
-																																									  full_information: false,
-																																									  product_code: product_code,
-																																									  web_public: false,
-																																						        sales_channel_code: self.sales_channel_code,
-																																						        apply_promotion_code: self.promotion_code ? true : false,
-																																						        promotion_code: self.promotion_code})
+					  	if product = BookingCategory.search(date_from,
+																									time_from,
+																									date_to,
+																									time_to,
+																									days,
+																					{ locale: self.customer_language,
+																									 full_information: false,
+																									 product_code: product_code,
+																									 web_public: false,
+																									 sales_channel_code: self.sales_channel_code,
+																									 apply_promotion_code: self.promotion_code ? true : false,
+																									 promotion_code: self.promotion_code})
 						  add_item(product.code, product.name, quantity,
 								   product.base_price, product.price, product.deposit)
 					    end
 					  end  
 					else
-						p "promotion_code:#{self.promotion_code}"
-					  product = BookingCategory.search(date_from, date_to, days,{ locale: self.customer_language,
-																																				       full_information: false,
-																																				       product_code: product_code,
-																																				       web_public: false,
-																																				       sales_channel_code: self.sales_channel_code,
-																																			       	 apply_promotion_code: self.promotion_code ? true : false,
-																																				       promotion_code: self.promotion_code})
-						p "product: #{product}"
+					  product = BookingCategory.search(date_from,
+																						 time_from,
+																						 date_to,
+																						 time_to,
+																						 days,
+																						 { locale: self.customer_language,
+																										  full_information: false,
+																										  product_code: product_code,
+																										  web_public: false,
+																										  sales_channel_code: self.sales_channel_code,
+																										  apply_promotion_code: self.promotion_code ? true : false,
+																										  promotion_code: self.promotion_code})
 					  # Shopping cart empty
 					  if items.size == 0
 						  add_item(product.code, product.name, quantity,

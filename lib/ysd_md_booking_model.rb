@@ -146,6 +146,10 @@ module BookingDataSystem
 
      extend BookingNotificationTemplates
      extend Yito::Model::Booking::Queries
+     extend Yito::Model::Booking::Occupation
+     extend Yito::Model::Booking::OccupationExtras
+     extend Yito::Model::Booking::Planning
+     extend Yito::Model::Booking::Dashboard
      extend Yito::Model::Finder
      
      # --------------------------  CLASS METHODS -----------------------------------------------------------
@@ -468,16 +472,19 @@ module BookingDataSystem
      def self.parse_date_time(date, time)
 
        begin
-         date_str = "#{date.strftime('%Y-%m-%d')}T#{time}:00#{date.strftime("%:z")}"
+         #date_str = "#{date.strftime('%Y-%m-%d')}T#{time}:00#{date.strftime("%:z")}"
+         date_str = "#{date.strftime('%Y-%m-%d')}T#{time}:00+00:00"
          result = DateTime.strptime(date_str,'%Y-%m-%dT%H:%M:%S%:z')
        rescue
          p "Invalid date #{date} #{time}"
          result = date
        end
 
-       return date
+       return result #date
 
      end
+
+
 
      #
      # Check if the reservation should take into account one extra day to calculate ratings
@@ -1208,17 +1215,22 @@ module BookingDataSystem
         total_deposit: total_deposit}
      end
 
+     # ----------------- Automatic resource assignation ------------------------------------------------------------
+
      #
      # Assign available stock to unassigned items
      #
      def assign_available_stock
 
-       stock_detail, category_occupation = BookingDataSystem::Booking.resources_occupation(self.date_from,
-                                                                                           self.date_to,
-                                                                                           nil,
-                                                                                           {
-                                                                                               origin: 'booking',
-                                                                                               id: self.id})
+       stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(self.date_from,
+                                                                                              self.time_from,
+                                                                                              self.date_to,
+                                                                                              self.time_to,
+                                                                                              nil,
+                                                                                              {
+                                                                                                origin: 'booking',
+                                                                                                id: self.id
+                                                                                              })
 
        p "stock_detail: #{stock_detail.inspect}"
        p "category_occupation: #{category_occupation.inspect}"
@@ -1239,6 +1251,71 @@ module BookingDataSystem
 
        end
 
+     end
+
+     #
+     # Review the assigned stock when the user changes dates
+     #
+     def review_assigned_stock
+
+       automatic_assignation = SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation', 'false').to_bool
+
+       # Search availability
+       product_search = ::Yito::Model::Booking::BookingCategory.search(self.date_from,
+                                                                       self.time_from,
+                                                                       self.date_to,
+                                                                       self.time_to,
+                                                                       self.days,
+                                                                       {
+                                                                           locale: self.customer_language,
+                                                                           full_information: true,
+                                                                           product_code: nil,
+                                                                           web_public: false,
+                                                                           sales_channel_code: self.sales_channel_code,
+                                                                           apply_promotion_code: self.promotion_code.nil? ? false : true,
+                                                                           promotion_code: self.promotion_code,
+                                                                           include_stock: true,
+                                                                           ignore_urge: {origin: 'booking', id: self.id}
+                                                                       })
+       free_resources = product_search.inject([]) do |result, item|
+         result.concat(item.resources)
+       end
+
+       p "free_resources: #{free_resources}"
+
+       self.booking_line_resources.each do |booking_line_resource|
+
+         if !booking_line_resource.booking_item_reference.nil? # Assigned resource
+           if free_resources.index(booking_line_resource.booking_item_reference).nil? # Not found
+             if product = product_search.select { |item| item.code == booking_line_resource.booking_line.item_id }.first
+               if product.availability and product.resources.size > 0
+                 if automatic_assignation
+                   p "booking : #{self.id} reassigned #{product.resources.first} instead of #{booking_line_resource.booking_item_reference}"
+                   booking_line_resource.assign_resource(product.resources.first)
+                   product.resources.delete_at(0)
+                 end
+               else
+                 booking_line_resource.clear_assignation
+                 p "booking : #{self.id} clear assignation #{booking_line_resource.booking_item_reference} -- not free resources"
+               end
+             else
+               p "booking : #{self.id} #{booking_line_resource.booking_item_reference} product #{booking_line_resource.booking_line.item_id} not found"
+             end
+           else
+             p "booking: #{self.id} kept: #{booking_line_resource.booking_item_reference}"
+           end
+         else # Not assigned resource
+           if automatic_assignation
+             if product = product_search.select { |item| item.code == booking_line_resource.booking_line.item_id }.first
+               if product.availability and product.resources.size > 0
+                 p "booking : #{self.id} assigned #{product.resources.first}"
+                 booking_line_resource.assign_resource(product.resources.first)
+                 product.resources.delete_at(0)
+               end
+             end
+           end
+         end
+       end
      end
 
      private

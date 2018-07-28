@@ -1,3 +1,78 @@
+booking_business_literals:
+  business_type:
+    vehicle_rental:
+      category: Groups
+      category_singular: Group
+      product: Vehicles
+      product_singular: Reference
+      stock_model: Model
+      stock_reference: Plate
+    accommodation:
+      category: Room types
+      category_singular: Room type
+      product: Rooms
+      product_singular: Room number
+      stock_model: Model
+      stock_reference: Reference
+    ads:
+      category: Ads
+      category_singular: Ad
+      product: Products
+      product_singular: Product
+      stock_model: Model
+      stock_reference: Reference
+    category_resources:
+      category: Categories
+      category_singular: Category
+      product: Inventory
+      product_singular: Reference
+      stock_model: Model
+      stock_reference: Reference
+    resources:
+      category: Products
+      category_singular: Product
+      product: Products
+      product_singular: Product
+      stock_model: Model
+      stock_reference: Reference
+    boat_charter:
+      category: Boats
+      category_singular: Boat
+      product: Products
+      product_singular: Product
+      stock_model: Model
+      stock_reference: Reference
+  starting_date:
+    pickup_return_date:
+      date_from: Pickup date
+      time_from: Pickup time
+      date_to: Return date
+      time_to: Return time
+    checkin_checkout:
+      date_from: Check in
+      time_from: Check in time
+      date_to: Check out
+      time_to: Check out time
+    start_end:
+      date_from: Start
+      time_from: Start time
+      date_to: End
+      time_to: End time
+    start_end_date:
+      date_from: Start date
+      time_from: Start time
+      date_to: End date
+      time_to: End time
+    arrive_departure:
+      date_from: Arrive
+      time_from: Arrive time
+      date_to: Departure
+      time_to: Departure time
+    arrive_departure_date:
+      date_from: Arrive date
+      time_from: Arrive time
+      date_to: Departure date
+      time_to: Departure time
 booking_driver_age:
   driver_under_age_literal: Driver %1
   driver_driving_license_literal: Driver %1

@@ -62,22 +62,33 @@ module Yito
   		 #
   		 # Search products, price and availability
   		 #
-			 # from   : date from
-			 # to     : date to
-			 # days   : number of days
-			 #
-			 # locale : locale to show descriptions
-			 # full_information : show stock and busy for any product
-			 # product_code : Search only one product
-			 # web_public: Include only web_public categories
-			 # sales_channel_code: The sales channel code (nil for default)
-			 # promotion_code: The promotion code
-			 # apply_promotion_code: Apply the promotion code
-			 # include_stock: Include the stock references in the result (if we want to known the free resources)
-			 # ignore_urge: It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
+			 # == Parameters:
+			 # date_from::
+			 #   The reservation starting date
+			 # time_from::
+			 #   The reservation starting time
+			 # date_to::
+			 #   The reservation ending date
+			 # time_to::
+			 #   The reservation ending time
+			 # days::
+			 #   The reservation number of days
+			 # options::
+			 #   A hash with some options
+			 #   :locale -> The locale for the translations
+			 #   :full_information -> Shows the stock information (total and available)
+			 #   :product_code -> The product code (for a specific category search)
+			 #   :web_public -> Include only web_public categories
+			 #   :sales_channel_code -> The sales channel code (nil for default)
+			 #   :promotion_code -> The promotion code
+			 #   :apply_promotion_code -> Apply the promotion code
+			 #   :include_stock -> Include the stock references in the result (if we want to known the free resources)
+			 #   :ignore_urge -> It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
 			 #              pending reservation. It's used when trying to assign resources to this reservation
-			 # 
-  		 def self.search(from, to, days, options={})
+			 # == Returns:
+			 # An array of RentingSearch items
+			 #
+  		 def self.search(date_from, time_from, date_to, time_to, days, options={})
 
 				 # Retrieve the options
 				 locale = (options.has_key?(:locale) ? options[:locale] : nil)
@@ -89,14 +100,18 @@ module Yito
 				 promotion_code = (options.has_key?(:promotion_code) ? options[:promotion_code] : nil)
 				 include_stock = (options.has_key?(:include_stock) ? options[:include_stock] : false)
 				 ignore_urge = (options.has_key?(:ignore_urge) ? options[:ignore_urge] : nil)
-				 
+
 				 # Proceed
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
   		   result = []
 
   		   # Check the 'real' occupation
-         occupation = BookingDataSystem::Booking.occupation(from, to, ignore_urge, include_stock).map do |item|
+         occupation = BookingDataSystem::Booking.categories_availability_summary(date_from, time_from,
+																														                    date_to, time_to,
+																																								nil,
+																														                    ignore_urge,
+																																								include_stock).map do |item|
 					              if include_stock
 													{item_id: item.item_id, stock: item.stock, busy: item.busy, resources: item.resources}
 												else
@@ -110,8 +125,8 @@ module Yito
          end
 
          # Check the calendar
-  		   categories_available = Availability.instance.categories_available(from, to)
-  		   categories_payment_enabled = Availability.instance.categories_payment_enabled(from, to)
+  		   categories_available = Availability.instance.categories_available(date_from, date_to)
+  		   categories_payment_enabled = Availability.instance.categories_payment_enabled(date_from, date_to)
 
 				 # Promotional code
 				 rates_promotion_code = if apply_promotion_code and promotion_code and !promotion_code.nil?
@@ -150,10 +165,10 @@ module Yito
 										 end
 
   		   	           # Get the price
-  		   	           product_price = item.unit_price(from, days, nil, sales_channel_code)
+  		   	           product_price = item.unit_price(date_from, days, nil, sales_channel_code)
 
 										 # Apply promotion code or offers
-										 discount = ::Yito::Model::Booking::BookingCategory.discount(product_price, item.code, from, to, rates_promotion_code)
+										 discount = ::Yito::Model::Booking::BookingCategory.discount(product_price, item.code, date_from, date_to, rates_promotion_code)
   		   	           base_price = product_price.round(0) # Make sure no decimals in prices
   		   	           price = (product_price - discount).round(0) # Make sure no decimal in prices
   		   	           deposit = item.deposit
@@ -166,7 +181,8 @@ module Yito
 											 busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
 										   available = (available && (stock > busy))
 										 else
-											 busy = 0
+											 #busy = 0
+											 busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
 										 end
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 

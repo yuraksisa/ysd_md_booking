@@ -10,18 +10,22 @@ module Yito
         include Singleton
                 
         #
-        # Check the availability
+        # Check the categories calendar to control "free sales / stop sales"
+        #
+        # == Parameters:
+        # from::
+        #   The starting date
+        # to::
+        #   The ending date
+        # == Returns:
+        # An array of String that represents available category codes
         #
   	  	def categories_available(from, to)
 
-          categories_with_calendar = ::Yito::Model::Booking::BookingCategory.all(active: true).select { |cat| not cat.calendar.nil? }
-
-          calendars = categories_with_calendar.map { |cat| {:code => cat.code, :calendar => cat.calendar.id} }
-
-          no_available = ::Yito::Model::Calendar::EventType.first(:name => 'not_available')
+          not_available_event_type = ::Yito::Model::Calendar::EventType.first(:name => 'not_available')
 
           condition = Conditions::JoinComparison.new('$and',
-           [Conditions::Comparison.new('event_type', '$eq', no_available),
+           [Conditions::Comparison.new('event_type', '$eq', not_available_event_type),
             Conditions::JoinComparison.new('$or', 
               [Conditions::JoinComparison.new('$and', 
                  [Conditions::Comparison.new('from','$lte', from),
@@ -42,17 +46,25 @@ module Yito
             ),
             ]
           )
+          not_available_calendars = Set.new(condition.build_datamapper(Yito::Model::Calendar::Event).all.map { |item| item.calendar.id }).to_a
 
-          not_available = Set.new(condition.build_datamapper(Yito::Model::Calendar::Event).all.map { |item| item.calendar.id }).to_a
-
-          calendars.select! { |cal| not_available.index(cal[:calendar]) == nil }
+          categories_with_calendar = ::Yito::Model::Booking::BookingCategory.all(active: true).select { |cat| not cat.calendar.nil? }
+          calendars = categories_with_calendar.map { |cat| {:code => cat.code, :calendar => cat.calendar.id} }
+          calendars.select! { |cal| not_available_calendars.index(cal[:calendar]) == nil }
           calendars.map { |cal| cal[:code] }
-          #calendars - not_available
 
   	  	end	
 
         #
         # Check the categories that allow payment on a date range
+        #
+        # == Parameters:
+        # from::
+        #   The starting date
+        # to::
+        #   The ending date
+        # == Returns:
+        # An array of String that represents available category codes
         #
         def categories_payment_enabled(from, to)
 

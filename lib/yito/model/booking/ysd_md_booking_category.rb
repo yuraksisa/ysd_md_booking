@@ -31,6 +31,7 @@ module Yito
         property :sort_order, Integer, :default => 0
         property :deposit, Decimal, :scale => 2, :precision => 10, :default => 0
         property :capacity, Integer, :default => 0
+        property :capacity_children, Integer, :default => 0
         property :active, Boolean, :default => true
         property :web_public, Boolean, :default => true
         property :alias, String, :length => 80
@@ -47,6 +48,9 @@ module Yito
 
         has n, :category_classifier_terms, 'CategoryClassifierTerm', :child_key => [:category_code], :parent_key => [:code], :constraint => :destroy
         has n, :classifier_terms, '::Yito::Model::Classifier::ClassifierTerm', :through => :category_classifier_terms, :via => :classifier_term
+
+        has n, :booking_categories_sales_channels, 'BookingCategoriesSalesChannel', :child_key => [:booking_category_code], :parent_key => [:code], :constraint => :destroy
+        #has n, :sales_channels, 'Yito::Model::SalesChannel::SalesChannel', :through => :booking_categories_sales_channels, :via => :sales_channel
 
         # -------------------------------- Hooks ----------------------------------------------
 
@@ -131,10 +135,14 @@ module Yito
         # Search for products (availability and categories)
         #
         # == Parameters:
-        # from::
+        # date_from::
         #   The reservation starting date
-        # to::
+        # time_from::
+        #   The reservation starting time
+        # date_to::
         #   The reservation ending date
+        # time_to::
+        #   The reservation ending time
         # days::
         #   The reservation number of days
         # options::
@@ -152,9 +160,9 @@ module Yito
         # == Returns:
         # An array of RentingSearch items
         #
-        def self.search(from, to, days, options={})
+        def self.search(date_from, time_from, date_to, time_to, days, options={})
           
-          RentingSearch.search(from, to, days, options)
+          RentingSearch.search(date_from, time_from, date_to, time_to, days, options)
 
         end
 
@@ -203,10 +211,14 @@ module Yito
         # Search for products (availability and categories)
         #
         # == Parameters:
-        # from::
+        # date_from::
         #   The reservation starting date
-        # to::
+        # time_fom::
+        #   The reservation starting time
+        # date_to::
         #   The reservation ending date
+        # time_to::
+        #   The reservation ending time
         # days::
         #   The reservation number of days
         # options::
@@ -219,8 +231,8 @@ module Yito
         # == Returns:
         # An array of RentingSearch items
         #        
-        def search(from, to, days, options={})
-          RentingSearch.search(from, to, days, options.merge({product_code: self.code}))          
+        def search(date_from, time_from, date_to, time_to, days, options={})
+          RentingSearch.search(date_from, time_from, date_to, time_to, days, options.merge({product_code: self.code}))
         end
 
         #

@@ -26,6 +26,10 @@ require 'yito/model/booking/ysd_md_booking_shopping_cart_item_resource_renting'
 require 'yito/model/booking/ysd_md_booking_activity_queries_mysql'
 require 'yito/model/booking/ysd_md_booking_activity_queries_postgresql'
 require 'yito/model/booking/ysd_md_booking_activity_queries_sqlite'
+require 'yito/model/booking/ysd_md_booking_dashboard'
+require 'yito/model/booking/ysd_md_booking_planning'
+require 'yito/model/booking/ysd_md_booking_occupation'
+require 'yito/model/booking/ysd_md_booking_occupation_extras'
 require 'yito/model/booking/ysd_md_booking_queries'
 require 'yito/model/booking/ysd_md_booking_queries_mysql'
 require 'yito/model/booking/ysd_md_booking_queries_postgresql'
@@ -94,18 +98,50 @@ module BookingDataSystem
     end
   end
 
+  #
+  # Get the pickup places
+  #
   def self.pickup_places
 
-    if place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
+    pickup_return_place_def_id = SystemConfiguration::Variable.get_value('booking.pickup_return_place_definition','0').to_i
+
+    if pickup_return_place_def_id > 0
+      place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.get(pickup_return_place_def_id)
+    end
+
+    if place_definition.nil?
+      place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
+    end
+
+    if place_definition
       pickup_places = ::Yito::Model::Booking::PickupReturnPlace.all(:conditions => {:place_definition_id => place_definition.id, :is_pickup => true}, :order => [:sort_order, :name.asc])
+    else
+      pickup_places = []
     end
 
   end
 
+  #
+  # Get the return places
+  #
   def self.return_places
-    if place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
-      return_places = ::Yito::Model::Booking::PickupReturnPlace.all(conditions: {:place_definition_id => place_definition.id, :is_return => true}, order: [:sort_order, :name.asc])
+
+    pickup_return_place_def_id = SystemConfiguration::Variable.get_value('booking.pickup_return_place_definition','0').to_i
+
+    if pickup_return_place_def_id > 0
+      place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.get(pickup_return_place_def_id)
     end
+
+    if place_definition.nil?
+      place_definition = ::Yito::Model::Booking::PickupReturnPlaceDefinition.first
+    end
+
+    if place_definition
+      return_places = ::Yito::Model::Booking::PickupReturnPlace.all(conditions: {:place_definition_id => place_definition.id, :is_return => true}, order: [:sort_order, :name.asc])
+    else
+      return_places = []
+    end
+
   end
 
   def self.pickup_return_timetable

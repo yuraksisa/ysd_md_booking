@@ -6,16 +6,18 @@ module Yito
 			#
   	  class RentingExtraSearch
 
-  	     attr_reader :code, :name, :description, 
+  	     attr_reader :code, :name, :description, :photo_path, :photo_full_path,
   	     			 :max_quantity, :stock, :unit_price
   	     
-  	     def initialize(code, name, description,
+  	     def initialize(code, name, description, photo_path, photo_full_path,
   	     				max_quantity, unit_price,
 				        stock, busy, available)
 
   	     	@code = code
   	     	@name = name
   	     	@description = description
+					@photo_path = photo_path
+					@photo_full_path = photo_full_path
   	     	@max_quantity = [max_quantity, stock-busy].min
   	     	@unit_price = unit_price
 					@stock = stock
@@ -29,6 +31,8 @@ module Yito
   		 	   {code: @code,
   		 	   	name: @name,
   		 	   	description: @description,
+						photo_path: @photo_path,
+						photo_full_path: @photo_full_path,
   		 	   	max_quantity: @max_quantity,
 						stock: @stock,
   		 	   	unit_price: @unit_price
@@ -44,6 +48,8 @@ module Yito
   		 # Search extras and price
   		 #
   		 def self.search(from, to, days, locale=nil, extra_code=nil)
+
+				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
 				 # Check the 'real' occupation
 				 occupation = BookingDataSystem::Booking.extras_occupation(from, to).map do |item|
@@ -64,8 +70,20 @@ module Yito
   		   			   order: [:code]).map do |item|
 
 					      # Translate the extra
-					      item = item.translate(locale) if locale 
-					 
+					      item = item.translate(locale) if locale
+
+								# Get the photos
+								photo = item.album ? item.album.thumbnail_medium_url : nil
+								full_photo = item.album ? item.album.image_url : nil
+								photo_path = nil
+								if photo
+									photo_path = (photo.match(/^https?:/) ? photo : File.join(domain, photo))
+								end
+								full_photo_path = nil
+								if full_photo
+									full_photo_path = (full_photo.match(/^https?:/) ? full_photo : File.join(domain, full_photo))
+								end
+
   		   				# Get the unit price
   		   				unit_price = item.unit_price(from, days)
 
@@ -75,7 +93,7 @@ module Yito
 								available = (stock > busy)
 
   		   				# Build the search result
-  		   				RentingExtraSearch.new(item.code, item.name, item.description,
+  		   				RentingExtraSearch.new(item.code, item.name, item.description, photo_path, full_photo_path,
   		   					item.max_quantity, unit_price, stock, busy, available)
   		   			end
 
