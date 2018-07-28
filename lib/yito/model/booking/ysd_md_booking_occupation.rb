@@ -764,7 +764,7 @@ module Yito
                   extra_condition = "and r.booking_item_reference = '#{options[:reference]}' "
                   extra_pr_condition = "and prl.booking_item_reference = '#{options[:reference]}' "
                 elsif options[:mode].to_sym == :product and options.has_key?(:product)
-                  extra_condition = "and item_id = '#{options[:product]}' "
+                  extra_condition = "and l.item_id = '#{options[:product]}' "
                   extra_pr_condition = "and prl.booking_item_category = '#{options[:product]}' "
                 end
               end

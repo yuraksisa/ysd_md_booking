@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.118] - 2018-07-28
+### Updated
+- Resource urges query error
+
 ## [0.4.117] - 2018-07-28
 ### Updated
 - Refactored ysd_md_booking_queries into dashboard - occupation - occupation_extras and planning
