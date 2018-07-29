@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.123] - 2018-07-29
+### Updated
+- Planning auto assign
+- Manual/Auto pending of confirmation management in settings
+
+## [0.4.122] - 2018-07-29
+### Updated
+- Planning auto assign
+
+## [0.4.121] - 2018-07-29
+### Updated
+- Planning auto assign
+
 ## [0.4.120] - 2018-07-29
 ### Updated
 - Planning reassign limit

@@ -152,7 +152,13 @@ module Yito
           #                 :occupation_assigned : # of assigned urges
           #                 :available_stock     : # stock not assigned [id's of the items]
           #                 :available_assignable_stock : # stock not assigned and available [id's of the items]
-          #                 :assignation_pending : #
+          #                 :assignation_pending : Original assignation pending
+          #                 :pending_confirmation_assignation_pending : Original assignation pending that corresponds a pending confirmation urges
+          #                 :confirmed_assignation_pending : Original assignation pending that corresponds a confirmed urges
+          #                 :pending_confirmation_assignation_pending_after_preassign : Pending of confirmation urges not reassigned
+          #                 :confirmed_assignation_pending_after_preassign : Confirmed urges not reassigned
+          #                 :pending_confirmation_reassigned : Pending of confirmation urges reassigned
+          #                 :confirmed_reassigned : Confirmed urges reassigned
           #
           #
           def categories_availability(date_from, time_from, date_to, time_to, category=nil, ignore_urge=nil)
@@ -300,7 +306,7 @@ module Yito
                   ignore_urge.has_key?(:origin) and ignore_urge.has_key?(:id) and
                   ignore_urge[:origin] == resource_urge.origin and
                   ignore_urge[:id] == resource_urge.id)
-                p "Ignored urge by params : #{ignore_urge.inspect}"
+                p "categories_availability. Ignored urge by params : #{ignore_urge.inspect}"
               else
                 urge_date_time_from = parse_date_time_from(resource_urge.date_from, resource_urge.time_from)
                 urge_date_time_to = parse_date_time_to(resource_urge.date_to, resource_urge.time_to)
@@ -309,7 +315,7 @@ module Yito
                 # - If the urge starts <hours of cadency> after the search date time to, the urge does not affect resource availability
                 if urge_date_time_to < (date_time_from - Rational(hours_cadency,24)) or
                    urge_date_time_from > (date_time_to + Rational(hours_cadency,24))
-                  p "Ignore urge by dates: #{resource_urge.id} [ #{urge_date_time_from} - #{urge_date_time_to} vs #{(date_time_from - Rational(hours_cadency,24))} - #{(date_time_to + Rational(hours_cadency,24))} ]"
+                  p "categories_availability. Ignore urge by dates: #{resource_urge.id} [ #{urge_date_time_from} - #{urge_date_time_to} vs #{(date_time_from - Rational(hours_cadency,24))} - #{(date_time_to + Rational(hours_cadency,24))} ]"
                 else
                   # The urge has an assigned stock resource
                   if resource_urge.booking_item_reference
@@ -339,6 +345,8 @@ module Yito
             #
             # 4. Try to automatically assign stock to assignation pending resource_urges
             #
+            automatic_management_pending_reservations = SystemConfiguration::Variable.get_value('booking.assignation.automatically_manage_pending_of_confirmation', 'true').to_bool
+
             required_categories.each do |required_category_key, required_category_value|
 
               required_categories[required_category_key][:original_total] = required_categories[required_category_key][:total]
@@ -346,9 +354,16 @@ module Yito
 
               # Clones the assignation pending resource urges (because we are going to manipulate it)
               assignation_pending_sources = required_category_value[:assignation_pending].clone
-              p "Checking assignation_pending. Category=#{required_category_key}.Total pending:#{assignation_pending_sources.size}"
-              assignation_pending_sources.each_with_index do |assignation_pending_source, index|
-                p "assignation_pending_source(#{index}):#{assignation_pending_source.inspect}"
+              p "categories_availability. Checking assignation_pending. Category=#{required_category_key}. Total pending:#{assignation_pending_sources.size}"
+
+              assignation_pending_sources.sort {|x,y| x.confirmed <=> y.confirmed}.each_with_index do |assignation_pending_source, index|
+
+                p "categories_availability. Assignation pending source #{assignation_pending_source}"
+
+                # Avoid pending of confirmation reservations if the system does not manages automatically
+                next if !automatic_management_pending_reservations and assignation_pending_source.confirmed == 0
+
+                p "categories_availability. assignation_pending_source(#{index}):#{assignation_pending_source.inspect}"
                 # Build date from and date to
                 pending_date_from = parse_date_time_from(assignation_pending_source.date_from,
                                                          assignation_pending_source.time_from)
@@ -374,7 +389,7 @@ module Yito
                         pending_date_to < (element_date_from - Rational(hours_cadency,24)) ||
                             pending_date_from > (element_date_to + Rational(hours_cadency,24))
                       end
-                      p "checked(#{index}).Reference:#{item_reference}.possible=#{free_assignations}-from:#{assignation_pending_source.date_from.strftime('%Y-%m-%d')}--to:#{assignation_pending_source.date_to.strftime('%Y-%m-%d')}"
+                      p "categories_availability. Checked(#{index}). Reference:#{item_reference}. possible=#{free_assignations}-from:#{pending_date_from}--to:#{pending_date_to}"
                       free_assignations
                     else
                       false # Reservations in requested date range overlapped
@@ -399,6 +414,8 @@ module Yito
                     stock_detail[candidate_item_reference][:estimation] << assignation_pending_source
                   end
                   assignation_pending_source.preassigned_item_reference = candidate_item_reference
+                else
+                  p "categories_availability. Impossible to preassign #{assignation_pending_source.id}-#{assignation_pending_source.id2}"
                 end
 
               end
@@ -434,7 +451,13 @@ module Yito
                                          available_stock: available_stock, # Array of available stock item references
                                          available_assignable_stock: available_assignable_stock, # Array of available and assignable stock item references
                                          automatically_preassigned_stock: automatically_preassigned_stock, # Array of automatically pre-assigned stock item references
-                                         assignation_pending: required_category_value[:original_assignation_pending]})
+                                         assignation_pending: required_category_value[:original_assignation_pending],
+                                         pending_confirmation_assignation_pending: required_category_value[:original_assignation_pending].select { |item| item.confirmed == 0},
+                                         confirmed_assignation_pending: required_category_value[:original_assignation_pending].select { |item| item.confirmed == 1},
+                                         pending_confirmation_assignation_pending_after_preassign: required_category_value[:assignation_pending].select { |item| item.confirmed == 0 },
+                                         confirmed_assignation_pending_after_preassign: required_category_value[:assignation_pending].select { |item| item.confirmed == 1 },
+                                         pending_confirmation_reassigned: required_category_value[:reassigned_assignation_pending].select {|item| item.confirmed == 0},
+                                         confirmed_reassigned: required_category_value[:reassigned_assignation_pending].select {|item| item.confirmed == 1} })
 
             end
 

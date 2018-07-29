@@ -207,33 +207,134 @@ module Yito
             query = resources_occupation_query(date_from, date_to, options)
             resource_occupations = repository.adapter.select(query)
 
-            # 3. Automatically assign not assigned pending confirmation reservations
-            # TODO "Not assigned confirmed"
-            not_assigned = resource_occupations.select { |resource_occupation| resource_occupation.booking_item_reference.nil? } # resource_occupation.confirmed == 0
-            if not_assigned.size > 0 and not_assigned.size < 30 # CONTROLLED TO AVOID timeout
-              automatically_assigned = []
-              not_assigned.each do |not_assigned_item|
-                # Search for availability
-                stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(not_assigned_item.date_from,
-                                                                                                       not_assigned_item.time_from,
-                                                                                                       not_assigned_item.date_to,
-                                                                                                       not_assigned_item.time_to,
-                                                                                                       not_assigned_item.item_id,
-                                                                                                       {
-                                                                                                           origin: not_assigned_item.origin,
-                                                                                                           id: not_assigned_item.id
-                                                                                                       })
-                # Check if there is an assignable stock
-                assignable_stock = category_occupation[not_assigned_item.item_id][:available_assignable_stock] - automatically_assigned
-                # Assign it
-                unless assignable_stock.empty?
-                  booking_item_reference = assignable_stock.first
-                  not_assigned_item.booking_item_reference = booking_item_reference
-                  not_assigned_item.requested_item_id = not_assigned_item.item_id
-                  not_assigned_item.auto_assigned_item_reference = 1
-                  automatically_assigned << booking_item_reference
-                end
+            # 3. Automatically assign not assigned reservations
+            automatic_management_pending_reservations = SystemConfiguration::Variable.get_value('booking.assignation.automatically_manage_pending_of_confirmation', 'true').to_bool
 
+            if automatic_management_pending_reservations
+
+              # Select not assigned reservations
+              not_assigned = resource_occupations.select { |resource_occupation| resource_occupation.booking_item_reference.nil? } # resource_occupation.confirmed == 0
+
+              if not_assigned.size > 0 and not_assigned.size < 50 # CONTROLLED TO AVOID timeout
+
+                hours_cadency = SystemConfiguration::Variable.get_value('booking.assignation_hours_return_pickup','2').to_i
+                automatically_assigned = [] # Hold automatically assigned during the process
+
+                not_assigned.each do |not_assigned_item|
+
+                  # Build date-time
+                  not_assigned_item_date_time_from = BookingDataSystem::Booking.parse_date_time_from(not_assigned_item.date_from, not_assigned_item.time_from)
+                  not_assigned_item_date_time_to = BookingDataSystem::Booking.parse_date_time_to(not_assigned_item.date_to, not_assigned_item.time_to)
+
+                  #p "planning. Pre-assignation: #{not_assigned_item.origin}--#{not_assigned_item.id}--#{not_assigned_item.id2}--#{not_assigned_item_date_time_from}--#{not_assigned_item_date_time_to}"
+
+                  # 1. Search for resources
+                  resources = ::Yito::Model::Booking::BookingItem.all(conditions: {category_code: not_assigned_item.item_id}).map { |resource| resource.reference }
+
+                  # 2. Search for the confirmed resource urges (for the not_assigned_item dates)
+                  urge_query_date_from = not_assigned_item.date_from
+                  urge_query_date_to = not_assigned_item.date_to
+
+                  if not_assigned_item.time_from.split(':').first.to_i <= 2
+                    if date_from.is_a?Date or date_from.is_a?DateTime
+                      urge_query_date_from = date_from - 1
+                    else
+                      urge_query_date_from = Date.parse(date_from) - 1
+                    end
+                  end
+
+                  if not_assigned_item.time_to.split(':').first.to_i >= 22
+                    if date_to.is_a?Date or date_to.is_a?DateTime
+                      urge_query_date_to = date_to + 1
+                    else
+                      urge_query_date_to = Date.parse(date_to) + 1
+                    end
+                  end
+
+                  urge_options = {mode: :product, product: not_assigned_item.item_id}
+
+                  resource_urges = BookingDataSystem::Booking.resource_urges(urge_query_date_from,
+                                                                             urge_query_date_to,
+                                                                             urge_options)
+
+                  # Select the resource_urges that matches the dates of the not_assigned_item
+                  resource_urges.select! do |resource_urge|
+                    resource_urge_date_time_from = BookingDataSystem::Booking.parse_date_time_from(resource_urge.date_from, resource_urge.time_from)
+                    resource_urge_date_time_to = BookingDataSystem::Booking.parse_date_time_to(resource_urge.date_to, resource_urge.time_to)
+                    #
+                    #          not_assigned_item_date_time_from          not_assigned_item_date_time_to
+                    #                          |                                    |
+                    #                          |------------------------------------|
+                    #                     2018-08-07 10:00                   2018-08-12 20:00
+                    #  ----------------|                                               |---------------------------------
+                    #         resource_urge_date_to            REJECT                  resource_urge_date_from
+                    #
+                    #  if the date_to is more than               OR                    if the date_from is more than
+                    #  2 hours sooner then the assigned                                2 hours later than the assigned
+                    #
+                    reject = ( resource_urge_date_time_to < (not_assigned_item_date_time_from - Rational(hours_cadency,24)) or  # SOONER
+                               resource_urge_date_time_from > (not_assigned_item_date_time_to + Rational(hours_cadency,24))     # LATER
+                             )
+                    result = !reject
+                    #p "planning. select_urge: #{resource_urge_date_time_from}--#{resource_urge_date_time_to} == #{not_assigned_item_date_time_from} #{not_assigned_item_date_time_to} -- RESULT: #{result}"
+                    result
+                  end
+
+                  resource_urges.map! { |resource_urge| resource_urge.booking_item_reference}.uniq!
+
+                  # 3. Build free resources
+                  free_resources = resources - resource_urges
+                  p "free_resources_tmp: #{free_resources.inspect}"
+                  # Remove the resources that have been automatically assigned during the process
+                  free_resources.delete_if do |item|
+                    overlapped = automatically_assigned.select do |automatically_assigned_item|
+                                    if automatically_assigned_item[:item_reference] != item
+                                      false
+                                    else
+                                       #
+                                       #                                  not_assigned_item_date_time_from          not_assigned_item_date_time_to
+                                       #                                                |                                    |
+                                       #                                                |------------------------------------|
+                                       #                                         2018-08-07 10:00                   2018-08-12 20:00
+                                       #  -----------------------------------------|                                                |---------------------------------
+                                       #  automatically_assigned_item[:date_time_to]                                                automatically_assigned_item[:date_time_from]
+                                       #
+                                       #                                                                NOT OVERLAPPED
+                                       #
+                                       #  if the date_to is more than                                     OR                        if the date_from is more than
+                                       #  2 hours sooner then the assigned                                                          2 hours later than the assigned
+                                       #
+                                       not_overlapped = (
+                                                         automatically_assigned_item[:date_time_to] < (not_assigned_item_date_time_from + Rational(hours_cadency,24)) or # SOONER
+                                                         automatically_assigned_item[:date_time_from] > (not_assigned_item_date_time_to + Rational(hours_cadency,24))    # LATER
+                                                        )
+                                       result = !not_overlapped
+                                       #p "planning. overlapped: #{automatically_assigned_item[:date_time_from]}--#{automatically_assigned_item[:date_time_to]} == #{not_assigned_item_date_time_from} #{not_assigned_item_date_time_to} -- RESULT: #{result}"
+                                       result
+                                     end
+                    end
+                    overlapped.size > 0
+                  end
+                  #p "free_resources: #{free_resources.inspect}"
+
+                  # 4. Assign the first free resource
+                  unless free_resources.empty?
+                    booking_item_reference = free_resources.first
+                    not_assigned_item.booking_item_reference = booking_item_reference
+                    not_assigned_item.requested_item_id = not_assigned_item.item_id
+                    not_assigned_item.auto_assigned_item_reference = 1
+                    automatically_assigned << {
+                                               item_reference: booking_item_reference,
+                                               date_from: not_assigned_item.date_from,
+                                               time_from: not_assigned_item.time_from,
+                                               date_time_from: BookingDataSystem::Booking.parse_date_time_from(not_assigned_item.date_from,not_assigned_item.time_from),
+                                               date_to: not_assigned_item.date_to,
+                                               time_to: not_assigned_item.time_to,
+                                               date_time_to: BookingDataSystem::Booking.parse_date_time_from(not_assigned_item.date_to,not_assigned_item.time_to)
+                                               }
+                  end
+
+                end
               end
             end
 
@@ -243,7 +344,7 @@ module Yito
               item.date_to = item.date_to.strftime('%Y-%m-%d')
             end
 
-            p "resource_occupations:#{resource_occupations.inspect}"
+            #p "resource_occupations:#{resource_occupations.inspect}"
 
             # 5. Build the results
             {references: references_hash, result: resource_occupations}
