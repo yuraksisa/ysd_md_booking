@@ -65,6 +65,7 @@ booking_business_literals:
       time_from: Hora de entrega
       date_to: Fecha de devolución
       time_to: Hora de devolución
+      date_to_greater_than_validation: La fecha de devolución no puede ser anterior que la fecha de entrega
     checkin_checkout:
       title: Check-in/Check-out
       pickup: Check in
@@ -75,6 +76,7 @@ booking_business_literals:
       time_from: Hora check in
       date_to: Check out
       time_to: Hora check out
+      date_to_greater_than_validation: La fecha de check-out no puede ser anterior que fecha de check-in
     start_end:
       title: Entrega/Devolución
       pickup: Entregas
@@ -85,6 +87,7 @@ booking_business_literals:
       time_from: Hora de inicio
       date_to: Fin
       time_to: Hora de fin
+      date_to_greater_than_validation: La fecha de fin no puede ser anterior que la fecha de inicio
     start_end_date:
       title: Entrega/Devolución
       pickup: Entregas
@@ -95,6 +98,7 @@ booking_business_literals:
       time_from: Hora de inicio
       date_to: Fecha de fin
       time_to: Hora de fin
+      date_to_greater_than_validation: La fecha de fin no puede ser anterior que la fecha de inicio
     arrive_departure:
       title: Llegadas/Salidas
       pickup: Llegadas
@@ -105,6 +109,7 @@ booking_business_literals:
       time_from: Hora de llegada
       date_to: Salida
       time_to: Hora de salida
+      date_to_greater_than_validation: La fecha de salida no puede ser anterior que la fecha de llegada
     arrive_departure_date:
       title: Llegadas/Salidas
       pickup: Llegadas
@@ -115,6 +120,7 @@ booking_business_literals:
       time_from: Hora de llegada
       date_to: Fecha de salida
       time_to: Hora de salida
+      date_to_greater_than_validation: La fecha de salida no puede ser anterior que la fecha de llegada
 booking_driver_age:
   driver_under_age_literal: Conductor %1
   driver_driving_license_literal: Conductor con %1

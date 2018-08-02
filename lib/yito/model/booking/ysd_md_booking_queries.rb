@@ -106,6 +106,22 @@ module Yito
           end
 
           #
+          # Started reservations
+          # ---------------------------------------------------------------------------------------------------------
+          #
+          # Started reservations in a date interval
+          #
+          #
+          def finances_started_reservations(date_from, date_to)
+
+            repository.adapter.select(query_finances_started_reservations, date_from, date_to).sort do |x,y|
+              comp = x.date_from <=> y.date_from
+              comp.zero? ? Time.parse(x.time_from) <=> Time.parse(y.time_from) : comp
+            end
+
+          end
+
+          #
           # Finished reservations
           # ---------------------------------------------------------------------------------------------------------
           #
@@ -120,7 +136,7 @@ module Yito
             end
 
           end
-
+          
           # -------------------------- Pickup / Delivery ------------------------------------------------------------
           
           #
@@ -574,13 +590,30 @@ module Yito
           end
 
           #
+          # Retrive the started reservations between on a range of dates 
+          #
+          def query_finances_started_reservations
+
+            query = <<-QUERY
+              select b.id, booking_item_stock_model, booking_item_stock_plate, b.driver_name, b.driver_surname,
+                     b.date_from, b.time_from, b.date_to, b.time_to, b.notes, b.total_cost
+              from bookds_bookings b
+              join bookds_bookings_lines bl on bl.booking_id = b.id
+              join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
+              where b.date_from >= ? and b.date_from <= ? and b.status NOT IN (1,5)
+              order by b.id;
+            QUERY
+
+          end
+          
+          #
           # Retrive the returned products on a range of dates 
           #
           def query_finances_finished_reservations
 
             query = <<-QUERY
               select b.id, booking_item_stock_model, booking_item_stock_plate, b.driver_name, b.driver_surname,
-                     b.date_from, b.time_from, b.date_to, b.time_to, b.total_cost
+                     b.date_from, b.time_from, b.date_to, b.time_to, b.notes, b.total_cost
               from bookds_bookings b
               join bookds_bookings_lines bl on bl.booking_id = b.id
               join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id

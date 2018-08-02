@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.124] - 2018-08-02
+### Added
+- New pickup report
+
 ## [0.4.123] - 2018-07-29
 ### Updated
 - Planning auto assign
