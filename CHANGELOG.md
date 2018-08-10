@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.125] - 2018-08-10
+### Updated
+- Available attribute in product search taking into account stock_control
+
 ## [0.4.124] - 2018-08-02
 ### Added
 - New pickup report

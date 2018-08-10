@@ -5,19 +5,21 @@ module Yito
 			# Search products, prices and availability
 			#
   	  class RentingSearch	
-  		 attr_accessor :code, :name, :short_description, :description, :photo, :full_photo,
+  		 attr_accessor :code, :name, :short_description, :description, :stock_control, :photo, :full_photo,
   		 			   :base_price, :price, :deposit, 
-  		 			   :availability, :stock, :busy, :payment_availibility, :include_stock, :resources
+  		 			   :availability, :stock, :busy, :available, :payment_availibility, :include_stock, :resources
 
-  		 def initialize(code, name, short_description, description,
+  		 def initialize(code, name, short_description, description, stock_control,
   		 	              photo, full_photo,
   		 				        base_price=0, price=0, deposit=0,
-  		 				        availability=false,stock=0, busy=0, payment_availibility=false, full_information=false,
+  		 				        availability=false, stock=0, busy=0, available=0, 
+											payment_availibility=false, full_information=false,
 											include_stock=false, resources=nil)
   		   @code = code
   		   @name = name
   		   @short_description = short_description
   		   @description = description
+				 @stock_control = stock_control
   		   @photo = photo
   		   @full_photo = full_photo
   		   @base_price = base_price
@@ -26,6 +28,7 @@ module Yito
   		   @availability = availability
   		   @stock = stock
   		   @busy = busy
+				 @available = available
   		   @payment_availibility = payment_availibility
 				 @full_information = full_information
 				 @include_stock = include_stock
@@ -45,6 +48,7 @@ module Yito
   		 		  price: @price,
   		 		  deposit: @deposit,
   		 		  availability: @availability,
+						available: @available,
   		 		  payment_availibility: @payment_availibility,
 					 }
 
@@ -176,20 +180,25 @@ module Yito
   		   	           # Get the availability
   		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
 										 resources = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:resources] : nil
-  		   	           available = categories_available.include?(item.code) # Calendar lock
+  		   	           availability = categories_available.include?(item.code) # Calendar lock
 										 if item.stock_control # Stock
 											 busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
-										   available = (available && (stock > busy))
-										 else
+											 availability = (availability && (stock > busy))
+											 available = [(stock - busy), 0].max
+										 else # No stock control - [All are available]
 											 #busy = 0
 											 busy = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:busy] : 0
+											 available = stock
 										 end
   		   	           payment_available = categories_payment_enabled.include?(item.code)
 
   		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
-  		   	           	         photo_path, full_photo_path,
-  		   	           					 base_price, price, deposit, 
-  		   	           					 available, stock, busy, payment_available, full_information, include_stock, resources)
+																			 item.stock_control,
+																			 photo_path, full_photo_path,
+																			 base_price, price, deposit,
+																			 availability, stock, busy, available,
+																			 payment_available, full_information, include_stock, 
+																			 resources)
   		   	        end
 
   		   return product_code.nil? ? result : result.first
