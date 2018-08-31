@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.126] - 2018-08-31
+### Updated
+- Reservations by resource: include booking_item_reference
+- Translations and context literals for reservations by resource
+
 ## [0.4.125] - 2018-08-10
 ### Updated
 - Available attribute in product search taking into account stock_control

@@ -7,6 +7,9 @@ booking_business_literals:
       product_singular: Reference
       stock_model: Model
       stock_reference: Plate
+      resource_reservations_menu: Vehicle reservations
+      resource_reservations_title: Vehicle reservations report
+      resource_reservations_search: Plate or reference
     accommodation:
       category: Room types
       category_singular: Room type
@@ -14,6 +17,9 @@ booking_business_literals:
       product_singular: Room number
       stock_model: Model
       stock_reference: Reference
+      resource_reservations_menu: Room reservations
+      resource_reservations_title: Room reservations report
+      resource_reservations_search: Room number
     ads:
       category: Ads
       category_singular: Ad
@@ -21,6 +27,9 @@ booking_business_literals:
       product_singular: Product
       stock_model: Model
       stock_reference: Reference
+      resource_reservations_menu: Products reservations
+      resource_reservations_title: Product reservations report
+      resource_reservations_search: Reference
     category_resources:
       category: Categories
       category_singular: Category
@@ -28,6 +37,9 @@ booking_business_literals:
       product_singular: Reference
       stock_model: Model
       stock_reference: Reference
+      resource_reservations_menu: Products reservations
+      resource_reservations_title: Product reservations report
+      resource_reservations_search: Reference
     resources:
       category: Products
       category_singular: Product
@@ -35,6 +47,9 @@ booking_business_literals:
       product_singular: Product
       stock_model: Model
       stock_reference: Reference
+      resource_reservations_menu: Products reservations
+      resource_reservations_title: Product reservations report
+      resource_reservations_search: Reference
     boat_charter:
       category: Boats
       category_singular: Boat
@@ -42,6 +57,9 @@ booking_business_literals:
       product_singular: Product
       stock_model: Model
       stock_reference: Reference
+      resource_reservations_menu: Boat reservations
+      resource_reservations_title: Boat reservations report
+      resource_reservations_search: Reference
   starting_date:
     pickup_return_date:
       date_from: Pickup date

@@ -9,6 +9,9 @@ booking_business_literals:
       stock_reference: Matrícula
       new_product: Nuevo grupo
       detail_page: Página detalle grupo
+      resource_reservations_menu: Reservas por vehículo
+      resource_reservations_title: Listado de reservas por vehículo
+      resource_reservations_search: Matrícula o referencia
     accommodation:
       category: Tipos de habitación
       category_singular: Tipo de habitación
@@ -18,6 +21,9 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo tipo de habitación
       detail_page: Página detalle tipo de habitación
+      resource_reservations_menu: Reservas por habitación
+      resource_reservations_title: Listado de reservas por habitación
+      resource_reservations_search: Número de habitación
     ads:
       category: Anuncios
       category_singular: Anuncio
@@ -27,6 +33,9 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo anuncio
       detail_page: Página detalle anuncio
+      resource_reservations_menu: Reservas por referencia
+      resource_reservations_title: Listado de reservas por referencia
+      resource_reservations_search: Referencia
     category_resources:
       category: Categorías
       category_singular: Categoría
@@ -36,6 +45,9 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nueva categoría
       detail_page: Página detalle categoría
+      resource_reservations_menu: Reservas por referencia
+      resource_reservations_title: Listado de reservas por referencia
+      resource_reservations_search: Referencia
     resources:
       category: Productos
       category_singular: Producto
@@ -45,6 +57,9 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo producto
       detail_page: Página detalle producto
+      resource_reservations_menu: Reservas por producto
+      resource_reservations_title: Listado de reservas por producto
+      resource_reservations_search: Referencia
     boat_charter:
       category: Barcos
       category_singular: Barco
@@ -54,6 +69,9 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo barco
       detail_page: Página detalle barco
+      resource_reservations_menu: Reservas por barco
+      resource_reservations_title: Listado de reservas por barco
+      resource_reservations_search: Referencia
   starting_date:
     pickup_return_date:
       title: Entrega/Devolución

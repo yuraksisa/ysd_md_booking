@@ -79,10 +79,10 @@ module Yito
           #
           # Get the detail of the reservations that involve a resource
           #
-          def resource_reservations(date_from, date_to, stock_plate)
+          def resource_reservations(date_from, date_to, stock_plate_or_reference)
 
              BookingDataSystem::Booking.by_sql { |b| 
-               [select_resource_reservations(b), stock_plate, 
+               [select_resource_reservations(b), stock_plate_or_reference, stock_plate_or_reference,
                  date_from, date_from, 
                  date_to, date_to,
                  date_from, date_to,
@@ -522,7 +522,7 @@ module Yito
                 join bookds_bookings_lines bl on bl.booking_id = #{b.id} 
                 join bookds_bookings_lines_resources blr on blr.booking_line_id = bl.id
                 where #{b.status} NOT IN (1,5) and
-                      blr.booking_item_stock_plate = ? and 
+                      (blr.booking_item_stock_plate = ? or blr.booking_item_reference = ?) and 
                      ((#{b.date_from} <= ? and #{b.date_to} >= ?) or 
                       (#{b.date_from} <= ? and #{b.date_to} >= ?) or 
                       (#{b.date_from} = ? and #{b.date_to} = ?) or
