@@ -382,7 +382,7 @@ module BookingDataSystem
     def notify_request_to_customer(force_send=false)
 
       if force_send || send_notifications?
-        unless customer_email.empty?
+        if !customer_email.nil? and !customer_email.empty?
 
           # Try to get sales channel template
           bcn_template = nil
@@ -422,7 +422,7 @@ module BookingDataSystem
     def notify_request_to_customer_pay_now(force_send=false)
 
       if force_send || send_notifications?
-        unless customer_email.empty?
+        if !customer_email.nil? and !customer_email.empty?
 
           # Try to get sales channel template
           bcn_template = nil
@@ -464,7 +464,7 @@ module BookingDataSystem
     def notify_customer(force_send=false)
 
       if force_send || send_notifications?
-        unless customer_email.empty?
+        if !customer_email.nil? and !customer_email.empty?
 
           # Try to get sales channel template
           bcn_template = nil
@@ -500,7 +500,7 @@ module BookingDataSystem
     def notify_customer_payment_enabled(force_send=false)
 
       if force_send || send_notifications?
-        unless customer_email.empty?
+        if !customer_email.nil? and !customer_email.empty?
 
           # Try to get sales channel template
           bcn_template = nil
