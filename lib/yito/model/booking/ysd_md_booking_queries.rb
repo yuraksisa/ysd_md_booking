@@ -15,6 +15,23 @@ module Yito
           # Reservation customers
           # ---------------------------------------------------------------------------------------------------------
           #
+          def customers(sales_channel_code=nil)
+            query = <<-QUERY
+              select trim(upper(customer_surname)) as customer_surname, 
+                     trim(upper(customer_name)) as customer_name, 
+                     lower(customer_email) as customer_email, 
+                     customer_phone
+              FROM bookds_bookings 
+              group by trim(upper(customer_surname)), trim(upper(customer_name)), lower(customer_email), customer_phone
+              order by customer_surname, customer_name
+            QUERY
+            repository.adapter.select(query)
+          end  
+
+          #
+          # Reservation customers
+          # ---------------------------------------------------------------------------------------------------------
+          #
           # Search customers (and groups by surname, name, phone, email) from bookings
           #
           def customer_search(search_text, options={})
