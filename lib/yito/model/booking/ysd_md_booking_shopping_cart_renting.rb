@@ -263,14 +263,14 @@ module Yito
 						self.return_place = return_place
 						self.custom_return_place = custom_return_place
 						if self.custom_return_place
+							self.return_place_customer_translation = return_place
+						else
 							if booking_return_place = PickupReturnPlace.first(name: return_place)
 								booking_return_place_translation = booking_return_place.translate(customer_language)
 								self.return_place_customer_translation = (booking_return_place_translation.nil? ? return_place : booking_return_place_translation.name)
 							else
 								self.return_place_customer_translation = return_place
 							end
-						else
-							self.return_place_customer_translation = return_place
 						end
 
             # Number of adults and children

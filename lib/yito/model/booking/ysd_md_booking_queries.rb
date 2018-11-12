@@ -16,16 +16,44 @@ module Yito
           # ---------------------------------------------------------------------------------------------------------
           #
           def customers(sales_channel_code=nil)
+            
+            conditions = ""
+            query_parameters = []
+            
+            if sales_channel_code.nil? or sales_channel_code.empty?
+              conditions << "(sales_channel_code IS NULL or sales_channel_code = '')" 
+            elsif sales_channel_code != 'all'
+              conditions << "(sales_channel_code = ?)" 
+              query_parameters << sales_channel_code 
+            end
+
+            conditions.prepend("where ") unless conditions.empty?
+
             query = <<-QUERY
               select trim(upper(customer_surname)) as customer_surname, 
                      trim(upper(customer_name)) as customer_name, 
                      lower(customer_email) as customer_email, 
-                     customer_phone
+                     customer_phone,
+                     sales_channel_code,
+                     locds_address.street as street,
+                     locds_address.number as number,
+                     locds_address.complement as complement,
+                     locds_address.city as city,
+                     locds_address.state as state,
+                     locds_address.zip as zip,
+                     locds_address.country as country       
               FROM bookds_bookings 
-              group by trim(upper(customer_surname)), trim(upper(customer_name)), lower(customer_email), customer_phone
+              left join locds_address on locds_address.id = bookds_bookings.driver_address_id
+              #{conditions}
+              group by trim(upper(customer_surname)), trim(upper(customer_name)), lower(customer_email), customer_phone,
+                    sales_channel_code, street, number, complement, city, state, zip, country
               order by customer_surname, customer_name
             QUERY
-            repository.adapter.select(query)
+            if query_parameters.empty?
+              repository.adapter.select(query)
+            else
+              repository.adapter.select(query, query_parameters)
+            end  
           end  
 
           #
