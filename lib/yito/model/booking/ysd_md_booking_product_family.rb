@@ -27,7 +27,8 @@ module Yito
         property :product_type, Enum[:category_of_resources, :resource], :default => :category_of_resources
         # Business type
         property :business_type, Enum[:vehicle_rental, :accommodation, :boat_charter, :ads,
-                                      :category_resources, :resources, :tours, :activities], default: :vehicle_rental
+                                      :category_resources, :resources, :tours, :activities,
+                                      :vehicle_rental_resources], default: :vehicle_rental
         # Business activity
         property :business_activity, Enum[:rental, :activities_tours, :both_rental_activities_tours], default: :rental
         # Frontend

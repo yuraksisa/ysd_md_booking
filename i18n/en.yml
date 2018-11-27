@@ -60,6 +60,16 @@ booking_business_literals:
       resource_reservations_menu: Boat reservations
       resource_reservations_title: Boat reservations report
       resource_reservations_search: Reference
+    vehicle_rental_resources:
+      category: Vehicles
+      category_singular: Vehicles
+      product: Vehicles
+      product_singular: Reference
+      stock_model: Model
+      stock_reference: Plate
+      resource_reservations_menu: Vehicle reservations
+      resource_reservations_title: Vehicle reservations report
+      resource_reservations_search: Plate or reference      
   starting_date:
     pickup_return_date:
       date_from: Pickup date

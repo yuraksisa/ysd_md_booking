@@ -71,8 +71,8 @@ module Yito
           end
           # Setup depending on the type
           if type == :resource
-            stock_control = true
-            stock = 1
+            self.stock_control = true
+            self.stock = 1
           end
           # Create the calendar associated to the category
           if calendar.nil?

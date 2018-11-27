@@ -12,6 +12,10 @@ booking_business_literals:
       resource_reservations_menu: Reservas por vehículo
       resource_reservations_title: Listado de reservas por vehículo
       resource_reservations_search: Matrícula o referencia
+      resource_characteristic_1: Combustible
+      resource_characteristic_2: Fecha matriculación
+      resource_characteristic_3: Km. adquisición
+      resource_characteristic_4: Color
     accommodation:
       category: Tipos de habitación
       category_singular: Tipo de habitación
@@ -72,6 +76,22 @@ booking_business_literals:
       resource_reservations_menu: Reservas por barco
       resource_reservations_title: Listado de reservas por barco
       resource_reservations_search: Referencia
+    vehicle_rental_resources:
+      category: Vehículos
+      category_singular: Vehículo
+      product: Vehículos
+      product_singular: Referencia
+      stock_model: Modelo
+      stock_reference: Matrícula
+      new_product: Nuevo vehículo
+      detail_page: Página detalle vehículo
+      resource_reservations_menu: Reservas por vehículo
+      resource_reservations_title: Listado de reservas por vehículo
+      resource_reservations_search: Matrícula o referencia
+      resource_characteristic_1: Combustible
+      resource_characteristic_2: Fecha matriculación
+      resource_characteristic_3: Km. adquisición
+      resource_characteristic_4: Color            
   starting_date:
     pickup_return_date:
       title: Entrega/Devolución
