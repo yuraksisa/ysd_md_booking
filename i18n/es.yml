@@ -9,6 +9,8 @@ booking_business_literals:
       stock_reference: Matrícula
       new_product: Nuevo grupo
       detail_page: Página detalle grupo
+      physical_organization: Almacén/campa
+      logical_organization: Oficina/sucursal
       resource_reservations_menu: Reservas por vehículo
       resource_reservations_title: Listado de reservas por vehículo
       resource_reservations_search: Matrícula o referencia
@@ -25,9 +27,15 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo tipo de habitación
       detail_page: Página detalle tipo de habitación
+      physical_organization: Almacén/campa
+      logical_organization: Oficina/sucursal            
       resource_reservations_menu: Reservas por habitación
       resource_reservations_title: Listado de reservas por habitación
       resource_reservations_search: Número de habitación
+      resource_characteristic_1: Característica 1
+      resource_characteristic_2: Característica 2
+      resource_characteristic_3: Característica 3
+      resource_characteristic_4: Característica 4     
     ads:
       category: Anuncios
       category_singular: Anuncio
@@ -37,9 +45,15 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo anuncio
       detail_page: Página detalle anuncio
+      physical_organization: Organización física
+      logical_organization: Organización lógica  
       resource_reservations_menu: Reservas por referencia
       resource_reservations_title: Listado de reservas por referencia
       resource_reservations_search: Referencia
+      resource_characteristic_1: Característica 1
+      resource_characteristic_2: Característica 2
+      resource_characteristic_3: Característica 3
+      resource_characteristic_4: Característica 4         
     category_resources:
       category: Categorías
       category_singular: Categoría
@@ -47,11 +61,17 @@ booking_business_literals:
       product_singular: Referencia
       stock_model: Modelo
       stock_reference: Referencia
-      new_product: Nueva categoría
-      detail_page: Página detalle categoría
+      new_product: Nuevo anuncio
+      detail_page: Página detalle anuncio
+      physical_organization: Organización física
+      logical_organization: Organización lógica       
       resource_reservations_menu: Reservas por referencia
       resource_reservations_title: Listado de reservas por referencia
       resource_reservations_search: Referencia
+      resource_characteristic_1: Característica 1
+      resource_characteristic_2: Característica 2
+      resource_characteristic_3: Característica 3
+      resource_characteristic_4: Característica 4        
     resources:
       category: Productos
       category_singular: Producto
@@ -61,9 +81,15 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo producto
       detail_page: Página detalle producto
+      physical_organization: Organización física
+      logical_organization: Organización lógica        
       resource_reservations_menu: Reservas por producto
       resource_reservations_title: Listado de reservas por producto
       resource_reservations_search: Referencia
+      resource_characteristic_1: Característica 1
+      resource_characteristic_2: Característica 2
+      resource_characteristic_3: Característica 3
+      resource_characteristic_4: Característica 4        
     boat_charter:
       category: Barcos
       category_singular: Barco
@@ -73,9 +99,17 @@ booking_business_literals:
       stock_reference: Referencia
       new_product: Nuevo barco
       detail_page: Página detalle barco
+      physical_organization: Organización física
+      logical_organization: Organización lógica        
+      physical_organization: Almacén/campa
+      logical_organization: Oficina/sucursal      
       resource_reservations_menu: Reservas por barco
       resource_reservations_title: Listado de reservas por barco
       resource_reservations_search: Referencia
+      resource_characteristic_1: Característica 1
+      resource_characteristic_2: Característica 2
+      resource_characteristic_3: Característica 3
+      resource_characteristic_4: Característica 4       
     vehicle_rental_resources:
       category: Vehículos
       category_singular: Vehículo
@@ -85,6 +119,8 @@ booking_business_literals:
       stock_reference: Matrícula
       new_product: Nuevo vehículo
       detail_page: Página detalle vehículo
+      physical_organization: Almacén/campa
+      logical_organization: Oficina/sucursal      
       resource_reservations_menu: Reservas por vehículo
       resource_reservations_title: Listado de reservas por vehículo
       resource_reservations_search: Matrícula o referencia

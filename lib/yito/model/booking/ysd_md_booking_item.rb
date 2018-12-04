@@ -34,6 +34,7 @@ module Yito
         property :planning_order, Integer, :default => 0   
         belongs_to :category, 'Yito::Model::Booking::BookingCategory', 
           :child_key => [:category_code], :parent_key => [:code]
+        belongs_to :rental_storage, 'RentalStorage', child_key: [:rental_storage_id], parent_key: [:id], required: false  
 
         #
         # Override the save method to check the category
@@ -68,11 +69,29 @@ module Yito
           repository.adapter.select(query, new_reference, reference)
         end
 
+        #
+        # Exporting to json
+        #
+        def as_json(options={})
+
+          if options.has_key?(:only)
+            super(options)
+          else
+            relationships = options[:relationships] || {}
+            relationships.store(:rental_storage, {})
+            super(options.merge({:relationships => relationships}))
+          end
+
+        end
+
         private
 
         def check_category!
           if self.category and (not self.category.saved?) and loaded = BookingCategory.get(self.category.code)
             self.category = loaded
+          end
+          if self.rental_storage and (not self.rental_storage.saved?) and loaded = RentalStorage.get(self.rental_storage.id)
+            self.rental_storage = loaded
           end
         end
 

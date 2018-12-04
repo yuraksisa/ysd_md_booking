@@ -77,6 +77,9 @@ module Yito
         property :stock_model, Boolean, :default => false
         property :stock_plate, Boolean, :default => false
         property :starting_date, Enum[:pickup_return_date, :checkin_checkout, :start_end_date, :start_end, :arrive_departure_date, :arrive_departure], default: :pickup_return_date
+        property :multiple_locations, Boolean, default: false # Logical organization
+        property :multiple_storages, Boolean, default: false  # Phisical organization
+        property :pax, Boolean, default: false # Pax
 
         # Characteristics (up to 4 characteristics for inventory items)
         property :stock_characteristic_1, String, length: 80

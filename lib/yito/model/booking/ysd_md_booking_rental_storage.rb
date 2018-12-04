@@ -5,20 +5,19 @@ module Yito
   module Model
     module Booking
       #
-      # It represents a rent location (working center)
+      # It represents a rental storage or campa
       #
-      class RentalLocation
+      class RentalStorage
         include DataMapper::Resource
         extend  Yito::Model::Finder
 
-        storage_names[:default] = 'bookds_rental_locations'
+        storage_names[:default] = 'bookds_rental_storages'
 
-        property :code, String, length: 50, key: true
+        property :id, Serial
         property :name, String, length: 255
 
-        belongs_to :rental_storage, 'RentalStorage', child_key: [:rental_storage_id], parent_id: [:id], required: false
-        has n, :rental_location_users, 'RentalLocationUser', child_key: [:rental_location_code], parent_key: [:code]
         belongs_to :address, 'LocationDataSystem::Address', :required => false 
+        has n, :rental_locations, 'RentalLocation', child_key: [:rental_storage_id], parent_key: [:id]
 
         #
         # Exporting to json
@@ -29,7 +28,7 @@ module Yito
             super(options)
           else
             relationships = options[:relationships] || {}
-            relationships.store(:rental_location_users, {})
+            relationships.store(:rental_locations, {})
             super(options.merge({:relationships => relationships}))
           end
 

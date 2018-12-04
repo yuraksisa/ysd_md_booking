@@ -302,6 +302,14 @@ module Yito
           warnings << BookingDataSystem.r18n.t.price_definition_empty if price_definition.nil?
           return warnings
         end
+
+        def resource
+          if type == :resource
+             booking_item = BookingItem.first(category_code: self.code)
+          else
+             nil
+          end     
+        end
         
         alias_method :ready, :ready?
         
@@ -319,6 +327,7 @@ module Yito
             methods << :ready
             methods << :ready_warnings
             methods << :defined_stock
+            methods << :resource if type == :resource 
             super(options.merge({:relationships => relationships, :methods => methods}))
           end
 
