@@ -16,6 +16,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "prawn"
   s.add_runtime_dependency "prawn-table"
 
+  s.add_runtime_dependency "r18n-core"
+
   s.add_runtime_dependency "ysd_service_postal"  
   s.add_runtime_dependency "ysd_md_business_events" # Business events
   s.add_runtime_dependency "ysd_md_calendar"
@@ -26,10 +28,15 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "ysd_md_location"
   s.add_runtime_dependency "ysd_md_translation"
   s.add_runtime_dependency "ysd_md_rates"
-      
+  s.add_runtime_dependency "ysd_md_photo_gallery"
+  s.add_runtime_dependency "ysd_plugin_sales_channels"
+  s.add_runtime_dependency "dm-sql-finders"
+
   s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rspec-its"
   s.add_development_dependency "dm-sqlite-adapter" # Model testing using sqlite
+  s.add_development_dependency "factory_bot"
+  s.add_development_dependency "database_cleaner"
 
 end

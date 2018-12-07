@@ -204,8 +204,7 @@ module Yito
             references, references_hash = planning_resources(date_from, date_to, options)
 
             # 2. Get the reservations
-            query = resources_occupation_query(date_from, date_to, options)
-            resource_occupations = repository.adapter.select(query)
+            resource_occupations = resource_urges(date_from, date_to, options)
 
             # 3. Automatically assign not assigned reservations
             automatic_management_pending_reservations = SystemConfiguration::Variable.get_value('booking.assignation.automatically_manage_pending_of_confirmation', 'true').to_bool

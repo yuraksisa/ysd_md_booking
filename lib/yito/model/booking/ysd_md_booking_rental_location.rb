@@ -16,7 +16,7 @@ module Yito
         property :code, String, length: 50, key: true
         property :name, String, length: 255
 
-        belongs_to :rental_storage, 'RentalStorage', child_key: [:rental_storage_id], parent_id: [:id], required: false
+        belongs_to :rental_storage, 'RentalStorage', child_key: [:rental_storage_id], parent_key: [:id], required: false
         has n, :rental_location_users, 'RentalLocationUser', child_key: [:rental_location_code], parent_key: [:code]
         belongs_to :address, 'LocationDataSystem::Address', :required => false 
 

@@ -289,6 +289,7 @@ module BookingDataSystem
                           flight_time_departure: shopping_cart.flight_time_departure,
                           created_by_manager: created_by_manager,
                           sales_channel_code: shopping_cart.sales_channel_code,
+                          rental_location_code: shopping_cart.rental_location_code,
                           destination_accommodation: shopping_cart.destination_accommodation)
            booking.init_user_agent_data(user_agent_data) unless user_agent_data.nil?
            booking.save
@@ -441,7 +442,9 @@ module BookingDataSystem
      def self.parse_date_time_from(date, time=nil)
 
        parsing_time = if time.nil? or time.empty?
-                        "10:00"
+                        # "10:00"
+                        @@product_family ||= ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+                        @@product_family ? @@product_family.time_start : '10:00' 
                       else 
                         time
                       end 
@@ -454,10 +457,10 @@ module BookingDataSystem
      #
      def self.parse_date_time_to(date, time=nil)
 
-       @@product_family ||= ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
-
        parsing_time = if time.nil? or time.empty?
-                        @@product_family and @@product_family.cycle_of_24_hours ? "10:00" : "20:00"
+                        #@@product_family and @@product_family.cycle_of_24_hours ? "10:00" : "20:00"
+                        @@product_family ||= ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+                        @@product_family ? @@product_family.time_end : "20:00"
                       else 
                         time
                       end 
@@ -469,6 +472,10 @@ module BookingDataSystem
      # Parses date and time
      #
      def self.parse_date_time(date, time)
+
+       date = Date.strptime(date[0,10],'%Y-%m-%d') if date.is_a?String
+       #time = '10:00' if time.nil? or (time.is_a?String and time.empty?)
+       #p "date: #{date} time:#{time}"
 
        begin
          #date_str = "#{date.strftime('%Y-%m-%d')}T#{time}:00#{date.strftime("%:z")}"
@@ -552,7 +559,7 @@ module BookingDataSystem
        if multiple_rental_locations
          if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: booking.pickup_place) and
             !_pickup_place.rental_location.nil?
-           booking.rental_location_code = _pickup_place.rental_location.code
+           booking.rental_location_code = _pickup_place.rental_location.code if booking.rental_location_code.nil?
          end
        end
      end
@@ -1221,7 +1228,8 @@ module BookingDataSystem
      #
      def assign_available_stock
 
-       stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(self.date_from,
+       stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(self.rental_location_code,
+                                                                                              self.date_from,
                                                                                               self.time_from,
                                                                                               self.date_to,
                                                                                               self.time_to,
@@ -1260,7 +1268,8 @@ module BookingDataSystem
        automatic_assignation = SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation', 'false').to_bool
 
        # Search availability
-       product_search = ::Yito::Model::Booking::BookingCategory.search(self.date_from,
+       product_search = ::Yito::Model::Booking::BookingCategory.search(self.rental_location_code,
+                                                                       self.date_from,
                                                                        self.time_from,
                                                                        self.date_to,
                                                                        self.time_to,

@@ -51,7 +51,9 @@ module Yito
 
         has n, :booking_categories_sales_channels, 'BookingCategoriesSalesChannel', :child_key => [:booking_category_code], :parent_key => [:code], :constraint => :destroy
         #has n, :sales_channels, 'Yito::Model::SalesChannel::SalesChannel', :through => :booking_categories_sales_channels, :via => :sales_channel
-
+        
+        belongs_to :rental_location, 'RentalLocation', child_key: [:rental_location_code], parent_key: [:code], required: false 
+          
         # -------------------------------- Hooks ----------------------------------------------
 
         #
@@ -135,6 +137,8 @@ module Yito
         # Search for products (availability and categories)
         #
         # == Parameters:
+        # rental_location_code::
+        #   The rental location code          
         # date_from::
         #   The reservation starting date
         # time_from::
@@ -156,13 +160,15 @@ module Yito
         #   :apply_promotion_code -> Apply the promotion code
         #   :include_stock -> Include the stock references in the result (if we want to known the free resources)
         #   :ignore_urge -> It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
-        #              pending reservation. It's used when trying to assign resources to this reservation
+        #                   pending reservation. It's used when trying to assign resources to this reservation
         # == Returns:
         # An array of RentingSearch items
         #
-        def self.search(date_from, time_from, date_to, time_to, days, options={})
+        def self.search(rental_location_code, date_from, time_from, date_to, time_to, days, options={})
           
-          RentingSearch.search(date_from, time_from, date_to, time_to, days, options)
+          p "rental_location_code: #{rental_location_code} date_from: #{date_from}"  
+
+          RentingSearch.search(rental_location_code, date_from, time_from, date_to, time_to, days, options)
 
         end
 
@@ -211,6 +217,8 @@ module Yito
         # Search for products (availability and categories)
         #
         # == Parameters:
+        # rental_location_code::
+        #   The rental location code  
         # date_from::
         #   The reservation starting date
         # time_fom::
@@ -231,8 +239,8 @@ module Yito
         # == Returns:
         # An array of RentingSearch items
         #        
-        def search(date_from, time_from, date_to, time_to, days, options={})
-          RentingSearch.search(date_from, time_from, date_to, time_to, days, options.merge({product_code: self.code}))
+        def search(rental_location_code, date_from, time_from, date_to, time_to, days, options={})
+          RentingSearch.search(rental_location_code, date_from, time_from, date_to, time_to, days, options.merge({product_code: self.code}))
         end
 
         #

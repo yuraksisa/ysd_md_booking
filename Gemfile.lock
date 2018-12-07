@@ -1,23 +1,43 @@
 PATH
+  remote: ../ysd_md_configuration
+  specs:
+    ysd_md_configuration (0.2.10)
+      data_mapper (= 1.2.0)
+      dm-ysd-encrypted
+      ysd_md_yito
+
+PATH
+  remote: ../ysd_md_rates
+  specs:
+    ysd_md_rates (0.2.27)
+      data_mapper (= 1.2.0)
+      json
+      ysd_md_yito
+
+PATH
   remote: .
   specs:
-    ysd_md_booking (0.4.126)
+    ysd_md_booking (0.4.130)
       data_mapper (= 1.2.0)
       delayed_job
       delayed_job_data_mapper
       dm-observer
+      dm-sql-finders
       json
       prawn
       prawn-table
+      r18n-core
       ysd_md_audit
       ysd_md_business_events
       ysd_md_calendar
       ysd_md_cms
       ysd_md_location
       ysd_md_payment
+      ysd_md_photo_gallery
       ysd_md_rates
       ysd_md_translation
       ysd_md_yito
+      ysd_plugin_sales_channels
       ysd_service_postal
 
 GEM
@@ -36,7 +56,7 @@ GEM
       bcrypt (>= 3.1.3)
     bson (4.3.0)
     builder (3.0.4)
-    concurrent-ruby (1.0.5)
+    concurrent-ruby (1.1.3)
     data_mapper (1.2.0)
       dm-aggregates (~> 1.2.0)
       dm-constraints (~> 1.2.0)
@@ -49,6 +69,7 @@ GEM
       dm-validations (~> 1.2.0)
     data_objects (0.10.17)
       addressable (~> 2.1)
+    database_cleaner (1.7.0)
     delayed_job (4.1.5)
       activesupport (>= 3.0, < 5.3)
     delayed_job_data_mapper (1.0.0)
@@ -83,6 +104,9 @@ GEM
       json (~> 1.6)
       json_pure (~> 1.6)
       multi_json (~> 1.0)
+    dm-sql-finders (0.0.3)
+      dm-core (>= 1.2.0)
+      dm-do-adapter (>= 1.2.0)
     dm-sqlite-adapter (1.2.0)
       dm-do-adapter (~> 1.2.0)
       do_sqlite3 (~> 0.10.6)
@@ -100,16 +124,23 @@ GEM
       uuidtools (~> 2.1)
     dm-validations (1.2.0)
       dm-core (~> 1.2.0)
-    dm-ysd-encrypted (0.1.2)
+    dm-ysd-encrypted (0.1.3)
     do_postgres (0.10.17)
       data_objects (= 0.10.17)
     do_sqlite3 (0.10.17)
       data_objects (= 0.10.17)
+    factory_bot (4.11.1)
+      activesupport (>= 3.0.0)
+    faraday (0.15.3)
+      multipart-post (>= 1.2, < 3)
     fastercsv (1.5.5)
+    httparty (0.16.2)
+      multi_xml (>= 0.5.2)
     i18n (0.9.5)
       concurrent-ruby (~> 1.0)
     json (1.8.6)
     json_pure (1.8.6)
+    jwt (2.1.0)
     macaddr (1.7.1)
       systemu (~> 2.6.2)
     mail (2.7.0)
@@ -118,7 +149,12 @@ GEM
     mongo (2.6.2)
       bson (>= 4.3.0, < 5.0.0)
     multi_json (1.13.1)
+    multi_xml (0.6.0)
+    multipart-post (2.0.0)
+    mustermann (1.0.3)
     pdf-core (0.7.0)
+    picasa (0.9.1)
+      httparty
     pony (1.12)
       mail (>= 2.0)
     prawn (2.2.2)
@@ -127,10 +163,12 @@ GEM
     prawn-table (0.2.2)
       prawn (>= 1.3.0, < 3.0.0)
     public_suffix (3.0.3)
-    rack (1.6.10)
-    rack-protection (1.5.5)
+    r18n-core (3.2.0)
+    rack (2.0.6)
+    rack-protection (2.0.4)
       rack
     rake (12.3.1)
+    rmagick (2.13.4)
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)
@@ -147,10 +185,16 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.8.0)
     rspec-support (3.8.0)
-    sinatra (1.4.8)
-      rack (~> 1.5)
-      rack-protection (~> 1.4)
-      tilt (>= 1.3, < 3)
+    signet (0.11.0)
+      addressable (~> 2.3)
+      faraday (~> 0.9)
+      jwt (>= 1.5, < 3.0)
+      multi_json (~> 1.10)
+    sinatra (2.0.4)
+      mustermann (~> 1.0)
+      rack (~> 2.0)
+      rack-protection (= 2.0.4)
+      tilt (~> 2.0)
     stringex (1.5.1)
     systemu (2.6.5)
     thread_safe (0.3.6)
@@ -199,10 +243,9 @@ GEM
     ysd_md_comparison (0.2.13)
       dm-postgres-adapter
       do_postgres
-    ysd_md_configuration (0.2.8)
+    ysd_md_integration (0.2.3)
       data_mapper (= 1.2.0)
-      dm-ysd-encrypted
-      ysd_md_yito
+      ysd_md_audit
     ysd_md_location (0.2.6)
       data_mapper (= 1.2.0)
       ysd_core_plugins
@@ -213,6 +256,16 @@ GEM
       ysd_core_plugins
       ysd_md_configuration
       ysd_md_translation
+      ysd_md_yito
+    ysd_md_photo_gallery (0.4.5)
+      data_mapper (= 1.2.0)
+      json
+      picasa
+      rmagick (= 2.13.4)
+      signet
+      ysd_core_plugins
+      ysd_md_configuration
+      ysd_md_integration
       ysd_md_yito
     ysd_md_profile (0.2.32)
       data_mapper (= 1.2.0)
@@ -225,10 +278,6 @@ GEM
     ysd_md_rac (0.2.13)
       ysd_md_comparison
       ysd_md_profile
-    ysd_md_rates (0.2.27)
-      data_mapper (= 1.2.0)
-      json
-      ysd_md_yito
     ysd_md_search (0.2.4)
       data_mapper (>= 1.2.0)
     ysd_md_system (0.2.2)
@@ -236,6 +285,7 @@ GEM
       data_mapper (= 1.2.0)
     ysd_md_yito (0.2.9)
       useragent
+    ysd_plugin_sales_channels (0.1.4)
     ysd_service_postal (0.1.8)
       pony (~> 1.3)
 
@@ -243,11 +293,15 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  database_cleaner
   dm-sqlite-adapter
+  factory_bot
   rake
   rspec
   rspec-its
   ysd_md_booking!
+  ysd_md_configuration!
+  ysd_md_rates!
 
 BUNDLED WITH
    1.16.1

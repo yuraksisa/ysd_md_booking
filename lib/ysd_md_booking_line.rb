@@ -52,7 +52,7 @@ module BookingDataSystem
        if new_item_id && new_item_id != self.item_id
         if product = ::Yito::Model::Booking::BookingCategory.get(new_item_id)
 
-          product_customer_translation = product.translate(booking.customer_language)
+           product_customer_translation = product.translate(booking.customer_language)
            item_description = product.name
            item_description_customer_translation = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
            old_price = new_price = self.item_unit_cost
@@ -97,7 +97,8 @@ module BookingDataSystem
              # Update booking line resources : Clear or assign new resource
              if assignation_review == 'update'
                # Get the available stock
-               stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(self.booking.date_from,
+               stock_detail, category_occupation = BookingDataSystem::Booking.categories_availability(self.booking.rental_location_code,
+                                                                                                      self.booking.date_from,
                                                                                                       self.booking.time_from,
                                                                                                       self.booking.date_to,
                                                                                                       self.booking.time_to,

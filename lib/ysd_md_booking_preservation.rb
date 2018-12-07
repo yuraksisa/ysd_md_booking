@@ -31,5 +31,18 @@ module BookingDataSystem
 
      end
 
+     def rental_location_code
+       # TODO Take into account booking_item_category > rental_location_code
+       if booking_item = Yito::Model::Booking::BookingItem.get(booking_item_reference)
+         if booking_item.rental_storage
+           Yito::Model::Booking::BookingLocation.first(rental_storage_id: booking_item.rental_storage.id)
+         else
+           return nil
+         end 
+       else
+         return nil     
+       end 
+     end 
+
   end
 end

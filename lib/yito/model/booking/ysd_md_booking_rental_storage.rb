@@ -17,6 +17,7 @@ module Yito
         property :name, String, length: 255
 
         belongs_to :address, 'LocationDataSystem::Address', :required => false 
+        
         has n, :rental_locations, 'RentalLocation', child_key: [:rental_storage_id], parent_key: [:id]
 
         #
