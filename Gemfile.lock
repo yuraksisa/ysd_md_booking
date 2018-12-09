@@ -1,20 +1,4 @@
 PATH
-  remote: ../ysd_md_configuration
-  specs:
-    ysd_md_configuration (0.2.10)
-      data_mapper (= 1.2.0)
-      dm-ysd-encrypted
-      ysd_md_yito
-
-PATH
-  remote: ../ysd_md_rates
-  specs:
-    ysd_md_rates (0.2.27)
-      data_mapper (= 1.2.0)
-      json
-      ysd_md_yito
-
-PATH
   remote: .
   specs:
     ysd_md_booking (0.4.130)
@@ -243,6 +227,10 @@ GEM
     ysd_md_comparison (0.2.13)
       dm-postgres-adapter
       do_postgres
+    ysd_md_configuration (0.2.11)
+      data_mapper (= 1.2.0)
+      dm-ysd-encrypted
+      ysd_md_yito
     ysd_md_integration (0.2.3)
       data_mapper (= 1.2.0)
       ysd_md_audit
@@ -278,6 +266,10 @@ GEM
     ysd_md_rac (0.2.13)
       ysd_md_comparison
       ysd_md_profile
+    ysd_md_rates (0.2.28)
+      data_mapper (= 1.2.0)
+      json
+      ysd_md_yito
     ysd_md_search (0.2.4)
       data_mapper (>= 1.2.0)
     ysd_md_system (0.2.2)
@@ -300,8 +292,6 @@ DEPENDENCIES
   rspec
   rspec-its
   ysd_md_booking!
-  ysd_md_configuration!
-  ysd_md_rates!
 
 BUNDLED WITH
    1.16.1
