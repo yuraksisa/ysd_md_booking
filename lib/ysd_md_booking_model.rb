@@ -555,8 +555,7 @@ module BookingDataSystem
        booking.total_pending = booking.total_cost - booking.total_paid
        booking.planning_color = '#66ff66' if booking.planning_color.nil?
        # Assign the rental location depending on the pickup place
-       multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
-       if multiple_rental_locations
+       if BookingDataSystem::Booking.multiple_rental_locations
          if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: booking.pickup_place) and
             !_pickup_place.rental_location.nil?
            booking.rental_location_code = _pickup_place.rental_location.code if booking.rental_location_code.nil?

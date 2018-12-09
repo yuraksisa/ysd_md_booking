@@ -166,8 +166,6 @@ module Yito
         #
         def self.search(rental_location_code, date_from, time_from, date_to, time_to, days, options={})
           
-          p "rental_location_code: #{rental_location_code} date_from: #{date_from}"  
-
           RentingSearch.search(rental_location_code, date_from, time_from, date_to, time_to, days, options)
 
         end

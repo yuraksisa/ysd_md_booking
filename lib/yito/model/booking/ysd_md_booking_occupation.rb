@@ -28,6 +28,97 @@ module Yito
         module ClassMethods
 
           #
+          # Check if the availability is managed by storage or globally
+          #
+          # It depends on the product family definition + the multiple_rental_locations and resource_availability_by_rental_location_storage settings
+          #  
+          # == Returns:
+          #
+          #   true if the availability is managed by storage
+          #   false if the availability is managed globally
+          #  
+          def availability_managed_by_storage
+            
+            @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family')) 
+            if (@product_family and @product_family.multiple_locations and @product_family.multiple_storages)
+                @multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
+                @availability_by_storage = SystemConfiguration::Variable.get_value('booking.resource_availability_by_rental_location_storage', 'false').to_bool
+                return (@multiple_rental_locations and @availability_by_storage)
+            else
+                return false
+            end   
+
+          end  
+
+          #
+          # Check if the are multiple rental locations
+          #  
+          # It depends on the product family definition + the multiple_rental_locations setting  
+          #  
+          # == Returns:
+          #
+          #   true if there are multiple rental locations
+          #   false if there are not multiple rental locations
+          #  
+          def multiple_rental_locations
+
+            @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+            @multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
+            result = (@product_family and @product_family.multiple_locations and @multiple_rental_locations)
+            return result
+          
+          end  
+
+          #
+          # Check if there are multiple rental locations and categories are exclusive for each location
+          #
+          # It allows to use the platform as an multi-user or multi-company reservation system. Each user(supplier) has a rental_location with
+          # exclusive categories 
+          #
+          #
+          # == Returns:
+          #
+          #   :not_multiple_rental_locations
+          #   :multiple_rental_locations_not_exclusive_categories
+          #   :multiple_rental_locations_exclusive_categories
+          # 
+          #          
+          def multiple_rental_locations_exclusive_categories
+
+            @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+            @multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
+            
+            if @product_family and @product_family.multiple_locations and @multiple_rental_locations
+              if @exclusive_categories_for_location = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
+                return :multiple_rental_locations_exclusive_categories
+              else
+                return :multiple_rental_locations_not_exclusive_categories
+              end    
+            else
+              return :not_multiple_rental_locations
+            end    
+            
+          end  
+
+          # 
+          # Check if the pickup and return places must belong to the same rental location
+          #
+          # It depends on the product family definition + the multiple_rental_locations and multiple_rental_locations_pickup_return_same_location settings  
+          #  
+          # == Returns:
+          #
+          #   true if the pickup and return must belong to the same rental location
+          #   false if the pickup and return mustn't belong to the same rental location
+          #
+          def pickup_return_places_same_rental_location
+
+            @same_location = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations_pickup_return_same_location', 'false').to_bool
+
+            (multiple_rental_locations and @same_location)
+
+          end
+
+          #
           # Categories availability summary
           # -------------------------------------------------------------------------------------------------------
           #
@@ -462,9 +553,7 @@ module Yito
 
             hours_cadency = SystemConfiguration::Variable.get_value('booking.assignation_hours_return_pickup','2').to_i
             allow_different_category = SystemConfiguration::Variable.get_value('booking.assignation.allow_different_category', 'false').to_bool
-            multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
-            availability_by_storage = SystemConfiguration::Variable.get_value('booking.resource_availability_by_rental_location_storage', 'false').to_bool
-            manage_availability_by_storage = availability_by_storage
+            manage_availability_by_storage = availability_managed_by_storage
 
             #
             # 1. Build the required_categories : categories requested and summary about assignation, stock and availability
@@ -509,12 +598,12 @@ module Yito
               booking_item_conditions.merge!({category_code: category})
             end
 
-            if multiple_rental_locations and availability_by_storage and 
+            if manage_availability_by_storage and 
                rental_location = ::Yito::Model::Booking::RentalLocation.get(rental_location_code) and rental_location.rental_storage
               booking_item_conditions.merge!({rental_storage_id: rental_location.rental_storage.id})
               manage_availability_by_storage = true  
             else
-              manage_availability_by_storage = false  # The storage does not exist
+              manage_availability_by_storage = false  # The storage does not exist or does not distinguish stock y storage
             end
 
             stock_items = ::Yito::Model::Booking::BookingItem.all(:conditions => booking_item_conditions,
@@ -795,8 +884,7 @@ module Yito
 
             hours_cadency = SystemConfiguration::Variable.get_value('booking.assignation_hours_return_pickup','2').to_i
             allow_different_category = SystemConfiguration::Variable.get_value('booking.assignation.allow_different_category', 'false').to_bool
-            multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
-            availability_by_storage = SystemConfiguration::Variable.get_value('booking.resource_availability_by_rental_location_storage', 'false').to_bool
+            manage_availability_by_storage = availability_managed_by_storage
 
             #
             # 1. Build the required_categories : categories requested and summary about assignation, stock and availability
@@ -817,11 +905,11 @@ module Yito
             required_categories = {}
             stock_detail = {}
 
-            if multiple_rental_locations and availability_by_storage and 
-              rental_location = ::Yito::Model::Booking::RentalLocation.get(rental_location_code) and rental_location.rental_storage
-              ::Yito::Model::Booking::BookingItem.all(conditions: {own_property: true, active: true, assignable: true,
-                                                                   rental_storage_id: rental_location.rental_storage.id },
-                                                      fields: [:reference], order: [:planning_order, :category_code, :reference]).each do |booking_item|
+            if manage_availability_by_storage and 
+               rental_location = ::Yito::Model::Booking::RentalLocation.get(rental_location_code) and rental_location.rental_storage
+                ::Yito::Model::Booking::BookingItem.all(conditions: {own_property: true, active: true, assignable: true,
+                                                                     rental_storage_id: rental_location.rental_storage.id },
+                                                        fields: [:reference], order: [:planning_order, :category_code, :reference]).each do |booking_item|
                 required_categories.store(booking_item.reference, 
                              {category_stock: 1,
                               total: 0,

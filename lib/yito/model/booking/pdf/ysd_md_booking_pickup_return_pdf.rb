@@ -14,7 +14,7 @@ module Yito
             @rental_location_code = rental_location_code
             @include_journal = include_journal
             @product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
-            @multiple_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
+            @multiple_locations = BookingDataSystem::Booking.multiple_rental_locations
           end
 
           def build

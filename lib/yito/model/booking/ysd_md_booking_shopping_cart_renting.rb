@@ -164,8 +164,7 @@ module Yito
 		  self.calculate_cost(true, true) # The first time the shopping cart is created, make sure all the costs are calculated
 		  self.free_access_id = Digest::MD5.hexdigest("#{rand}#{date_from.to_time.iso8601}#{date_to.to_time.iso8601}#{rand}")
 	      # Assign the rental location depending on the pickup place
-	      multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
-	      if multiple_rental_locations
+	      if BookingDataSystem::Booking.multiple_rental_locations
 	        if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: self.pickup_place) and
 	           !_pickup_place.rental_location.nil?
 	           self.rental_location_code = _pickup_place.rental_location.code
@@ -282,8 +281,7 @@ module Yito
 				end
 
 		        # Reassign the rental location depending on the pickup place
-		        multiple_rental_locations = SystemConfiguration::Variable.get_value('booking.multiple_rental_locations', 'false').to_bool
-		        if multiple_rental_locations
+		        if BookingDataSystem::Booking.multiple_rental_locations
 		          if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: self.pickup_place) and
 		            !_pickup_place.rental_location.nil?
 		            self.rental_location_code = _pickup_place.rental_location.code if self.rental_location_code != _pickup_place.rental_location.code
