@@ -15,11 +15,17 @@ module Yito
           # Reservation customers
           # ---------------------------------------------------------------------------------------------------------
           #
-          def customers(sales_channel_code=nil)
+          def customers(created_from=nil, created_to=nil, sales_channel_code=nil)
             
             conditions = ""
             query_parameters = []
             
+            if !created_from.nil? and !created_to.nil?
+              conditions << "(creation_date >= ? and creation_date <= ?) and "
+              query_parameters << created_from
+              query_parameters << created_to
+            end 
+
             if sales_channel_code.nil? or sales_channel_code.empty?
               conditions << "(sales_channel_code IS NULL or sales_channel_code = '')" 
             elsif sales_channel_code != 'all'
@@ -49,11 +55,15 @@ module Yito
                     sales_channel_code, street, number, complement, city, state, zip, country
               order by customer_surname, customer_name
             QUERY
+
+            #p "query: #{query} query_paramaters: #{query_parameters.inspect}"  
+
             if query_parameters.empty?
               repository.adapter.select(query)
             else
-              repository.adapter.select(query, query_parameters)
-            end  
+              repository.adapter.select(query, *query_parameters)
+            end
+
           end  
 
           #
