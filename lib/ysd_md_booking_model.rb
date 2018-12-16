@@ -167,7 +167,7 @@ module BookingDataSystem
      #
      # Create a reservation from a shopping cart
      #
-     def self.create_from_shopping_cart(shopping_cart, user_agent_data=nil, created_by_manager=false)
+     def self.create_from_shopping_cart(shopping_cart, user_agent_data=nil, created_by_manager=false, send_notifications=true)
 
        booking = nil
        booking_driver_address = nil
@@ -371,7 +371,9 @@ module BookingDataSystem
            end
 
            booking.reload
-           booking.send_new_booking_request_notifications
+           
+           # Send new request notifications
+           booking.send_new_booking_request_notifications if send_notifications
 
            # Create the newsfeed
            ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
@@ -1238,8 +1240,8 @@ module BookingDataSystem
                                                                                                 id: self.id
                                                                                               })
 
-       p "stock_detail: #{stock_detail.inspect}"
-       p "category_occupation: #{category_occupation.inspect}"
+       #p "stock_detail: #{stock_detail.inspect}"
+       #p "category_occupation: #{category_occupation.inspect}"
 
        transaction do
 

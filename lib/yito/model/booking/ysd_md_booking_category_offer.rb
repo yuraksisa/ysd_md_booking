@@ -29,7 +29,6 @@ module Yito
                                               date_from, date_to,
                                               date_from, date_from] }.first
 
-          p "conditions:#{booking_category_code}--#{offer.inspect}"
           if offer
             return offer.discount
           else

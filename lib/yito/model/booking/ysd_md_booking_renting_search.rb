@@ -144,7 +144,7 @@ module Yito
 
 			 # Promotional code
 			 rates_promotion_code = if apply_promotion_code and promotion_code and !promotion_code.nil?
-															  if ::Yito::Model::Rates::PromotionCode.valid_code?(promotion_code)
+															  if ::Yito::Model::Rates::PromotionCode.valid_code?(promotion_code, date_from, date_to)
 																  ::Yito::Model::Rates::PromotionCode.first(promotion_code: promotion_code)
 																else
 																	nil
