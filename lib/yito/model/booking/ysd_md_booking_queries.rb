@@ -15,15 +15,15 @@ module Yito
           # Reservation customers
           # ---------------------------------------------------------------------------------------------------------
           #
-          def customers(created_from=nil, created_to=nil, sales_channel_code=nil)
+          def customers(from=nil, to=nil, sales_channel_code=nil)
             
             conditions = ""
             query_parameters = []
             
-            if !created_from.nil? and !created_to.nil?
-              conditions << "(bookds_bookings.creation_date >= ? and bookds_bookings.creation_date <= ?)"
-              query_parameters << created_from
-              query_parameters << created_to
+            if !from.nil? and !to.nil?
+              conditions << "(bookds_bookings.date_from >= ? and bookds_bookings.date_from <= ?)"
+              query_parameters << from
+              query_parameters << to
             end 
 
             if sales_channel_code.nil? or sales_channel_code.empty?
