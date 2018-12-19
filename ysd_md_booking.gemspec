@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name    = "ysd_md_booking"
-  s.version = "0.4.135"
+  s.version = "0.4.136"
   s.authors = ["Yurak Sisa Dream"]
   s.date    = "2012-03-06"
   s.email   = ["yurak.sisa.dream@gmail.com"]
-  s.files   = Dir['lib/**/*.rb','templates/**/*.erb','i18n/**/*.yml', 'spec/**/*.rb', 'fonts/**/*.ttf']
+  s.files   = Dir['lib/**/*.rb','templates/**/*.erb','i18n/**/*.yml', 'spec/**/*.rb', 'fonts/**/*.ttf', 'img/**/*.jpg']
   s.summary = "A DattaMapper-based model for booking"
   
   s.add_runtime_dependency "data_mapper", "1.2.0"

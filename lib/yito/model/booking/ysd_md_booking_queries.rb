@@ -17,21 +17,19 @@ module Yito
           #
           def customers(from=nil, to=nil, sales_channel_code=nil)
             
-            conditions = ""
+            conditions = "(status not in (1,5))"
             query_parameters = []
             
             if !from.nil? and !to.nil?
-              conditions << "(bookds_bookings.date_from >= ? and bookds_bookings.date_from <= ?)"
+              conditions << "and (bookds_bookings.date_from >= ? and bookds_bookings.date_from <= ?)"
               query_parameters << from
               query_parameters << to
             end 
 
             if sales_channel_code.nil? or sales_channel_code.empty?
-              conditions << " and " unless conditions.empty?
-              conditions << "(sales_channel_code IS NULL or sales_channel_code = '')" 
+              conditions << "and (sales_channel_code IS NULL or sales_channel_code = '')" 
             elsif sales_channel_code != 'all'
-              conditions << " and " unless conditions.empty?
-              conditions << "(sales_channel_code = ?)" 
+              conditions << "and (sales_channel_code = ?)" 
               query_parameters << sales_channel_code 
             end
 
