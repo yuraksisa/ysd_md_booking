@@ -156,9 +156,12 @@ module Yito
               # -------------------------------------
               #       ^=======================^
               #       from                    to
-              if main_season_month_from <= main_season_month_to or (main_season_day_from <= main_season_day_to)
-                if @date_from.month >= main_season_month_from and @date_from.day >= main_season_day_from and
-                   @date_to.month <= main_season_month_to and @date_to.day <= main_season_day_to # In main season
+              if main_season_month_from <= main_season_month_to or 
+                (main_season_month_from == main_season_month_to and main_season_day_from <= main_season_day_to)                
+                if (@date_from.month >= main_season_month_from or 
+                    (@date_from.month == main_season_month_from and @date_from.day >= main_season_day_from)) and
+                   (@date_to.month <= main_season_month_to or 
+                    (@date_to.month == main_season_month_to and @date_to.day <= main_season_day_to)) # In main season
                   timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
                 else # Out of season
                   timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_of_season','0').to_i
@@ -168,16 +171,23 @@ module Yito
                 # -------------------------------------
                 # ======^                       ^======
                 #       to                      from
-                if ((@date_from.month >= main_season_month_from and @date_from.day >= main_season_day_from) or
-                    (@date_from.month <= main_season_month_to and @date_from.day <= main_season_day_to)) and
-                   ((@date_to.month >= main_season_month_from and @date_to.day >= main_season_day_from) or
-                    (@date_to.month <= main_season_month_to and @date_to.day <= main_season_day_to))  # In main season
+                if ((@date_from.month >= main_season_month_from or
+                     (@date_from.month == main_season_month_from and @date_from.day >= main_season_day_from)) or
+                    (@date_from.month <= main_season_month_to or 
+                     (@date_from.month == main_season_month_to and @date_from.day <= main_season_day_to))
+                   ) and
+                   ((@date_to.month >= main_season_month_from or
+                     (@date_to.month == main_season_month_from and @date_to.day >= main_season_day_from)) or
+                    (@date_to.month <= main_season_month_to or
+                     (@date_to.month == main_season_month_to and @date_to.day <= main_season_day_to)))  # In main season
                   timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable','0').to_i
                 else # Out of season
                   timetable_id = SystemConfiguration::Variable.get_value('booking.pickup_return_timetable_out_of_season','0').to_i
                 end
               end
             end
+
+            #p "timetable_id: #{timetable_id} -- main season: #{main_season_day_from}-#{main_season_month_from} #{main_season_day_to}-#{main_season_month_to}"
 
             time_cost = BigDecimal.new(time_cost)
             if timetable_id > 0
