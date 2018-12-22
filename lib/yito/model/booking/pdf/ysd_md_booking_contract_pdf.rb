@@ -78,14 +78,18 @@ module Yito
               pdf.text "<b>DATOS DEL VEHÍCULO</b>", inline_format: true, size: 10, align: :center
               pdf.move_down 2
               pdf.text "<b>Matrícula:</b> #{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first) ? booking.booking_lines.first.booking_line_resources.first.booking_item_stock_plate : ''}", inline_format: true, size:10
-              pdf.text "<b>Modelo:</b> #{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first) ? booking.booking_lines.first.booking_line_resources.first.booking_item_stock_model : ''} ", inline_format: true, size:10
+              pdf.text "<b>Modelo:</b>", inline_format: true, size:10
               pdf.text "<b>Color:</b> #{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first) ? booking.booking_lines.first.booking_line_resources.first.booking_item_characteristic_4 : ''}", inline_format: true, size:10
+              pdf.text_box "#{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first) ? booking.booking_lines.first.booking_line_resources.first.booking_item_stock_model : ''} ", 
+                           at: [50, y_position - 610],
+                           width: 300, height: 10, size: 10, overflow: :truncate
             end  
 
             pdf.bounding_box([145, y_position], :width => 190, :height => 60) do
               pdf.text "", size: 12
               pdf.text "<b>Grupo:</b> #{(booking.booking_lines and booking.booking_lines.size > 0) ? booking.booking_lines.first.item_id : ''}", inline_format: true, size:10
               pdf.text "<b>Combustible:</b> #{(booking.booking_lines and booking.booking_lines.size > 0 and booking.booking_lines.first.booking_line_resources and booking.booking_lines.first.booking_line_resources.size > 0 and booking.booking_lines.first.booking_line_resources.first) ? booking.booking_lines.first.booking_line_resources.first.booking_item_characteristic_1 : ''} ", inline_format: true, size:10
+              pdf.text " ",inline_format: true, size: 10
               pdf.text "<b>Bastidor:</b>", inline_format: true, size:10     
             end 
 
@@ -134,84 +138,100 @@ module Yito
               pdf.text "#{booking.additional_driver_2_driving_license_number}", inline_format: true, size: 10
             end            
 
-            pdf.bounding_box([5, y_position - 60], :width => 275, :height => 240) do
+            pdf.bounding_box([5, y_position - 60], :width => 275, :height => 200) do
               # Vehicle status
               pdf.fill_color "eeeeee"
-              pdf.fill_rectangle [-4, 246], 278, 18
+              pdf.fill_rectangle [-4, 206], 278, 18
               pdf.fill_color "000000"
               pdf.text "<b>ESTADO DEL VEHÍCULO</b>", inline_format: true, size: 10, align: :center
               damages_img_path = File.expand_path(File.join(File.dirname(__FILE__), "../../../../..", "img", "contract-vehicle-damages.jpg"))
-              pdf.image damages_img_path, width: 270, at: [0, 220]
-              pdf.move_down 190
+              pdf.image damages_img_path, width: 220, at: [0, 180]
+              pdf.move_down 160
               pdf.text "<b>(1)</b> Roce <b>(2)</b> Golpe <b>(3)</b> Arañazo <b>(4)</b> Quemado <b>(5)</b> Roto", inline_format: true, size: 10, align: :center
             end 
 
             # Pickup - return time / place
-            pdf.bounding_box([5, y_position - 290], :width => 275, :height => 20) do
+            pdf.bounding_box([5, y_position - 250], :width => 275, :height => 20) do
               # Pickup block
               pdf.fill_color "eeeeee"
               pdf.fill_rectangle [-4, 26], 278, 18
               pdf.fill_color "000000"
             end  
-            pdf.bounding_box([5, y_position - 290], :width => 50, :height => 40) do
+            pdf.bounding_box([5, y_position - 250], :width => 50, :height => 40) do
               pdf.text " ", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text "<b>Fecha:</b>", inline_format: true, size: 10
               pdf.text "<b>Lugar:</b>", inline_format: true, size: 10
             end
-            pdf.bounding_box([50, y_position - 290], :width => 110, :height => 40) do
+            pdf.bounding_box([50, y_position - 250], :width => 220, :height => 40) do
               pdf.text "<b>ENTREGA</b>", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text "#{booking.date_from.strftime('%d-%m-%Y')} #{booking.time_from}", inline_format: true, size: 10
-              pdf.text "#{booking.pickup_place}", inline_format: true, size: 10              
-            end    
-            pdf.bounding_box([160, y_position - 290], :width => 110, :height => 40) do
+              pdf.text "#{booking.pickup_place}", inline_format: true, size: 10             
+            end     
+            
+            # Return time / place
+            pdf.bounding_box([5, y_position - 300], :width => 275, :height => 20) do
+              # Return block
+              pdf.fill_color "eeeeee"
+              pdf.fill_rectangle [-4, 26], 278, 18
+              pdf.fill_color "000000"
+            end  
+            pdf.bounding_box([5, y_position - 300], :width => 50, :height => 40) do
+              pdf.text " ", inline_format: true, size: 10
+              pdf.move_down 5
+              pdf.text "<b>Fecha:</b>", inline_format: true, size: 10
+              pdf.text "<b>Lugar:</b>", inline_format: true, size: 10
+            end
+            pdf.bounding_box([50, y_position - 300], :width => 220, :height => 40) do
               pdf.text "<b>DEVOLUCIÓN</b>", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text "#{booking.date_to.strftime('%d-%m-%Y')} #{booking.time_to}", inline_format: true, size: 10
               pdf.text "#{booking.return_place}", inline_format: true, size: 10              
-            end  
+            end
 
             # Customer
-            pdf.bounding_box([5, y_position - 340], :width => 275, :height => 20) do
+            pdf.bounding_box([5, y_position - 350], :width => 275, :height => 20) do
               pdf.fill_color "eeeeee"
               pdf.fill_rectangle [-4, 26], 278, 18
               pdf.fill_color "000000"
             end              
-            pdf.bounding_box([5, y_position - 340], :width => 50, :height => 40) do
+            pdf.bounding_box([5, y_position - 350], :width => 50, :height => 40) do
               pdf.text " ", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text "<b>Nombre:</b>", inline_format: true, size: 10
               pdf.text "<b>Nif:</b>", inline_format: true, size: 10
             end
-            pdf.bounding_box([50, y_position - 340], :width => 150, :height => 40) do
+            pdf.bounding_box([50, y_position - 350], :width => 150, :height => 40) do
               pdf.text "<b>DATOS DEL CLIENTE</b>", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text "#{booking.customer_name} #{booking.customer_surname}", inline_format: true, size: 10
               pdf.text "#{booking.customer_document_id}", inline_format: true, size: 10              
             end
-            pdf.bounding_box([150, y_position - 340], :width => 40, :height => 40) do
+            pdf.bounding_box([150, y_position - 350], :width => 40, :height => 40) do
               pdf.text " ", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text " ", inline_format: true, size: 10
               pdf.text "<b>Tfno:</b>", inline_format: true, size: 10
             end  
-            pdf.bounding_box([190, y_position - 340], :width => 60, :height => 40) do
+            pdf.bounding_box([190, y_position - 350], :width => 60, :height => 40) do
               pdf.text " ", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text " ", inline_format: true, size: 10
               pdf.text "#{booking.customer_phone}", inline_format: true, size: 10              
             end                        
             # Comments          
-            pdf.bounding_box([5, y_position - 390], :width => 275, :height => 20) do
+            pdf.bounding_box([5, y_position - 400], :width => 275, :height => 20) do
               pdf.fill_color "eeeeee"
               pdf.fill_rectangle [-4, 26], 278, 18
               pdf.fill_color "000000"
             end              
-            pdf.bounding_box([5, y_position - 390], :width => 275, :height => 40) do
+            pdf.bounding_box([5, y_position - 400], :width => 275, :height => 40) do
               pdf.text "<b>COMENTARIOS</b>", inline_format: true, size: 10
               pdf.move_down 5
-              pdf.text "#{booking.comments}", inline_format: true, size: 10
+              pdf.text_box booking.comments, at: [0, y_position - 560],
+                           width: 275, height: 50, size: 10, overflow: :truncate
+              #pdf.text "#{booking.comments}", inline_format: true, size: 10
             end
 
             # Column 2 ==============================
@@ -251,7 +271,8 @@ module Yito
               pdf.fill_color "000000"
               pdf.text "<b>ALOJAMIENTO</b>", inline_format: true, size: 10, align: :center
               pdf.move_down 5
-              pdf.text "#{booking.destination_accommodation}", inline_format: true, size: 10
+              pdf.text_box booking.destination_accommodation, at: [0, y_position - 560],
+                           width: 269, height: 25, size: 10, overflow: :truncate
             end 
 
             pdf.bounding_box([285, y_position - 145], :width => 269, :height => 40) do
