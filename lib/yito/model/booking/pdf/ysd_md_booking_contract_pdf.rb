@@ -229,7 +229,8 @@ module Yito
             pdf.bounding_box([5, y_position - 400], :width => 275, :height => 40) do
               pdf.text "<b>COMENTARIOS</b>", inline_format: true, size: 10
               pdf.move_down 5
-              pdf.text_box booking.comments, at: [0, y_position - 560],
+              comments = booking.comments.nil? ? '' : booking.comments
+              pdf.text_box comments, at: [0, y_position - 560],
                            width: 275, height: 50, size: 10, overflow: :truncate
               #pdf.text "#{booking.comments}", inline_format: true, size: 10
             end
@@ -271,7 +272,8 @@ module Yito
               pdf.fill_color "000000"
               pdf.text "<b>ALOJAMIENTO</b>", inline_format: true, size: 10, align: :center
               pdf.move_down 5
-              pdf.text_box booking.destination_accommodation, at: [0, y_position - 560],
+              accommodation = booking.destination_accommodation.nil? ? '' : booking.destination_accommodation 
+              pdf.text_box accommodation, at: [0, y_position - 560],
                            width: 269, height: 25, size: 10, overflow: :truncate
             end 
 
