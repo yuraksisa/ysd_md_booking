@@ -341,15 +341,15 @@ module Yito
 
             # Product(s) ------------
 
-            pdf.bounding_box([285, y_position - 315], :width => 80, :height => 20) do
+            pdf.bounding_box([285, y_position - 315], :width => 140, :height => 20) do
               # Invoicing column 1
               pdf.text "Alquiler", inline_format: true, size: 10
             end
-            pdf.bounding_box([365, y_position - 315], :width => 45, :height => 20) do
+            pdf.bounding_box([425, y_position - 315], :width => 45, :height => 20) do
               # Invoicing column 2
               pdf.text "#{booking.days} día(s)", inline_format: true, size: 10, align: :right
             end            
-            pdf.bounding_box([410, y_position - 315], :width => 130, :height => 20) do
+            pdf.bounding_box([470, y_position - 315], :width => 70, :height => 20) do
               # Invoicing column 4
               pdf.text "#{'%.2f' % booking.item_cost}", inline_format: true, size: 10, align: :right
             end                          
@@ -358,15 +358,15 @@ module Yito
 
             extra_idx = 1
             booking.booking_extras.each do |booking_extra|
-              pdf.bounding_box([285, y_position - 315 - (extra_idx * 15)], :width => 80, :height => 15) do
+              pdf.bounding_box([285, y_position - 315 - (extra_idx * 15)], :width => 140, :height => 15) do
                 # Invoicing column 1
                 pdf.text "#{booking_extra.extra_description_customer_translation}", inline_format: true, size: 10
               end
-              pdf.bounding_box([365, y_position - 315 - (extra_idx * 15)], :width => 45, :height => 15) do
+              pdf.bounding_box([425, y_position - 315 - (extra_idx * 15)], :width => 45, :height => 15) do
                 # Invoicing column 2
                 pdf.text "#{booking_extra.quantity}", inline_format: true, size: 10, align: :right
               end            
-              pdf.bounding_box([410, y_position - 315 - (extra_idx * 15)], :width => 130, :height => 15) do
+              pdf.bounding_box([470, y_position - 315 - (extra_idx * 15)], :width => 70, :height => 15) do
                 # Invoicing column 4
                 pdf.text "#{'%.2f' % booking_extra.extra_cost}", inline_format: true, size: 10, align: :right
               end 
