@@ -208,13 +208,13 @@ module Yito
               pdf.text "#{booking.customer_name} #{booking.customer_surname}", inline_format: true, size: 10
               pdf.text "#{booking.customer_document_id}", inline_format: true, size: 10              
             end
-            pdf.bounding_box([150, y_position - 350], :width => 40, :height => 40) do
+            pdf.bounding_box([150, y_position - 350], :width => 30, :height => 40) do
               pdf.text " ", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text " ", inline_format: true, size: 10
               pdf.text "<b>Tfno:</b>", inline_format: true, size: 10
             end  
-            pdf.bounding_box([190, y_position - 350], :width => 60, :height => 40) do
+            pdf.bounding_box([180, y_position - 350], :width => 80, :height => 40) do
               pdf.text " ", inline_format: true, size: 10
               pdf.move_down 5
               pdf.text " ", inline_format: true, size: 10
