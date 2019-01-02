@@ -9,7 +9,7 @@ module Yito
         include DataMapper::Resource
         extend  Plugins::ApplicableModelAspect  # Extends the entity to allow apply aspects
         
-        storage_names[:default] = 'bookds_categories_channels' # stored in bookdsds_category_saleschannel in default storage
+        storage_names[:default] = 'bookds_categories_channels' 
 
         property :id, Serial
         property :name, String, :length => 80
@@ -20,6 +20,10 @@ module Yito
 
         property :price_definition_own_season_definition, Boolean, default: false
         property :price_definition_own_factor_definition, Boolean, default: false
+        
+        property :category_supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0
+        property :category_supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0
+        property :category_supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0
         
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
 

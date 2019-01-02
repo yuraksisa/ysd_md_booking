@@ -19,6 +19,13 @@ module BookingDataSystem
      property :quantity, Integer
      property :product_deposit_unit_cost, Decimal, :precision => 10, :scale => 2, :default => 0
      property :product_deposit_cost, Decimal, :precision => 10, :scale => 2, :default => 0
+     property :category_supplement_1_unit_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_2_unit_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_3_unit_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0     
+
      belongs_to :booking, 'Booking', :child_key => [:booking_id]
      has n, :booking_line_resources, 'BookingLineResource', :constraint => :destroy 
 
@@ -45,7 +52,15 @@ module BookingDataSystem
      #
      # Change booking line item
      #
-     def change_item(new_item_id, price_modification='update', assignation_review='hold')
+     # == Parameters::
+     #
+     # new_item_id:: New item id
+     # price_modification:: Price modification 'update' or 'hold'
+     # assignation_review:: Assignation 'hold' or 'update'
+     #
+     def change_item(new_item_id, 
+                     price_modification='update', 
+                     assignation_review='hold')
 
        old_item_id = self.item_id
        
@@ -55,10 +70,18 @@ module BookingDataSystem
            product_customer_translation = product.translate(booking.customer_language)
            item_description = product.name
            item_description_customer_translation = (product_customer_translation.nil? ? product.name : product_customer_translation.name)
+           
            old_price = new_price = self.item_unit_cost
            old_product_deposit = new_product_deposit = self.product_deposit_unit_cost
+           old_product_supplement_1_unit_cost = new_product_supplement_1_unit_cost = self.category_supplement_1_unit_cost
+           old_product_supplement_2_unit_cost = new_product_supplement_2_unit_cost = self.category_supplement_2_unit_cost
+           old_product_supplement_3_unit_cost = new_product_supplement_3_unit_cost = self.category_supplement_3_unit_cost
+
            item_cost_increment = 0
            deposit_cost_increment = 0
+           product_supplement_1_unit_cost_increment = 0
+           product_supplement_2_unit_cost_increment = 0
+           product_supplement_3_unit_cost_increment = 0
 
            if price_modification == 'update'
              new_price = product.unit_price(booking.date_from, booking.days, nil, self.booking.sales_channel_code).round(0) # Make sure no decimals in price
@@ -73,9 +96,28 @@ module BookingDataSystem
                new_price = (new_price - discount).round(0) if discount > 0
              end
              ## End apply offers
+             ## Category supplements
+             product_supplement_1_unit_cost = product.category_supplement_1_cost || 0
+             product_supplement_2_unit_cost = product.category_supplement_2_cost || 0
+             product_supplement_3_unit_cost = product.category_supplement_3_cost || 0 
+             if sales_channel_code
+               if bcsc = product.booking_categories_sales_channels.select { |item| item.sales_channel.code == sales_channel_code }.first
+                  product_supplement_1_unit_cost = bcsc.category_supplement_1_cost || 0
+                  product_supplement_2_unit_cost = bcsc.category_supplement_2_cost || 0
+                  product_supplement_3_unit_cost = bcsc.category_supplement_3_cost || 0
+               end 
+             end 
+             ## End of category supplements             
              new_product_deposit = product.deposit
+             new_product_supplement_1_unit_cost = product_supplement_1_unit_cost
+             new_product_supplement_2_unit_cost = product_supplement_2_unit_cost
+             new_product_supplement_3_unit_cost = product_supplement_3_unit_cost
+
              item_cost_increment = new_price - old_price
              deposit_cost_increment = new_product_deposit - old_product_deposit
+             product_supplement_1_unit_cost_increment = new_product_supplement_1_unit_cost - old_product_supplement_1_unit_cost
+             product_supplement_2_unit_cost_increment = new_product_supplement_2_unit_cost - old_product_supplement_2_unit_cost
+             product_supplement_3_unit_cost_increment = new_product_supplement_3_unit_cost - old_product_supplement_3_unit_cost
            end
 
            # Update the booking line and the booking
@@ -92,6 +134,18 @@ module BookingDataSystem
                self.product_deposit_unit_cost += deposit_cost_increment
                self.product_deposit_cost = self.product_deposit_unit_cost * self.quantity
              end
+             unless product_supplement_1_unit_cost_increment == 0
+               self.category_supplement_1_unit_cost += product_supplement_1_unit_cost_increment
+               self.category_supplement_1_cost = self.category_supplement_1_unit_cost * self.quantity
+             end
+             unless product_supplement_2_unit_cost_increment == 0
+               self.category_supplement_2_unit_cost += product_supplement_2_unit_cost_increment
+               self.category_supplement_2_cost = self.category_supplement_2_unit_cost * self.quantity
+             end 
+             unless product_supplement_3_unit_cost_increment == 0
+               self.category_supplement_3_unit_cost += product_supplement_3_unit_cost_increment
+               self.category_supplement_3_cost = self.category_supplement_3_unit_cost * self.quantity
+             end                           
              self.save
 
              # Update booking line resources : Clear or assign new resource
@@ -126,9 +180,16 @@ module BookingDataSystem
              end
 
              # Update booking
-             if item_cost_increment != 0 or deposit_cost_increment != 0
+             if item_cost_increment != 0 or 
+                deposit_cost_increment != 0 or
+                product_supplement_1_unit_cost_increment != 0 or
+                product_supplement_2_unit_cost_increment != 0 or
+                product_supplement_3_unit_cost_increment != 0
                booking.item_cost += (item_cost_increment * self.quantity)
                booking.product_deposit_cost += (deposit_cost_increment * self.quantity)
+               booking.category_supplement_1_cost += (product_supplement_1_unit_cost_increment * self.quantity)
+               booking.category_supplement_2_cost += (product_supplement_2_unit_cost_increment * self.quantity)
+               booking.category_supplement_3_cost += (product_supplement_3_unit_cost_increment * self.quantity)
                booking.calculate_cost(false, false)
                booking.save
              end
@@ -141,6 +202,9 @@ module BookingDataSystem
                                             attributes_updated: {item_id: new_item_id,
                                                                  booking_item_cost: booking.item_cost,
                                                                  booking_product_deposit_cost: booking.product_deposit_cost,
+                                                                 booking_category_supplement_1_cost: booking.category_supplement_1_cost,
+                                                                 booking_category_supplement_2_cost: booking.category_supplement_2_cost,
+                                                                 booking_category_supplement_3_cost: booking.category_supplement_3_cost,
                                                                  booking_total_cost: booking.total_cost,
                                                                  booking_total_pending: booking.total_pending}.merge({booking: booking.newsfeed_summary}).to_json)
              booking.reload
@@ -152,14 +216,27 @@ module BookingDataSystem
      #
      # Update booking line quantity
      #
+     # == Parameters::
+     #
+     # new_quantity:: New quantity
+     #
      def update_quantity(new_quantity)
 
        if product = ::Yito::Model::Booking::BookingCategory.get(self.item_id)
          old_quantity = self.quantity
          old_booking_line_item_cost = self.item_cost
+         old_booking_line_product_deposit_cost = self.product_deposit_cost
+         old_product_supplement_1_cost = self.category_supplement_1_cost
+         old_product_supplement_2_cost = self.category_supplement_2_cost
+         old_product_supplement_3_cost = self.category_supplement_3_cost
+         # Process
          transaction do
            self.quantity = new_quantity
            self.item_cost = self.item_unit_cost * new_quantity
+           self.product_deposit_cost = self.product_deposit_unit_cost * new_quantity
+           self.category_supplement_1_cost = self.category_supplement_1_unit_cost * new_quantity
+           self.category_supplement_2_cost = self.category_supplement_2_unit_cost * new_quantity
+           self.category_supplement_3_cost = self.category_supplement_3_unit_cost * new_quantity 
            self.save
            # Add or remove booking line resources
            if new_quantity < old_quantity
@@ -175,9 +252,29 @@ module BookingDataSystem
            end
            # Update the booking (cost)
            item_cost_increment = self.item_cost - old_booking_line_item_cost
+           product_deposit_cost_increment = self.product_deposit_cost - old_booking_line_product_deposit_cost
+           product_supplement_1_cost_increment = self.category_supplement_1_cost - old_product_supplement_1_cost
+           product_supplement_2_cost_increment = self.category_supplement_2_cost - old_product_supplement_2_cost
+           product_supplement_3_cost_increment = self.category_supplement_3_cost - old_product_supplement_3_cost
            booking.item_cost += item_cost_increment
+           booking.product_deposit_cost += product_deposit_cost_increment
+           booking.category_supplement_1_cost += product_supplement_1_cost_increment
+           booking.category_supplement_2_cost += product_supplement_2_cost_increment
+           booking.category_supplement_3_cost += product_supplement_3_cost_increment
            booking.calculate_cost(false, false)
            booking.save
+           # Assign available stock         
+           if booking.status == :pending_confirmation 
+             if booking.created_by_manager 
+               booking.assign_available_stock if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation_on_backoffice_request').to_bool
+             else
+               booking.assign_available_stock if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation_on_web_request').to_bool
+             end
+           elsif booking.status == :confirmed   
+             if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation', 'false').to_bool
+               booking.assign_available_stock
+             end
+           end          
            # Create newsfeed
            ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
                                           action: 'updated_item_quantity',
@@ -186,6 +283,9 @@ module BookingDataSystem
                                           attributes_updated: {quantity: new_quantity,
                                                                booking_item_cost: booking.item_cost,
                                                                booking_product_deposit_cost: booking.product_deposit_cost,
+                                                               booking_category_supplement_1_cost: booking.category_supplement_1_cost,
+                                                               booking_category_supplement_2_cost: booking.category_supplement_2_cost,
+                                                               booking_category_supplement_3_cost: booking.category_supplement_3_cost,                                                               
                                                                booking_total_cost: booking.total_cost,
                                                                booking_total_pending: booking.total_pending
                                                                }.merge({booking: booking.newsfeed_summary}).to_json)
@@ -197,6 +297,10 @@ module BookingDataSystem
 
      #
      # Update item cost
+     #
+     # == Parameters::
+     #
+     # new_item_unit_cost:: New item cost
      #
      def update_item_cost(new_item_unit_cost)
 
@@ -225,6 +329,10 @@ module BookingDataSystem
 
      #
      # Update item deposit
+     #
+     # == Parameters
+     #
+     # new_item_deposit:: New item deposit
      #
      def update_item_deposit(new_item_deposit)
 

@@ -11,9 +11,10 @@ module Yito
         #
         def calculate_cost(calculate_supplements, calculate_deposit)
 
-          self.calculate_supplements if calculate_supplements # Calculate age, pickup, return place calculation, driver age supplements...
+          self.calculate_supplements if calculate_supplements # Calculate pickup, return place and time supplements + driver age supplements...
           self.calculate_deposit if calculate_deposit         # Calculate product and driver age deposits
 
+          # Reset total cost
           self.total_cost = 0
 
           # Add product cost
@@ -22,13 +23,24 @@ module Yito
           # Add extras cost
           self.total_cost += self.extras_cost
 
-          # Apply supplements
+          # Apply supplements (time and places)
           self.total_cost += self.time_from_cost
           self.total_cost += self.time_to_cost
           self.total_cost += self.pickup_place_cost
           self.total_cost += self.return_place_cost
           self.total_cost += self.driver_age_cost
 
+          # Apply category supplements
+          self.total_cost += category_supplement_1_cost
+          self.total_cost += category_supplement_2_cost
+          self.total_cost += category_supplement_3_cost
+
+          # Apply other supplements
+          self.total_cost += supplement_1_cost
+          self.total_cost += supplement_2_cost
+          self.total_cost += supplement_3_cost
+
+          # Total cost before deposit 
           total_cost_before_deposit = self.total_cost
 
           # Apply deposit

@@ -27,6 +27,13 @@ module Yito
      	property :extras_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      	property :time_from_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      	property :time_to_cost, Decimal, :scale => 2, :precision => 10, :default => 0
+        property :category_supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0     
+		property :supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0
+
      	property :total_cost, Decimal, :scale => 2, :precision => 10, :default => 0
 
 		property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
@@ -54,7 +61,7 @@ module Yito
 		property :pay_now, Boolean, :field => 'pay_now', :default => false
 		property :payment_method_id, String, :field => 'payment_method_id', :length => 30
 
-			property :free_access_id, String, :field => 'free_access_id', :length => 32, :unique_index => :shopping_cart_renting_free_access_id_index
+		property :free_access_id, String, :field => 'free_access_id', :length => 32, :unique_index => :shopping_cart_renting_free_access_id_index
 
      	has n, :extras, 'ShoppingCartExtraRenting', :constraint => :destroy
      	has n, :items, 'ShoppingCartItemRenting', :constraint => :destroy
@@ -64,6 +71,30 @@ module Yito
 
 		property :destination_accommodation, Text
 		
+		# ----------------- Hooks ----------------------
+		
+		before :create do
+          # Calculate the days if not assigned
+          if self.days.nil? or self.date_to_price_calculation.nil?
+            days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
+			#p "calculating dates. previous: #{self.days} -- now: #{days_calculus[:days]}"
+            self.days = days_calculus[:days]
+            self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
+          end
+
+		  self.calculate_cost(true, true) # The first time the shopping cart is created, make sure all the costs are calculated
+		  self.free_access_id = Digest::MD5.hexdigest("#{rand}#{date_from.to_time.iso8601}#{date_to.to_time.iso8601}#{rand}")
+	      # Assign the rental location depending on the pickup place
+	      if BookingDataSystem::Booking.multiple_rental_locations
+	        if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: self.pickup_place) and
+	           !_pickup_place.rental_location.nil?
+	           self.rental_location_code = _pickup_place.rental_location.code
+	        end
+	      end
+		end
+
+		# ------------------ CLASS METHODS ----------------------------------
+
 		#
 		# Get a booking by its free access id
 		#
@@ -74,8 +105,16 @@ module Yito
 			first({:free_access_id => free_id})
 		end
 
+		# ------------------ INSTANCE METHODS ------------------------------
+
 		#
 		# Create a new reservation from a booking
+		#
+		# == Parameters::
+		#
+		# booking::
+		#
+		#   The booking
 		#
 		def update_from_booking(booking)
 			self.customer_name = booking.customer_name
@@ -152,30 +191,12 @@ module Yito
 			self.driver_address.zip = booking.driver_address.zip if booking.driver_address
 		end
 
-		before :create do
-          # Calculate the days if not assigned
-          if self.days.nil? or self.date_to_price_calculation.nil?
-            days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
-												#p "calculating dates. previous: #{self.days} -- now: #{days_calculus[:days]}"
-            self.days = days_calculus[:days]
-            self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
-          end
-
-		  self.calculate_cost(true, true) # The first time the shopping cart is created, make sure all the costs are calculated
-		  self.free_access_id = Digest::MD5.hexdigest("#{rand}#{date_from.to_time.iso8601}#{date_to.to_time.iso8601}#{rand}")
-	      # Assign the rental location depending on the pickup place
-	      if BookingDataSystem::Booking.multiple_rental_locations
-	        if _pickup_place = ::Yito::Model::Booking::PickupReturnPlace.first(name: self.pickup_place) and
-	           !_pickup_place.rental_location.nil?
-	           self.rental_location_code = _pickup_place.rental_location.code
-	        end
-	      end
-		end
-
-		# ----------------------------------------------------------------------------------
-
 		#
 		# Change the customer language of the shopping cart and translate all the elements
+		#
+		# == Parameters::
+		#
+		# new_customer_language:: The customer language
 		#
 		def change_customer_language(new_customer_language)
 
@@ -229,16 +250,32 @@ module Yito
 		end
 
 		#
-		# Change selection data : date from/to, pickup/return place
+		# Change selection data 
+		#
+		# == Parameters::
+		#
+		# date_from:: The reservation date from
+		# time_from:: The reservation time from
+		# date_to:: The reservation date to
+		# time_to:: The reservation time to
+		# pickup_place:: The pick up place
+		# custom_pickup_place:: The custom pick up place
+		# return_place:: The return place
+		# custom_return_place:: The custom return place
+		# number_of_adults:: The number of adults
+		# number_of_children:: The number of children
+		# driver_age_rule_id:: The driver age rule
+		# sales_channel_code:: The sales channel code
+		# promotion_code:: The promotion code
 		#
 		def change_selection_data(date_from, time_from,
-															date_to, time_to,
-															pickup_place, custom_pickup_place,
-															return_place, custom_return_place,
-															number_of_adults, number_of_children,
-															driver_age_rule_id=nil,
-															sales_channel_code=nil,
-															promotion_code=nil)
+								  date_to, time_to,
+								  pickup_place, custom_pickup_place,
+								  return_place, custom_return_place,
+								  number_of_adults, number_of_children,
+								  driver_age_rule_id=nil,
+								  sales_channel_code=nil,
+								  promotion_code=nil)
 
 			 transaction do
 
@@ -303,7 +340,7 @@ module Yito
 				# Promotion code
 				self.promotion_code = promotion_code
 
-					# Recalculate cost
+				# Recalculate cost
 				self.calculate_cost(true, true)
 
 			  	self.save
@@ -323,7 +360,8 @@ module Yito
 								        apply_promotion_code: self.promotion_code ? true : false,
 								        promotion_code: self.promotion_code,
 						                sales_channel_code: self.sales_channel_code})
-					    sc_item.update_item_cost(product.base_price, product.price, product.deposit)
+					    sc_item.update_item_cost(product.base_price, product.price, 
+					    						 product.deposit)
 					end
 				end
 				# Recalcute extras
@@ -337,8 +375,9 @@ module Yito
 
 		end
 
-		# -----------------------------------------------------------------------------------
-
+		#
+		# Clear the shopping cart
+		#
 		def clear
 			transaction do
 				items.destroy
@@ -348,6 +387,12 @@ module Yito
 				self.pickup_place_cost = 0
 				self.return_place_cost = 0
 				self.driver_age_cost = 0
+				self.category_supplement_1_cost = 0
+				self.category_supplement_2_cost = 0
+				self.category_supplement_3_cost = 0
+				self.supplement_1_cost = 0
+				self.supplement_2_cost = 0
+				self.supplement_3_cost = 0
 				self.total_cost = 0
 				self.item_cost = 0
 				self.extras_cost = 0
@@ -364,99 +409,117 @@ module Yito
 			end
 		end
 
+		# --------------------- Items ----------------------------------------
+
+		#
+		# Set the item to the shopping cart
+		#
+		# == Parameters::
+		#
+		# product_code:: The product code
+		# quantity:: The quantity
+		# multiple_items:: The shopping car allows multiple items  
+		# 
+		#
+		def set_item(product_code, quantity=1, multiple_items=false)
+
+			if multiple_items
+			  # Shopping cart contains item
+  		 	  if shopping_cart_item = items.select { |item| item.item_id == product_code }.first
+				  if quantity == 0
+				    shopping_cart_item.remove_item
+				  else
+		  		    shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
+				  end
+			  # Shopping cart does not contain item
+			  else 
+			  	 if product = BookingCategory.search(rental_location_code,
+ 			  	 	                date_from,
+									time_from,
+									date_to,
+									time_to,
+									days,
+									{locale: self.customer_language,
+									 full_information: false,
+									 product_code: product_code,
+									 web_public: false,
+									 sales_channel_code: self.sales_channel_code,
+									 apply_promotion_code: self.promotion_code ? true : false,
+									 promotion_code: self.promotion_code})
+				    add_item(product.code, product.name, quantity,
+						     product.base_price, product.price, product.deposit,
+						     product.category_supplement_1_cost,
+						   	 product.category_supplement_2_cost,
+						     product.category_supplement_3_cost)
+			    end
+			  end  
+			else
+			  product = BookingCategory.search(rental_location_code,
+			  	             date_from,
+							 time_from,
+							 date_to,
+							 time_to,
+							 days,
+							 {locale: self.customer_language,
+							  full_information: false,
+							  product_code: product_code,
+							  web_public: false,
+							  sales_channel_code: self.sales_channel_code,
+							  apply_promotion_code: self.promotion_code ? true : false,
+							  promotion_code: self.promotion_code})
+			  # Shopping cart empty
+			  if items.size == 0
+				  add_item(product.code, product.name, quantity,
+						   product.base_price, product.price, product.deposit,
+						   product.category_supplement_1_cost,
+						   product.category_supplement_2_cost,
+						   product.category_supplement_3_cost)
+			  else
+				  items.first.set_item(product.code, product.name, quantity,
+									   product.base_price, product.price, product.deposit,
+									   product.category_supplement_1_cost,
+									   product.category_supplement_2_cost,
+									   product.category_supplement_3_cost)
+			  end
+			end
+
+		end
+
 		#
 		# Add an item to the shopping cart
 		#
+		# == Parameters::
+		#
+		# item_id:: The item id
+		# item_description:: The item description
+		# quantity:: The quantity
+		# item_unit_cost_base:: Unit cost base
+		# item_unit_cost:: Unit cost
+		# product_deposit_unit_cost:: Deposit unit cost
+		# category_supplement_1_cost:: Category supplement 1
+		# category_supplement_2_cost:: Category supplement 2
+		# category_supplement_3_cost:: Category supplement 3
+		#
 		def add_item(item_id, item_description, quantity,
-								 item_unit_cost_base, item_unit_cost, product_deposit_unit_cost)
+					 item_unit_cost_base, item_unit_cost, 
+					 product_deposit_unit_cost,
+					 category_supplement_1_cost,
+					 category_supplement_2_cost,
+					 category_supplement_3_cost)
 
 			shopping_cart_item = ShoppingCartItemRenting.new
 			shopping_cart_item.shopping_cart = self
 			self.items << shopping_cart_item
 			shopping_cart_item.set_item(item_id, item_description, quantity,
-																	item_unit_cost_base, item_unit_cost, product_deposit_unit_cost)
+										item_unit_cost_base, item_unit_cost, 
+										product_deposit_unit_cost,
+									    category_supplement_1_cost,
+									    category_supplement_2_cost,
+									    category_supplement_3_cost)
 
 		end
 
-		#
-		# Add an extra to the shopping cart
-		#
-		def add_extra(extra_code, extra_description, quantity, extra_unit_cost)
-			shopping_cart_extra = ShoppingCartExtraRenting.new
-			shopping_cart_extra.shopping_cart = self
-			self.extras << shopping_cart_extra
-			shopping_cart_extra.set_item(extra_code, extra_description, extra_unit_cost, quantity)
-		end
-
-		#
-		# Remove an extra
-		#
-		def remove_extra(extra_code)
-
-			if shopping_cart_extra = extras.select { |extra|  extra.extra_id == extra_code }.first
-				shopping_cart_extra.destroy
-				self.reload # To reload the extras
-			end
-
-		end
-
-		#
-		# Set the item to the shopping cart
-		#
-		def set_item(product_code, quantity=1, multiple_items=false)
-
-			if multiple_items
-			 # Shopping cart contains item
-  		 if shopping_cart_item = items.select { |item| item.item_id == product_code }.first
-					  if quantity == 0
-					    shopping_cart_item.remove_item
-					  else
-		  		   shopping_cart_item.update_quantity(quantity) if shopping_cart_item.quantity != quantity
-				   end
-			  # Shopping cart does not contain item
-			  else 
-			  	 if product = BookingCategory.search(rental_location_code,
-			  	 	               date_from,
-																							time_from,
-																							date_to,
-																							time_to,
-																							days,
-																			{ locale: self.customer_language,
-																							 full_information: false,
-																							 product_code: product_code,
-																							 web_public: false,
-																							 sales_channel_code: self.sales_channel_code,
-																							 apply_promotion_code: self.promotion_code ? true : false,
-																							 promotion_code: self.promotion_code})
-				     add_item(product.code, product.name, quantity,
-						            product.base_price, product.price, product.deposit)
-			    end
-			  end  
-			else
-			  product = BookingCategory.search(rental_location_code,
-			  	               date_from,
-																				 time_from,
-																				 date_to,
-																				 time_to,
-																				 days,
-																				 { locale: self.customer_language,
-																								  full_information: false,
-																								  product_code: product_code,
-																								  web_public: false,
-																								  sales_channel_code: self.sales_channel_code,
-																								  apply_promotion_code: self.promotion_code ? true : false,
-																								  promotion_code: self.promotion_code})
-			  # Shopping cart empty
-			  if items.size == 0
-				  add_item(product.code, product.name, quantity,
-						 product.base_price, product.price, product.deposit)
-			  else
-				  items.first.set_item(product.code, product.name, quantity,
-									 product.base_price, product.price, product.deposit)
-			  end
-			end
-
-		end
+		# --------------------- Extras ----------------------------------------		
 
 		#
 		# Set an extra to the shopping cart
@@ -469,6 +532,29 @@ module Yito
 				# Shopping cart does not contain extra
 			elsif extra = RentingExtraSearch.search(date_from, date_to, days, nil, extra_code)
 				add_extra(extra.code, extra.name, quantity, extra.unit_price)
+			end
+
+		end
+
+		#
+		# Add an extra to the shopping cart
+		#
+		def add_extra(extra_code, extra_description, quantity, extra_unit_cost)
+			shopping_cart_extra = ShoppingCartExtraRenting.new
+			shopping_cart_extra.shopping_cart = self
+			self.extras << shopping_cart_extra
+			shopping_cart_extra.set_item(extra_code, extra_description, 
+										 extra_unit_cost, quantity)
+		end
+
+		#
+		# Remove an extra
+		#
+		def remove_extra(extra_code)
+
+			if shopping_cart_extra = extras.select { |extra|  extra.extra_id == extra_code }.first
+				shopping_cart_extra.destroy
+				self.reload # To reload the extras
 			end
 
 		end

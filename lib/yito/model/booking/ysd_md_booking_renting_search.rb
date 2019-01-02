@@ -6,12 +6,18 @@ module Yito
 	  #
   	  class RentingSearch	
 
-  		 attr_accessor :code, :name, :short_description, :description, :stock_control, :photo, :full_photo,
+  		 attr_accessor :code, :name, :short_description, :description, :stock_control, 
+  		 			   :photo, :full_photo,
   		 			   :base_price, :price, :deposit, 
-  		 			   :availability, :stock, :busy, :available, :payment_availibility, :include_stock, :resources
+  		 			   :category_supplement_1_cost, :category_supplement_2_cost,
+  		 			   :category_supplement_3_cost,
+  		 			   :availability, :stock, :busy, :available, :payment_availibility, 
+  		 			   :include_stock, :resources
 
   		 def initialize(code, name, short_description, description, stock_control,
   		 	            photo, full_photo, base_price=0, price=0, deposit=0,
+  		 	            category_supplement_1_cost=0, category_supplement_2_cost=0,
+  		 	            category_supplement_3_cost=0,
   		 				availability=false, stock=0, busy=0, available=0, 
 						payment_availibility=false, full_information=false,
 						include_stock=false, resources=nil)
@@ -25,6 +31,9 @@ module Yito
   		   @base_price = base_price
   		   @price = price
   		   @deposit = deposit
+  		   @category_supplement_1_cost = category_supplement_1_cost
+  		   @category_supplement_2_cost = category_supplement_2_cost
+  		   @category_supplement_3_cost = category_supplement_3_cost  		   
   		   @availability = availability
   		   @stock = stock
   		   @busy = busy
@@ -155,7 +164,11 @@ module Yito
 
 			 # Query for products
 	  		 prod_attributes = [:code, :name, :short_description, :description,
-	  		  		            :stock_control, :stock, :album_id, :deposit, :price_definition_id]
+	  		  		            :stock_control, :stock, :album_id, :deposit, 
+	  		  		            :category_supplement_1_cost,
+	  		  		            :category_supplement_2_cost,
+	  		  		            :category_supplement_3_cost,
+	  		  		            :price_definition_id]
 	  		 conditions = {active: true}
 			 conditions.store(:web_public, true) if web_public
 			 
@@ -164,7 +177,6 @@ module Yito
 			 else	
 	  		   conditions.store(:code, product_code)
 	  		 end
-	  		 #conditions.store(:code, product_code) unless product_code.nil?
 			 
 			 conditions.store('sales_channels.code', [sales_channel_code]) unless sales_channel_code.nil?
 
@@ -194,6 +206,22 @@ module Yito
 	  		   	           price = (product_price - discount).round(0) # Make sure no decimal in prices
 	  		   	           deposit = item.deposit
 	  		   	           
+  		   	           	   category_supplement_1_cost = 0
+  		   	           	   category_supplement_2_cost = 0
+  		   	           	   category_supplement_3_cost =	0
+
+	  		   	           if sales_channel_code.nil?
+	  		   	           	 category_supplement_1_cost = item.category_supplement_1_cost
+	  		   	           	 category_supplement_2_cost = item.category_supplement_2_cost
+	  		   	           	 category_supplement_3_cost =	item.category_supplement_3_cost	  		   	           	
+	  		   	           else	
+	  		   	           	 if bc_sc = item.booking_categories_sales_channels.select {|bcsc| bcsc.sales_channel.code == sales_channel_code}.first
+	  		   	           	   category_supplement_1_cost = bc_sc.category_supplement_1_cost
+	  		   	           	   category_supplement_2_cost = bc_sc.category_supplement_2_cost
+	  		   	           	   category_supplement_3_cost = bc_sc.category_supplement_3_cost
+	  		   	           	 end  	
+	  		   	           end	
+
 	  		   	           # Get the availability
 	  		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
 											 resources = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:resources] : nil
@@ -210,9 +238,11 @@ module Yito
 	  		   	           payment_available = categories_payment_enabled.include?(item.code)
 
 	  		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
-											 item.stock_control,
-											 photo_path, full_photo_path,
+											 item.stock_control, photo_path, full_photo_path,
 											 base_price, price, deposit,
+											 category_supplement_1_cost,
+											 category_supplement_2_cost,
+											 category_supplement_3_cost,
 											 availability, stock, busy, available,
 											 payment_available, full_information, include_stock, 
 											 resources)

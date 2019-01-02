@@ -23,8 +23,8 @@ module Yito
           # Set up the sales channels
           #
           # == Parameters:
-          # sales_channels::
-          #   Array of ids with the sales channels
+          #
+          # sales_channels:: Array of ids with the sales channels
           #
           def setup_sales_channels(new_sales_channels_ids)
             

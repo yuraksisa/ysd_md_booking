@@ -18,6 +18,9 @@ booking_business_literals:
       resource_characteristic_2: Fecha matriculación
       resource_characteristic_3: Km. adquisición
       resource_characteristic_4: Color
+      category_supplement_1: Combustible
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3      
     accommodation:
       category: Tipos de habitación
       category_singular: Tipo de habitación
@@ -35,7 +38,10 @@ booking_business_literals:
       resource_characteristic_1: Característica 1
       resource_characteristic_2: Característica 2
       resource_characteristic_3: Característica 3
-      resource_characteristic_4: Característica 4     
+      resource_characteristic_4: Característica 4
+      category_supplement_1: Suplemento 1           
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3 
     ads:
       category: Anuncios
       category_singular: Anuncio
@@ -53,7 +59,10 @@ booking_business_literals:
       resource_characteristic_1: Característica 1
       resource_characteristic_2: Característica 2
       resource_characteristic_3: Característica 3
-      resource_characteristic_4: Característica 4         
+      resource_characteristic_4: Característica 4
+      category_supplement_1: Suplemento 1                
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3 
     category_resources:
       category: Categorías
       category_singular: Categoría
@@ -71,7 +80,10 @@ booking_business_literals:
       resource_characteristic_1: Característica 1
       resource_characteristic_2: Característica 2
       resource_characteristic_3: Característica 3
-      resource_characteristic_4: Característica 4        
+      resource_characteristic_4: Característica 4
+      category_supplement_1: Suplemento 1               
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3 
     resources:
       category: Productos
       category_singular: Producto
@@ -89,7 +101,10 @@ booking_business_literals:
       resource_characteristic_1: Característica 1
       resource_characteristic_2: Característica 2
       resource_characteristic_3: Característica 3
-      resource_characteristic_4: Característica 4        
+      resource_characteristic_4: Característica 4
+      category_supplement_1: Suplemento 1               
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3 
     boat_charter:
       category: Barcos
       category_singular: Barco
@@ -109,7 +124,10 @@ booking_business_literals:
       resource_characteristic_1: Característica 1
       resource_characteristic_2: Característica 2
       resource_characteristic_3: Característica 3
-      resource_characteristic_4: Característica 4       
+      resource_characteristic_4: Característica 4
+      category_supplement_1: Suplemento 1              
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3 
     vehicle_rental_resources:
       category: Vehículos
       category_singular: Vehículo
@@ -127,7 +145,10 @@ booking_business_literals:
       resource_characteristic_1: Combustible
       resource_characteristic_2: Fecha matriculación
       resource_characteristic_3: Km. adquisición
-      resource_characteristic_4: Color            
+      resource_characteristic_4: Color
+      category_supplement_1: Combustible 
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3                         
   starting_date:
     pickup_return_date:
       title: Entrega/Devolución
@@ -280,6 +301,7 @@ booking_news_feed:
   updated_item_quantity: Modificada cantidad %1 del producto %2 (ant. %3)
   updated_item_cost: Modificado el precio %1 del producto %2 (ant. %3)
   updated_item_deposit: Modificado la fianza %1 del producto %2 (ant. %3)
+  updated_item_category_supplements: "Modificados suplementos de categoría del producto %1. %2 (ant. %3), %4 (ant. %5), %6 (ant. 7)"
   updated_driver_age_deposit: Actualizada la fianza por edad del conductor %1 (ant. %2)
   updated_driver_dates: Actualizadas fechas del conductor. Fecha nacimiento %1. Fecha carnet %2
   confirmed_booking: Reserva confirmada

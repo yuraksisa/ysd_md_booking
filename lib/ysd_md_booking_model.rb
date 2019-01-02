@@ -63,6 +63,13 @@ module BookingDataSystem
      property :extras_cost, Decimal, :field => 'extras_cost', :scale => 2, :precision => 10, :default => 0
      property :time_from_cost, Decimal, :scale => 2, :precision => 10, :default => 0
      property :time_to_cost, Decimal, :scale => 2, :precision => 10, :default => 0
+     property :category_supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :category_supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0     
+     property :supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0
+
      property :total_cost, Decimal, :field => 'total_cost', :scale => 2, :precision => 10, :default => 0
 
      property :product_deposit_cost, Decimal, :scale => 2, :precision => 10, :default => 0
@@ -156,6 +163,11 @@ module BookingDataSystem
      #
      # Calculate completed years between two dates
      #
+     # == Parameters::
+     #
+     # to_date:: To date
+     # from_date:: From date
+     #
      def self.completed_years(to_date, from_date)
        d = to_date
        a = d.year - from_date.year
@@ -167,7 +179,17 @@ module BookingDataSystem
      #
      # Create a reservation from a shopping cart
      #
-     def self.create_from_shopping_cart(shopping_cart, user_agent_data=nil, created_by_manager=false, send_notifications=true)
+     # == Parameters::
+     #
+     # shopping_cart:: Shopping cart
+     # user_agent_data:: Browser user agent
+     # created_by_manager:: False if created from the website
+     # send_notifications:: Send the notifications
+     #
+     def self.create_from_shopping_cart(shopping_cart, 
+                                        user_agent_data=nil, 
+                                        created_by_manager=false, 
+                                        send_notifications=true)
 
        booking = nil
        booking_driver_address = nil
@@ -190,6 +212,12 @@ module BookingDataSystem
                           time_to_cost: shopping_cart.time_to_cost,
                           product_deposit_cost: shopping_cart.product_deposit_cost,
                           total_deposit: shopping_cart.total_deposit,
+                          category_supplement_1_cost: shopping_cart.category_supplement_1_cost,
+                          category_supplement_2_cost: shopping_cart.category_supplement_2_cost,
+                          category_supplement_3_cost: shopping_cart.category_supplement_3_cost,
+                          supplement_1_cost: shopping_cart.supplement_1_cost,
+                          supplement_2_cost: shopping_cart.supplement_2_cost,
+                          supplement_3_cost: shopping_cart.supplement_3_cost,                                                    
                           total_cost: shopping_cart.total_cost,
                           booking_amount: shopping_cart.booking_amount,
                           total_cost_includes_deposit: shopping_cart.total_cost_includes_deposit,
@@ -325,7 +353,14 @@ module BookingDataSystem
                                             item_cost: shopping_cart_item.item_cost,
                                             quantity: shopping_cart_item.quantity,
                                             product_deposit_unit_cost: shopping_cart_item.product_deposit_unit_cost,
-                                            product_deposit_cost: shopping_cart_item.product_deposit_cost)
+                                            product_deposit_cost: shopping_cart_item.product_deposit_cost,
+                                            category_supplement_1_unit_cost: shopping_cart_item.category_supplement_1_unit_cost,
+                                            category_supplement_1_cost: shopping_cart_item.category_supplement_1_cost,
+                                            category_supplement_2_unit_cost: shopping_cart_item.category_supplement_2_unit_cost,
+                                            category_supplement_2_cost: shopping_cart_item.category_supplement_2_cost,
+                                            category_supplement_3_unit_cost: shopping_cart_item.category_supplement_3_unit_cost,
+                                            category_supplement_3_cost: shopping_cart_item.category_supplement_3_cost                                            
+                                            )
                booking_item.save
              # Create the item resources
              shopping_cart_item.item_resources.each do |shopping_cart_item_resource|
@@ -361,12 +396,12 @@ module BookingDataSystem
            # Create the extras
            shopping_cart.extras.each do |shopping_cart_extra|
               booking_extra = BookingExtra.new(booking: booking,
-                                                  extra_id: shopping_cart_extra.extra_id,
-                                                  extra_description: shopping_cart_extra.extra_description,
-                                                  extra_description_customer_translation: shopping_cart_extra.extra_description_customer_translation,
-                                                  extra_unit_cost: shopping_cart_extra.extra_unit_cost,
-                                                  extra_cost: shopping_cart_extra.extra_cost,
-                                                  quantity: shopping_cart_extra.quantity)
+                                               extra_id: shopping_cart_extra.extra_id,
+                                               extra_description: shopping_cart_extra.extra_description,
+                                               extra_description_customer_translation: shopping_cart_extra.extra_description_customer_translation,
+                                               extra_unit_cost: shopping_cart_extra.extra_unit_cost,
+                                               extra_cost: shopping_cart_extra.extra_cost,
+                                               quantity: shopping_cart_extra.quantity)
               booking_extra.save
            end
 
@@ -548,6 +583,12 @@ module BookingDataSystem
        booking.extras_cost ||= 0
        booking.time_from_cost ||= 0
        booking.time_to_cost ||= 0
+       booking.category_supplement_1_cost ||= 0
+       booking.category_supplement_2_cost ||= 0
+       booking.category_supplement_3_cost ||= 0
+       booking.supplement_1_cost ||= 0
+       booking.supplement_2_cost ||= 0
+       booking.supplement_3_cost ||= 0       
        booking.product_deposit_cost ||= 0
        booking.total_deposit ||= 0
        booking.total_cost ||= 0
@@ -602,10 +643,15 @@ module BookingDataSystem
        
      end
      
-     # --------------------------- Reservation items management -----------------------------------------
+     # --------------------------- BOOKING LINES -----------------------------------------
 
      #
      # Add a booking line to the reservation
+     #
+     # == Parameters::
+     #
+     # item_id:: The item id
+     # quantity:: The quantity
      #
      def add_booking_line(item_id, quantity)
 
@@ -618,6 +664,7 @@ module BookingDataSystem
          if product = ::Yito::Model::Booking::BookingCategory.get(item_id)
            product_customer_translation = product.translate(customer_language)
            product_unit_cost = product_item_cost_base = product.unit_price(self.date_from, self.days, nil, self.sales_channel_code).round(0)
+           product_deposit_cost = product.deposit
            ## Apply promotion code and offers
            rates_promotion_code = if !self.promotion_code.nil? and !self.promotion.code.empty?
                                     ::Yito::Model::Rates::PromotionCode.first(promotion_code: self.promotion_code)
@@ -627,7 +674,19 @@ module BookingDataSystem
            discount = ::Yito::Model::Booking::BookingCategory.discount(product_unit_cost, item_id, self.date_from, self.date_to, rates_promotion_code) || 0
            product_unit_cost = (product_unit_cost - discount).round(0) if discount > 0
            ## End apply offers
-           product_deposit_cost = product.deposit
+           ## Category supplements
+           product_supplement_1_unit_cost = product.category_supplement_1_cost || 0
+           product_supplement_2_unit_cost = product.category_supplement_2_cost || 0
+           product_supplement_3_unit_cost = product.category_supplement_3_cost || 0 
+           if sales_channel_code
+             if bcsc = product.booking_categories_sales_channels.select { |item| item.sales_channel.code == sales_channel_code }.first
+                product_supplement_1_unit_cost = bcsc.category_supplement_1_cost || 0
+                product_supplement_2_unit_cost = bcsc.category_supplement_2_cost || 0
+                product_supplement_3_unit_cost = bcsc.category_supplement_3_cost || 0
+             end 
+           end 
+           ## End of category supplements
+
            transaction do
              # Create booking line
              booking_line = BookingDataSystem::BookingLine.new
@@ -641,6 +700,12 @@ module BookingDataSystem
              booking_line.quantity = quantity
              booking_line.product_deposit_unit_cost = product_deposit_cost
              booking_line.product_deposit_cost = product_deposit_cost * quantity
+             booking_line.category_supplement_1_unit_cost = product_supplement_1_unit_cost
+             booking_line.category_supplement_1_cost = product_supplement_1_unit_cost * quantity
+             booking_line.category_supplement_2_unit_cost = product_supplement_2_unit_cost
+             booking_line.category_supplement_2_cost = product_supplement_2_unit_cost * quantity
+             booking_line.category_supplement_3_unit_cost = product_supplement_3_unit_cost
+             booking_line.category_supplement_3_cost = product_supplement_3_unit_cost * quantity
              booking_line.save
              # Create booking line resources
              (1..quantity).each do |resource_number|
@@ -651,8 +716,23 @@ module BookingDataSystem
              # Update booking cost
              self.item_cost += (product_unit_cost * quantity)
              self.product_deposit_cost += (product_deposit_cost * quantity)
+             self.category_supplement_1_cost += (product_supplement_1_unit_cost * quantity)
+             self.category_supplement_2_cost += (product_supplement_2_unit_cost * quantity)
+             self.category_supplement_3_cost += (product_supplement_3_unit_cost * quantity) 
              self.calculate_cost(false, false)
              self.save
+             # Assign available stock
+             if status == :pending_confirmation 
+               if created_by_manager 
+                 assign_available_stock if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation_on_backoffice_request').to_bool
+               else
+                 assign_available_stock if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation_on_web_request').to_bool
+               end
+             elsif status == :confirmed   
+               if SystemConfiguration::Variable.get_value('booking.assignation.automatic_resource_assignation', 'false').to_bool
+                 assign_available_stock
+               end
+             end  
              # Create newsfeed
              ::Yito::Model::Newsfeed::Newsfeed.create(category: 'booking',
                                             action: 'add_booking_line',
@@ -669,6 +749,10 @@ module BookingDataSystem
      #
      # Destroy a booking line
      #
+     # == Parameters::
+     #
+     # item_id:: The item line id
+     #
      def destroy_booking_line(item_id)
 
        product_lines = self.booking_lines.select do |booking_line|
@@ -679,6 +763,9 @@ module BookingDataSystem
          transaction do
            self.item_cost -= booking_line.item_cost
            self.product_deposit_cost -= booking_line.product_deposit_cost
+           self.category_supplement_1_cost -= booking_line.category_supplement_1_cost
+           self.category_supplement_2_cost -= booking_line.category_supplement_2_cost
+           self.category_supplement_3_cost -= booking_line.category_supplement_3_cost            
            self.calculate_cost(false, false)
            self.save
            booking_line.destroy
@@ -693,6 +780,8 @@ module BookingDataSystem
        end
 
      end
+
+     # -------------------- EXTRAS ----------------------------------
 
      #
      # Add a booking extra to the reservation
@@ -761,6 +850,8 @@ module BookingDataSystem
        end
 
      end
+
+     # --------------- BOOKING CHARGE -----------------------
 
      #
      # Add a booking charge
@@ -1244,7 +1335,6 @@ module BookingDataSystem
        #p "category_occupation: #{category_occupation.inspect}"
 
        transaction do
-
          booking_lines.each do |booking_line|
            booking_line.booking_line_resources.each do |booking_line_resource|
              if booking_line_resource.booking_item_reference.nil?

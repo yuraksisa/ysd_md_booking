@@ -88,6 +88,11 @@ module Yito
         property :stock_characteristic_3, String, length: 80
         property :stock_characteristic_4, String, length: 80
 
+        # Supplements
+        property :category_supplement_1, Boolean, default: false
+        property :category_supplement_2, Boolean, default: false
+        property :category_supplement_3, Boolean, default: false
+
         # ------ Helpers that represents the categories of the business ------------------------------------------
 
         #

@@ -14,21 +14,47 @@ module Yito
         property :item_description, String, :length => 256
         property :item_description_customer_translation, String, :length => 256
         property :optional, String, :length => 40
+
+        property :quantity, Integer
+
         property :item_unit_cost_base, Decimal, :precision => 10, :scale => 2
         property :item_unit_cost, Decimal, :precision => 10, :scale => 2
         property :item_cost, Decimal, :precision => 10, :scale => 2
-        property :quantity, Integer
+
         property :product_deposit_unit_cost, Decimal, :precision => 10, :scale => 2, :default => 0
         property :product_deposit_cost, Decimal, :precision => 10, :scale => 2, :default => 0
-     
+
+        property :category_supplement_1_unit_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_2_unit_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_3_unit_cost, Decimal, scale: 2, precision: 10, default: 0     
+        property :category_supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0     
+
         belongs_to :shopping_cart, 'ShoppingCartRenting', :child_key => [:shopping_cart_renting_id]
         has n, :item_resources, 'ShoppingCartItemResourceRenting', :constraint => :destroy 
 
         #
         # Set the shopping cart item product
         #
+        # == Parameters::
+        #
+        # item_id:: The item id
+        # item_description:: The item description
+        # quantity:: The quantity
+        # item_unit_cost_base:: Unit cost base
+        # item_unit_cost:: Unit cost
+        # product_deposit_unit_cost:: Deposit unit cost
+        # category_supplement_1_unit_cost:: Category supplement 1
+        # category_supplement_2_unit_cost:: Category supplement 2
+        # category_supplement_3_unit_cost:: Category supplement 3
+        #        
         def set_item(item_id, item_description, quantity, 
-                     item_unit_cost_base, item_unit_cost, product_deposit_unit_cost)
+                     item_unit_cost_base, item_unit_cost, 
+                     product_deposit_unit_cost,
+                     category_supplement_1_unit_cost,
+                     category_supplement_2_unit_cost,
+                     category_supplement_3_unit_cost)
 
           transaction do
              # Updates the item
@@ -43,22 +69,37 @@ module Yito
              # Update the quantity
              self.update_quantity(quantity)
              # Update the cost
-             self.update_item_cost(item_unit_cost_base, item_unit_cost, product_deposit_unit_cost)
+             self.update_item_cost(item_unit_cost_base, 
+                                   item_unit_cost, 
+                                   product_deposit_unit_cost,
+                                   category_supplement_1_unit_cost,
+                                   category_supplement_2_unit_cost,
+                                   category_supplement_3_unit_cost)
           end
 
         end
 
         #
-        # Remove an item from the shopping cart
+        # Remove the item from the shopping cart
         #
         def remove_item
 
           transaction do
             self.destroy
+            
             self.shopping_cart.item_cost ||= 0
             self.shopping_cart.item_cost -= self.item_cost
+
             self.shopping_cart.product_deposit_cost ||= 0
             self.shopping_cart.product_deposit_cost -= self.product_deposit_cost
+            
+            self.shopping_cart.category_supplement_1_cost ||= 0
+            self.shopping_cart.category_supplement_1_cost -= self.category_supplement_1_cost
+            self.shopping_cart.category_supplement_2_cost ||= 0
+            self.shopping_cart.category_supplement_2_cost -= self.category_supplement_2_cost
+            self.shopping_cart.category_supplement_3_cost ||= 0
+            self.shopping_cart.category_supplement_3_cost -= self.category_supplement_3_cost
+
             self.shopping_cart.calculate_cost(false, true)
             begin
               self.shopping_cart.save
@@ -73,6 +114,10 @@ module Yito
         #
         # Updates the item quantity
         #
+        # == Parameters::
+        #
+        # quantity:: New quantity
+        #
         def update_quantity(quantity)
 
           if quantity != self.quantity
@@ -80,6 +125,9 @@ module Yito
             old_quantity = self.quantity || 0
             old_item_cost = self.item_cost || 0
             old_item_deposit = self.product_deposit_cost || 0
+            old_category_supplement_1_cost = self.category_supplement_1_cost || 0
+            old_category_supplement_2_cost = self.category_supplement_2_cost || 0
+            old_category_supplement_3_cost = self.category_supplement_3_cost || 0
 
             transaction do
 
@@ -87,11 +135,19 @@ module Yito
               self.quantity = quantity
               self.item_cost = (self.item_unit_cost || 0) * quantity
               self.product_deposit_cost = (self.product_deposit_unit_cost || 0) * quantity
+              self.category_supplement_1_cost = (self.category_supplement_1_unit_cost || 0) * quantity
+              self.category_supplement_2_cost = (self.category_supplement_2_unit_cost || 0) * quantity
+              self.category_supplement_3_cost = (self.category_supplement_3_unit_cost || 0) * quantity
               self.save
 
               # Update the shopping cart cost
-              self.shopping_cart_item_cost_variation(old_item_cost, old_item_deposit)
+              self.shopping_cart_item_cost_variation(old_item_cost, 
+                                                     old_item_deposit,                                                     
+                                                     old_category_supplement_1_cost,
+                                                     old_category_supplement_2_cost,
+                                                     old_category_supplement_3_cost)
               self.shopping_cart.calculate_cost(false, true)
+
               begin
                 self.shopping_cart.save
               rescue DataMapper::SaveFailureError => error
@@ -120,14 +176,31 @@ module Yito
         end
 
         #
-        # update cost
+        # update item cost
         #
-        def update_item_cost(item_unit_cost_base, item_unit_cost, product_deposit_unit_cost)
+        # == Parameters::
+        #
+        # item_unit_cost_base:: Unit cost base
+        # item_unit_cost:: Unit cost
+        # product_deposit_unit_cost:: Deposit unit cost       
+        # category_supplement_1_unit_cost:: Category supplement 1
+        # category_supplement_2_unit_cost:: Category supplement 2
+        # category_supplement_3_unit_cost:: Category supplement 3        
+        #
+        def update_item_cost(item_unit_cost_base, 
+                             item_unit_cost, 
+                             product_deposit_unit_cost,
+                             category_supplement_1_unit_cost,
+                             category_supplement_2_unit_cost,
+                             category_supplement_3_unit_cost)
 
           transaction do
 
             old_item_cost = self.item_cost || 0
             old_item_deposit = self.product_deposit_cost || 0
+            old_category_supplement_1_cost = self.category_supplement_1_cost || 0
+            old_category_supplement_2_cost = self.category_supplement_2_cost || 0
+            old_category_supplement_3_cost = self.category_supplement_3_cost || 0
 
             # Updates the item cost
             self.item_unit_cost_base = item_unit_cost_base
@@ -135,11 +208,21 @@ module Yito
             self.item_cost = item_unit_cost * self.quantity
             self.product_deposit_unit_cost = product_deposit_unit_cost
             self.product_deposit_cost = product_deposit_unit_cost * quantity
+            self.category_supplement_1_unit_cost = category_supplement_1_unit_cost
+            self.category_supplement_1_cost = category_supplement_1_unit_cost * quantity
+            self.category_supplement_2_unit_cost = category_supplement_2_unit_cost
+            self.category_supplement_2_cost = category_supplement_2_unit_cost * quantity
+            self.category_supplement_3_unit_cost = category_supplement_3_unit_cost
+            self.category_supplement_3_cost = category_supplement_3_unit_cost * quantity
+
             self.save
 
             # Updates the shopping cart cost
-            #update_shopping_cart_cost(old_item_cost, old_item_deposit)
-            self.shopping_cart_item_cost_variation(old_item_cost, old_item_deposit)
+            self.shopping_cart_item_cost_variation(old_item_cost, 
+                                                   old_item_deposit,
+                                                   old_category_supplement_1_cost,
+                                                   old_category_supplement_2_cost,
+                                                   old_category_supplement_3_cost)
             self.shopping_cart.calculate_cost(false, true)
             begin
               self.shopping_cart.save
@@ -154,13 +237,42 @@ module Yito
 
         protected
 
-        def shopping_cart_item_cost_variation(old_item_cost, old_item_deposit)
+        #
+        # Update shopping cart cost variation
+        #
+        # Parameters::
+        # 
+        # old_item_cost:: Old item cost
+        # old_item_deposit:: Old item deposit
+        # old_category_supplement_1_cost:: Old category supplement 1
+        # old_category_supplement_2_cost:: Old category supplement 2
+        # old_category_supplement_3_cost:: Old category supplement 3
+        #
+        def shopping_cart_item_cost_variation(old_item_cost, old_item_deposit,
+                                              old_category_supplement_1_cost, 
+                                              old_category_supplement_2_cost,
+                                              old_category_supplement_3_cost)
+          
           item_cost_variation = ((self.item_cost || 0) - (old_item_cost || 0)).round
-          item_deposit_variation = ((self.product_deposit_cost || 0) - (old_item_deposit || 0)).round
+          item_deposit_variation = ((self.product_deposit_cost || 0) - (old_item_deposit || 0)).round          
+          
+          category_supplement_1_variation = ((self.category_supplement_1_cost || 0) - (old_category_supplement_1_cost || 0)).round
+          category_supplement_2_variation = ((self.category_supplement_2_cost || 0) - (old_category_supplement_2_cost || 0)).round
+          category_supplement_3_variation = ((self.category_supplement_3_cost || 0) - (old_category_supplement_3_cost || 0)).round
+
           self.shopping_cart.item_cost ||= 0
           self.shopping_cart.item_cost += item_cost_variation
+
           self.shopping_cart.product_deposit_cost ||= 0
           self.shopping_cart.product_deposit_cost += item_deposit_variation
+
+          self.shopping_cart.category_supplement_1_cost ||= 0
+          self.shopping_cart.category_supplement_1_cost += category_supplement_1_variation
+          self.shopping_cart.category_supplement_2_cost ||= 0
+          self.shopping_cart.category_supplement_2_cost += category_supplement_2_variation
+          self.shopping_cart.category_supplement_3_cost ||= 0
+          self.shopping_cart.category_supplement_3_cost += category_supplement_3_variation
+
         end
 
       end

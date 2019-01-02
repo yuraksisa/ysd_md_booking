@@ -40,6 +40,10 @@ module Yito
         property :from_price, Decimal, :scale => 2, :precision => 10, :default => 0
         property :from_price_offer, Decimal, :scale => 2, :precision => 10, :default => 0
         
+        property :category_supplement_1_cost, Decimal, scale: 2, precision: 10, default: 0
+        property :category_supplement_2_cost, Decimal, scale: 2, precision: 10, default: 0
+        property :category_supplement_3_cost, Decimal, scale: 2, precision: 10, default: 0
+
         belongs_to :calendar, 'Yito::Model::Calendar::Calendar', :required => false
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
         belongs_to :booking_catalog, 'BookingCatalog', :required => false
@@ -243,7 +247,9 @@ module Yito
 
         #
         # Calculate the unit cost for a date and a number of days
+        #
         # ==Parameters:
+        #
         # date_from:: 
         #   The reservation starting date
         # ndays:: 
