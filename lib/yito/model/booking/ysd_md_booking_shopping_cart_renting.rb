@@ -362,9 +362,9 @@ module Yito
 						                sales_channel_code: self.sales_channel_code})
 					    sc_item.update_item_cost(product.base_price, product.price, 
 					    						 product.deposit,
-					    						 product.category_supplement_1_unit_cost,
-					    						 product.category_supplement_2_unit_cost,
-					    						 product.category_supplement_3_unit_cost)
+					    						 product.category_supplement_1_cost,
+					    						 product.category_supplement_2_cost,
+					    						 product.category_supplement_3_cost)
 					end
 				end
 				# Recalcute extras
