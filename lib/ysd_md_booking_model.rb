@@ -134,6 +134,8 @@ module BookingDataSystem
      property :rental_location_code, String, length: 50
      property :sales_channel_code, String, length: 50
 
+     belongs_to :customer, 'Yito::Model::Customers::Customer', required: false, child_key: [:customer_id], parent_key: [:id]
+
      # Booking extensions
      
      include BookingNotifications
@@ -1416,6 +1418,103 @@ module BookingDataSystem
          end
        end
      end
+
+     # ------------------------- Customer management --------------------------------------
+
+     #
+     # Update from customer
+     # 
+     def update_data_from_customer
+
+     end 
+
+     #
+     # Update customer data
+     #
+     def update_customer_data
+
+     end 
+
+
+     #
+     # Create a customer from reservation name
+     #
+     def create_customer
+
+       return customer if customer
+       customer = ::Yito::Model::Customers::Customer.new
+       customer.customer_type = :individual
+       customer.name = self.customer_name
+       customer.surname = self.customer_surname
+       customer.document_id = self.customer_document_id
+       customer.email = self.customer_email
+       customer.phone_number = self.customer_phone
+       customer.mobile_phone = self.customer_mobile_phone
+       customer.language = self.customer_language
+       customer.address = LocationDataSystem::Address.new
+       if self.driver_address
+         customer.address.street = self.driver_address.street 
+         customer.address.number = self.driver_address.number
+         customer.address.complement = self.driver_address.complement
+         customer.address.city = self.driver_address.city
+         customer.address.state = self.driver_address.state
+         customer.address.country = self.driver_address.country
+         customer.address.zip = self.driver_address.zip
+       end
+       customer.invoice_address = LocationDataSystem::Address.new
+       # Driver data
+       customer.document_id_date = self.driver_document_id_date
+       customer.document_id_expiration_date = self.driver_document_id_expiration_date
+       customer.origin_country = self.driver_origin_country
+       customer.date_of_birth = self.driver_date_of_birth
+       customer.driving_license_number = self.driver_driving_license_number
+       customer.driving_license_date = self.driver_driving_license_date
+       customer.driving_license_country = self.driver_driving_license_country
+       customer.driving_license_expiration_date = self.driver_driving_license_expiration_date
+       # Additional drivers
+       customer.additional_driver_1_name = self.additional_driver_1_name
+       customer.additional_driver_1_surname = self.additional_driver_1_surname
+       customer.additional_driver_1_date_of_birth = self.additional_driver_1_date_of_birth
+       customer.additional_driver_1_driving_license_number = self.additional_driver_1_driving_license_number
+       customer.additional_driver_1_driving_license_date = self.additional_driver_1_driving_license_date
+       customer.additional_driver_1_driving_license_country = self.additional_driver_1_driving_license_country
+       customer.additional_driver_1_driving_license_expiration_date = self.additional_driver_1_driving_license_expiration_date
+       customer.additional_driver_1_document_id = self.additional_driver_1_document_id
+       customer.additional_driver_1_document_id_date = self.additional_driver_1_document_id_date
+       customer.additional_driver_1_document_id_expiration_date = self.additional_driver_1_document_id_expiration_date
+       customer.additional_driver_1_phone = self.additional_driver_1_phone
+       customer.additional_driver_1_email = self.additional_driver_1_email
+       customer.additional_driver_1_origin_country = self.additional_driver_1_origin_country
+       customer.additional_driver_2_name = self.additional_driver_2_name
+       customer.additional_driver_2_surname = self.additional_driver_2_surname
+       customer.additional_driver_2_date_of_birth = self.additional_driver_2_date_of_birth
+       customer.additional_driver_2_driving_license_number = self.additional_driver_2_driving_license_number
+       customer.additional_driver_2_driving_license_date = self.additional_driver_2_driving_license_date
+       customer.additional_driver_2_driving_license_country = self.additional_driver_2_driving_license_country
+       customer.additional_driver_2_driving_license_expiration_date = self.additional_driver_2_driving_license_expiration_date
+       customer.additional_driver_2_document_id = self.additional_driver_2_document_id
+       customer.additional_driver_2_document_id_date = self.additional_driver_2_document_id_date
+       customer.additional_driver_2_document_id_expiration_date = self.additional_driver_2_document_id_expiration_date
+       customer.additional_driver_2_phone = self.additional_driver_2_phone
+       customer.additional_driver_2_email = self.additional_driver_2_email
+       customer.additional_driver_2_origin_country = self.additional_driver_2_origin_country
+       customer.additional_driver_3_name = self.additional_driver_3_name
+       customer.additional_driver_3_surname = self.additional_driver_3_surname
+       customer.additional_driver_3_date_of_birth = self.additional_driver_3_date_of_birth
+       customer.additional_driver_3_driving_license_number = self.additional_driver_3_driving_license_number
+       customer.additional_driver_3_driving_license_date = self.additional_driver_3_driving_license_date
+       customer.additional_driver_3_driving_license_country = self.additional_driver_3_driving_license_country
+       customer.additional_driver_3_driving_license_expiration_date = self.additional_driver_3_driving_license_expiration_date
+       customer.additional_driver_3_document_id = self.additional_driver_3_document_id
+       customer.additional_driver_3_document_id_date = self.additional_driver_3_document_id_date
+       customer.additional_driver_3_document_id_expiration_date = self.additional_driver_3_document_id_expiration_date
+       customer.additional_driver_3_phone = self.additional_driver_3_phone
+       customer.additional_driver_3_email = self.additional_driver_3_email
+       customer.additional_driver_3_origin_country = self.additional_driver_3_origin_country
+       #       
+       customer.save
+       return customer
+     end 
 
      private
      
