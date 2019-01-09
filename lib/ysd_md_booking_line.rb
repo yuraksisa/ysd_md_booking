@@ -100,8 +100,8 @@ module BookingDataSystem
              product_supplement_1_unit_cost = product.category_supplement_1_cost || 0
              product_supplement_2_unit_cost = product.category_supplement_2_cost || 0
              product_supplement_3_unit_cost = product.category_supplement_3_cost || 0 
-             if sales_channel_code
-               if bcsc = product.booking_categories_sales_channels.select { |item| item.sales_channel.code == sales_channel_code }.first
+             if self.booking.sales_channel_code
+               if bcsc = product.booking_categories_sales_channels.select { |item| item.sales_channel.code == self.booking.sales_channel_code }.first
                   product_supplement_1_unit_cost = bcsc.category_supplement_1_cost || 0
                   product_supplement_2_unit_cost = bcsc.category_supplement_2_cost || 0
                   product_supplement_3_unit_cost = bcsc.category_supplement_3_cost || 0
