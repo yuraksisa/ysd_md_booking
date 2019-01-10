@@ -360,6 +360,7 @@ module Yito
 								        apply_promotion_code: self.promotion_code ? true : false,
 								        promotion_code: self.promotion_code,
 						                sales_channel_code: self.sales_channel_code})
+						p "product: #{product.inspect} -- #{self.sales_channel_code}"
 					    sc_item.update_item_cost(product.base_price, product.price, 
 					    						 product.deposit,
 					    						 product.category_supplement_1_cost,

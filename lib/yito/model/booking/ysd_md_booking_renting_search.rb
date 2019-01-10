@@ -59,6 +59,9 @@ module Yito
   		 		  availability: @availability,
 				  available: @available,
   		 		  payment_availibility: @payment_availibility,
+  		 		  category_supplement_1_cost: @category_supplement_1_cost,
+  		 		  category_supplement_2_cost: @category_supplement_2_cost,
+  		 		  category_supplement_3_cost: @category_supplement_3_cost
 			}
 
 			result.merge!(stock: @stock, busy: @busy) if @full_information
@@ -215,7 +218,7 @@ module Yito
 	  		   	           	 category_supplement_2_cost = item.category_supplement_2_cost
 	  		   	           	 category_supplement_3_cost =	item.category_supplement_3_cost	  		   	           	
 	  		   	           else	
-	  		   	           	 if bc_sc = item.booking_categories_sales_channels.select {|bcsc| bcsc.sales_channel.code == sales_channel_code}.first
+	  		   	           	 if bc_sc = BookingCategoriesSalesChannel.first(conditions: {'sales_channel.code': sales_channel_code, booking_category_code: item.code })
 	  		   	           	   category_supplement_1_cost = bc_sc.category_supplement_1_cost
 	  		   	           	   category_supplement_2_cost = bc_sc.category_supplement_2_cost
 	  		   	           	   category_supplement_3_cost = bc_sc.category_supplement_3_cost
