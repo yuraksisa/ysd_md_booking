@@ -143,8 +143,8 @@ booking_business_literals:
       resource_reservations_title: Listado de reservas por vehículo
       resource_reservations_search: Matrícula o referencia
       resource_characteristic_1: Combustible
-      resource_characteristic_2: Fecha matriculación
-      resource_characteristic_3: Km. adquisición
+      resource_characteristic_2: Transmisión
+      resource_characteristic_3: Número bastidor
       resource_characteristic_4: Color
       category_supplement_1: Combustible 
       category_supplement_2: Suplemento 2
