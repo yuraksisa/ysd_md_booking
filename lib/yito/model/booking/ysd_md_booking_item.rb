@@ -36,22 +36,29 @@ module Yito
           :child_key => [:category_code], :parent_key => [:code]
         belongs_to :rental_storage, 'RentalStorage', child_key: [:rental_storage_id], parent_key: [:id], required: false  
 
+        include ::Yito::Model::Booking::Concerns::Registrable
+        include ::Yito::Model::Booking::Concerns::Purchasable
+        include ::Yito::Model::Booking::Concerns::Usage
+        include ::Yito::Model::Booking::Concerns::Maintenance
+        include ::Yito::Model::Booking::Concerns::Insurance
+
         #
         # Override the save method to check the category
         #
         def save
-          
           check_category! if self.category
           super
-
         end
 
         #
         # Change the reference
         #
+        # == Parameters:
+        #
+        # new_reference:: New reference
+        #
         def change_reference(new_reference)
 
-          p "old_reference: #{reference} -- new_reference: #{new_reference}"
           # In datamapper it's not possible to update the key value, so we use adapter
           # https://stackoverflow.com/questions/32302407/updating-a-property-set-as-the-key-in-datamapper
           BookingItem.change_item_reference(new_reference, reference)
@@ -60,13 +67,6 @@ module Yito
           # Update stock locking references
           BookingDataSystem::BookingPrereservationLine.all(booking_item_reference: reference).update(booking_item_reference: new_reference)
 
-        end
-
-        def self.change_item_reference(new_reference, reference)
-          query = <<-QUERY
-            update bookds_items set reference = ? where reference = ?
-          QUERY
-          repository.adapter.select(query, new_reference, reference)
         end
 
         #
@@ -86,6 +86,24 @@ module Yito
 
         private
 
+        #
+        # Update the item reference
+        #
+        # == Parameters::
+        #
+        # new_reference:: The new reference
+        # reference:: Current reference
+        #
+        def self.change_item_reference(new_reference, reference)
+          query = <<-QUERY
+            update bookds_items set reference = ? where reference = ?
+          QUERY
+          repository.adapter.select(query, new_reference, reference)
+        end
+
+        #
+        # Check the category on save
+        #
         def check_category!
           if self.category and (not self.category.saved?) and loaded = BookingCategory.get(self.category.code)
             self.category = loaded

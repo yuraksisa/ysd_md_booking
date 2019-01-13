@@ -93,6 +93,14 @@ module Yito
         property :category_supplement_2, Boolean, default: false
         property :category_supplement_3, Boolean, default: false
 
+        # Product characteristics
+        property :registrable, Boolean, default: false
+        property :purchasable, Boolean, default: false
+        property :usage, Boolean, default: false
+        property :maintenance, Boolean, default: false
+        property :insurance, Boolean, default: false
+
+
         # ------ Helpers that represents the categories of the business ------------------------------------------
 
         #
