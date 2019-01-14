@@ -79,7 +79,11 @@ module Yito
           else
             relationships = options[:relationships] || {}
             relationships.store(:rental_storage, {})
-            super(options.merge({:relationships => relationships}))
+            methods = options[:methods] || []
+            methods << :maintenance_external_revision_warning
+            methods << :maintenance_official_revision_warning
+            methods << :insurance_end_date_warning
+            super(options.merge({relationships: relationships, methods: methods}))
           end
 
         end
