@@ -18,9 +18,9 @@ module Yito
       
       	property :id, Serial
 
-     	property :date_from, DateTime, :required => true
+     	property :date_from, Date, :required => true
      	property :time_from, String, :required => false, :length => 5
-     	property :date_to, DateTime, :required => true 
+     	property :date_to, Date, :required => true 
      	property :time_to, String, :required => false, :length => 5
           
      	property :item_cost, Decimal, :scale => 2, :precision => 10, :default => 0
@@ -44,7 +44,7 @@ module Yito
 		property :total_cost_includes_deposit, Boolean, default: false
 		property :booking_amount_includes_deposit, Boolean, default: false
 
-	    property :date_to_price_calculation, DateTime
+	    property :date_to_price_calculation, Date
 	   	property :days, Integer
 
 	   	property :customer_name, String, :length => 40

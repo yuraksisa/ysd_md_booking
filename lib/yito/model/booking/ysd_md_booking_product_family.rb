@@ -42,12 +42,16 @@ module Yito
                    :child_key => [:product_price_definition_factor_definition_id], :parent_key => [:id], :required => false
         property :product_price_definition_units_management, Enum[:unitary, :detailed], default: :detailed
         property :product_price_definition_units_management_value, Integer, default: 7
+        property :product_price_definition_units_management_value_hours_list, String, length: 200, default: '1' # comma-separated values
+        property :product_price_definition_units_management_value_hours_half_day, Integer, default: 4
 
         # Extras price builder
         property :allow_extras, Boolean, default: true
         property :extras_price_definition_type, Enum[:season, :no_season], default: :no_season
         property :extras_price_definition_units_management, Enum[:unitary, :detailed], default: :unitary
         property :extras_price_definition_units_management_value, Integer, default: 1
+        property :extras_price_definition_units_management_value_hours_list, String, length: 200, default: '1' # comma-separated values
+        property :extras_price_definition_units_management_value_hours_half_day, Integer, default: 4
         belongs_to :extras_price_definition_season_definition, 'Yito::Model::Rates::SeasonDefinition',
                    :child_key => [:extras_price_definition_season_definition_id], :parent_key => [:id], :required => false
         belongs_to :extras_price_definition_factor_definition, 'Yito::Model::Rates::FactorDefinition',
@@ -237,6 +241,8 @@ module Yito
                               type: product_price_definition_type,
                               units_management: product_price_definition_units_management,
                               units_management_value: product_price_definition_units_management_value,
+                              units_management_value_hours_list: product_price_definition_units_management_value_hours_list,
+                              units_management_value_hours_half_day: product_price_definition_units_management_value_hours_half_day,
                               season_definition: season_definition,
                               factor_definition: factor_definition)
 
@@ -255,6 +261,8 @@ module Yito
               type: extras_price_definition_type,
               units_management: extras_price_definition_units_management,
               units_management_value: extras_price_definition_units_management_value,
+              units_management_value_hours_list: extras_price_definition_units_management_value_hours_list,
+              units_management_value_hours_half_day: extras_price_definition_units_management_value_hours_half_day,
               season_definition: (extras_price_definition_type == :season ? extras_price_definition_season_definition : nil),
               factor_definition: use_factors ? extras_price_definition_factor_definition : nil)
 

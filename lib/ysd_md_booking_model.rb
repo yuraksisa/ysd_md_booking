@@ -54,9 +54,9 @@ module BookingDataSystem
      property :created_by_manager, Boolean, :field => 'created_by_manager', :default => false
      property :source, String, :field => 'source', :length => 50   # Where does the booking come from
      
-     property :date_from, DateTime, :field => 'date_from', :required => true
+     property :date_from, Date, :field => 'date_from', :required => true
      property :time_from, String, :field => 'time_from', :required => false, :length => 5
-     property :date_to, DateTime, :field => 'date_to', :required => true 
+     property :date_to, Date, :field => 'date_to', :required => true 
      property :time_to, String, :field => 'time_to', :required => false, :length => 5
           
      property :item_cost, Decimal, :field => 'item_cost', :scale => 2, :precision => 10, :default => 0
@@ -91,7 +91,7 @@ module BookingDataSystem
      has n, :booking_charges, 'BookingCharge', :child_key => [:booking_id], :parent_key => [:id]
      has n, :charges, 'Payments::Charge', :through => :booking_charges
      
-     property :date_to_price_calculation, DateTime, :field => 'date_to_price_calculation'
+     property :date_to_price_calculation, Date, :field => 'date_to_price_calculation'
      property :days, Integer, :field => 'days'
      
      property :customer_name, String, :field => 'customer_name', :required => true, :length => 40
