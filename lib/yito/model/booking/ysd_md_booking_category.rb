@@ -56,7 +56,10 @@ module Yito
         has n, :booking_categories_sales_channels, 'BookingCategoriesSalesChannel', :child_key => [:booking_category_code], :parent_key => [:code], :constraint => :destroy
         #has n, :sales_channels, 'Yito::Model::SalesChannel::SalesChannel', :through => :booking_categories_sales_channels, :via => :sales_channel
         
-        belongs_to :rental_location, 'RentalLocation', child_key: [:rental_location_code], parent_key: [:code], required: false 
+        # TODO : Remove the column and the index
+        # alter table bookds_categories drop column rental_location_code;
+        #belongs_to :rental_location, 'RentalLocation', child_key: [:rental_location_code], parent_key: [:code], required: false 
+        belongs_to :supplier, 'Yito::Model::Suppliers::Supplier', child_key: [:supplier_id], parent_id: [:id], required: false
           
         # -------------------------------- Hooks ----------------------------------------------
 
@@ -175,7 +178,7 @@ module Yito
         end
 
         #
-        # Calcualte discount
+        # Calculate discount
         #
         def self.discount(product_price, item_id, from, to, rates_promotion_code=nil)
 

@@ -30,7 +30,9 @@ module Yito
               
               last_month = nil
               year = nil
+              total = 0
               month_charges = []
+              subtotals = {}
 
               charges.each do |charge|
                 year = charge.date.year
@@ -40,20 +42,24 @@ module Yito
                       pdf.move_down 20
                       pdf.text "#{BookingDataSystem.r18n.t.months[last_month]} #{year}"
                       pdf.move_down 10
-                      build_table(month_charges, pdf)
+                      build_table(month_charges, subtotals, total, pdf)
                     end
                     month_charges.clear
+                    total = 0
+                    subtotals.clear
                   end
                 end
                 month_charges << charge
                 last_month = charge.date.month
+                total += charge.amount
+                subtotals.has_key?(charge.payment_method_id) ? subtotals[charge.payment_method_id] += charge.amount : subtotals[charge.payment_method_id] = charge.amount
               end
 
               if month_charges.size > 0
               	pdf.move_down 20
                 pdf.text "#{BookingDataSystem.r18n.t.months[last_month]} #{year}"
                 pdf.move_down 10
-                build_table(month_charges, pdf)
+                build_table(month_charges, subtotals, total, pdf)
               end	
 
             end
@@ -63,7 +69,7 @@ module Yito
 
           private
 
-          def build_table(charges, pdf)
+          def build_table(charges, subtotals, total, pdf)
             
             table_data = []
             
@@ -72,6 +78,7 @@ module Yito
             header << "Importe"
             header << "Origen"
             header << "Cliente"
+            header << "NIF/CIF/VAT#"
             table_data << header
 
             charges.each do |charge|
@@ -79,17 +86,31 @@ module Yito
               	      charge.payment_method_id,
               	      "%.2f" % charge.amount,
               	      charge.source,
-              	      "#{charge.customer_name} #{charge.customer_surname}"
+              	      "#{charge.customer_name} #{charge.customer_surname}",
+                      charge.customer_document_id
                       ]              
               table_data << data                                 
             end
+            subtotals.each do |payment_method_id, subtotal|
+              data = ['',
+                      "Total #{payment_method_id}",
+                      "%.2f" % subtotal,
+                      '',
+                      '',
+                      ''
+                      ]              
+              table_data << data  
+            end  
+
+            table_data << ['','TOTAL',"%.2f" % total, '', '', '']
 
             pdf.table(table_data, width: pdf.bounds.width) do |t|
               t.column(0).style(size: 8)	
               t.column(1).style(size: 8)
               t.column(2).style(:align => :right,size: 8)
               t.column(3).style(size: 8)
-              t.column(4).style(size: 8) 
+              t.column(4).style(size: 8)
+              t.column(5).style(size: 8) 
             end   
 
           end	

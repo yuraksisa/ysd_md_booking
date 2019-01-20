@@ -165,6 +165,9 @@ module Yito
         has n, :activity_classifier_terms, 'ActivityClassifierTerm', :child_key => [:activity_id], :parent_key => [:id], :constraint => :destroy
         has n, :classifier_terms, '::Yito::Model::Classifier::ClassifierTerm', :through => :activity_classifier_terms, :via => :classifier_term
 
+        # Supplier
+        belongs_to :supplier, 'Yito::Model::Suppliers::Supplier', child_key: [:supplier_id], parent_id: [:id], required: false
+
         # ==================================   HOOKS   ============================================================
 
         before :create do

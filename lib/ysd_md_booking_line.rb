@@ -29,6 +29,9 @@ module BookingDataSystem
      belongs_to :booking, 'Booking', :child_key => [:booking_id]
      has n, :booking_line_resources, 'BookingLineResource', :constraint => :destroy 
 
+     # Item supplier
+     belongs_to :supplier, 'Yito::Model::Suppliers::Supplier', child_key: [:supplier_id], parent_id: [:id], required: false
+
 
      # =============================== Instance methods ==================================================
 

@@ -4,7 +4,7 @@ booking_business_literals:
       category: Grupos
       category_singular: Grupo
       product: Vehículos
-      product_singular: Referencia
+      product_singular: Vehículo
       stock_model: Modelo
       stock_reference: Matrícula
       new_product: Nuevo grupo

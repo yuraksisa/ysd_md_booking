@@ -355,44 +355,42 @@ module Yito
           #
           def charges(date_from, date_to)
 
-            if defined?(::Yito::Model::Order)
-              sql = <<-SQL
-                select * 
-                from (
-                  select pc.id, pc.amount, pc.date, pc.payment_method_id, 
-                         'booking' as source, bc.booking_id as source_id,
-                         'booking' as source_link,
-                         b.customer_name as customer_name, b.customer_surname as customer_surname
-                  from payment_charges pc
-                  join bookds_booking_charges bc on bc.charge_id = pc.id
-                  join bookds_bookings b on bc.booking_id = b.id
-                  where pc.status = 4
-                  union
-                  select pc.id, pc.amount, pc.date, pc.payment_method_id, 
-                         'order' as source, oc.order_id as source_id,
-                         'order' as source_link,
-                         o.customer_name as customer_name, o.customer_surname as customer_surname
-                  from payment_charges pc
-                  join orderds_order_charges oc on oc.charge_id = pc.id
-                  join orderds_orders o on oc.order_id = o.id
-                  where pc.status = 4
-                ) as data_charges
-                where data_charges.date >= ? and data_charges.date <= ?
-                order by data_charges.date
-              SQL
-            else
-              sql = <<-SQL
+            sql = <<-SQL
+              select * 
+              from (
                 select pc.id, pc.amount, pc.date, pc.payment_method_id, 
-                      'booking' as source, bc.booking_id as source_id,
-                      'booking' as source_link,
-                      b.customer_name as customer_name, b.customer_surname as customer_surname
+                       'booking' as source, bc.booking_id as source_id,
+                       'booking' as source_link,
+                       b.customer_name as customer_name, b.customer_surname as customer_surname,
+                       b.driver_document_id as customer_document_id
                 from payment_charges pc
                 join bookds_booking_charges bc on bc.charge_id = pc.id
                 join bookds_bookings b on bc.booking_id = b.id
-                where pc.status = 4 and pc.date >= ? and pc.date <= ?
-                order by pc.date
-              SQL
-            end
+                where pc.status = 4
+                union
+                select pc.id, pc.amount, pc.date, pc.payment_method_id, 
+                       'order' as source, oc.order_id as source_id,
+                       'order' as source_link,
+                       o.customer_name as customer_name, o.customer_surname as customer_surname,
+                       o.customer_document_id as customer_document_id
+                from payment_charges pc
+                join orderds_order_charges oc on oc.charge_id = pc.id
+                join orderds_orders o on oc.order_id = o.id
+                where pc.status = 4
+                union
+                select pc.id, pc.amount, pc.date, pc.payment_method_id, 
+                       'customer_invoice' as source, cic.customer_invoice_id as source_id,
+                       'customer_invoice' as source_link,
+                       ci.customer_full_name as customer_name, '' as customer_surname,
+                       ci.customer_document_id as customer_document_id
+                from payment_charges pc
+                join invoiceds_customer_invoice_charges cic on cic.charge_id = pc.id
+                join invoiceds_customer_invoices ci on cic.customer_invoice_id = ci.id
+                where pc.status = 4                  
+              ) as data_charges
+              where data_charges.date >= ? and data_charges.date <= ?
+              order by data_charges.date
+            SQL
 
             charges = repository.adapter.select(sql, date_from, date_to)
 
@@ -417,6 +415,9 @@ module Yito
               elsif charge.source_link == 'order'
                 charge.source_link = "<a href=\"/admin/order/orders/#{charge.source_id}\">Pedido #{BookingDataSystem.r18n.order_model.charge_description(charge.source_id)}</a>"
                 charge.source = BookingDataSystem.r18n.order_model.charge_description(charge.source_id)
+              elsif charge.source_link == 'customer_invoice'
+                charge.source_link = "<a href=\"/admin/invoices/customer-invoices/#{charge.source_id}\">#{YsdPluginInvoices.r18n.t.customer_invoice_model.charge_description(charge.source_id)}</a>"
+                charge.source = YsdPluginInvoices.r18n.t.customer_invoice_model.charge_description(charge.source_id)                
               end
             end
 

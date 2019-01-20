@@ -34,6 +34,9 @@ module Yito
         belongs_to :shopping_cart, 'ShoppingCartRenting', :child_key => [:shopping_cart_renting_id]
         has n, :item_resources, 'ShoppingCartItemResourceRenting', :constraint => :destroy 
 
+        # Item supplier
+        belongs_to :supplier, 'Yito::Model::Suppliers::Supplier', child_key: [:supplier_id], parent_id: [:id], required: false
+
         #
         # Set the shopping cart item product
         #
