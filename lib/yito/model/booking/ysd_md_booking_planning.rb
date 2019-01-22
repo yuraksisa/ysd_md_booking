@@ -397,7 +397,7 @@ module Yito
               end
             end
 
-          end
+          end 
 
         end
 
