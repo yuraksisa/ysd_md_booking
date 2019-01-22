@@ -9,9 +9,9 @@ module Yito
 
         module ClassMethods
 
-          # ------------------------------ Reservation Search -------------------------------------------------------
+          # --------- Reservation management optimized queries -------------
 
-          def map_results(data)
+          def map_optimized_query_results(data)
               data.map! do |item|
                 item['status'] = case item['status'].to_i
                                   when 1
@@ -41,46 +41,23 @@ module Yito
 
           #
           # Search booking by text (customer surname, phone, email)
-          # ---------------------------------------------------------------------------------------------------------
           #          
-          def text_search(search_text, limit, offset) #(search_text, offset_order_query={})
-             if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
-               total = query_strategy.count_text_search(search_text)
-               extra_condition = <<-CONDITION
-                  WHERE b.id = ? or unaccent(customer_name) ilike unaccent(?) or unaccent(customer_surname) ilike unaccent(?) or customer_email = ? or 
-                      customer_phone = ? or customer_mobile_phone = ? or external_invoice_number = ?
-               CONDITION
-               data = repository.adapter.select(query_reservation_search(limit, offset, extra_condition),
-                        search_text.to_i, "%#{search_text}%", "%#{search_text}%", search_text,
-                        search_text, search_text, search_text)
-               [total, data]                      
-             else
-              conditions = Conditions::JoinComparison.new('$or', 
-                              [Conditions::Comparison.new(:id, '$eq', search_text.to_i),
-                               Conditions::Comparison.new(:customer_name, '$like', "%#{search_text}%"),
-                               Conditions::Comparison.new(:customer_surname, '$like', "%#{search_text}%"),
-                               Conditions::Comparison.new(:customer_email, '$eq', search_text),
-                               Conditions::Comparison.new(:customer_phone, '$eq', search_text),
-                               Conditions::Comparison.new(:customer_mobile_phone, '$eq', search_text),
-                               Conditions::Comparison.new(:external_invoice_number, '$eq', search_text)])
-              total = conditions.build_datamapper(BookingDataSystem::Booking).count
-              extra_condition = <<-CONDITION
-                WHERE b.id = ? or customer_name like ? or customer_surname like ? or customer_email = ? or 
-                      customer_phone = ? or customer_mobile_phone = ? or external_invoice_number = ?
-              CONDITION
-              data = repository.adapter.select(query_reservation_search(limit, offset, extra_condition),
-                      search_text.to_i, "%#{search_text}%", "%#{search_text}%", search_text,
-                      search_text, search_text, search_text)
-
-              [total, data]
-             end
+          def text_search(search_text, limit, offset)
+             query_strategy.text_search(search_text, limit, offset)
           end
+          #
+          # Search booking by text (customer surname, phone, email)
+          #          
+          def text_search_multiple(search_text, limit, offset)
+             query_strategy.text_search(search_text, limit, offset)
+          end
+
 
           #
           # Reservation management no conditions
           #
           def reservation_search(limit, offset)
-             repository.adapter.select(query_reservation_search(limit, offset))
+             repository.adapter.select(query_strategy.query_reservation_search(limit, offset))
           end
 
           #
@@ -88,7 +65,7 @@ module Yito
           #
           def reservation_search_pending(limit, offset, today)
              extra_condition = "WHERE b.status = 1 and b.date_from >= ?"
-             repository.adapter.select(query_reservation_search(limit, offset, extra_condition), today)
+             repository.adapter.select(query_strategy.query_reservation_search(limit, offset, extra_condition), today)
           end
 
           #
@@ -96,7 +73,7 @@ module Yito
           #
           def reservation_search_in_process(limit, offset, today)
              extra_condition = "WHERE b.status in (2,3) and b.date_from <= ? and date_to >= ?"            
-             repository.adapter.select(query_reservation_search(limit, offset, extra_condition), today, today)
+             repository.adapter.select(query_strategy.query_reservation_search(limit, offset, extra_condition), today, today)
           end
 
           #
@@ -104,7 +81,7 @@ module Yito
           #
           def reservation_search_confirmed(limit, offset, first_year_date)
              extra_condition = "WHERE b.status in (2,3,4) and b.creation_date >= ?"
-             repository.adapter.select(query_reservation_search(limit, offset, extra_condition), first_year_date)
+             repository.adapter.select(query_strategy.query_reservation_search(limit, offset, extra_condition), first_year_date)
           end
 
           #
@@ -116,27 +93,27 @@ module Yito
           end
 
           def reservation_search_multiple(limit, offset)
-            repository.adapter.select(query_reservation_search_multiple(limit, offset))
+            repository.adapter.select(query_strategy.query_reservation_search_multiple(limit, offset))
           end
 
           def reservation_search_pending_multiple(limit, offset, today)
              extra_condition = " WHERE b.status = 1 and b.date_from >= ? "
-             repository.adapter.select(query_reservation_search_multiple(limit, offset, extra_condition), today)
+             repository.adapter.select(query_strategy.query_reservation_search_multiple(limit, offset, extra_condition), today)
           end
 
           def reservation_search_in_process_multiple(limit, offset, today)
              extra_condition = "WHERE b.status in (2,3) and b.date_from <= ? and date_to >= ?"            
-             repository.adapter.select(query_reservation_search_multiple(limit, offset, extra_condition), today, today)
+             repository.adapter.select(query_strategy.query_reservation_search_multiple(limit, offset, extra_condition), today, today)
           end    
 
           def reservation_search_confirmed_multiple(limit, offset, first_year_date)
              extra_condition = "WHERE b.status in (2,3,4) and b.creation_date >= ?"
-             repository.adapter.select(query_reservation_search_multiple(limit, offset, extra_condition), first_year_date)
+             repository.adapter.select(query_strategy.query_reservation_search_multiple(limit, offset, extra_condition), first_year_date)
           end                
 
           def reservation_search_received_multiple(limit, offset, first_year_date)
              extra_condition = "WHERE b.creation_date >= ?"
-             repository.adapter.select(query_reservation_search_multiple(limit, offset, extra_condition), first_year_date)
+             repository.adapter.select(query_strategy.query_reservation_search_multiple(limit, offset, extra_condition), first_year_date)
           end  
 
           def query_reservation_search(limit, offset, extra_condition='')
@@ -192,19 +169,10 @@ module Yito
                     LIMIT #{limit} OFFSET #{offset}
                 SQL
             end              
-            sql = <<-SQL
-                SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as #{cast}) as status, 
-                       CAST(payment_status as #{cast}) as payment_status, creation_date, created_by_manager, rental_location_code,
-                       #{group_concat} as item_id
-                FROM bookds_bookings b
-                JOIN bookds_bookings_lines bl on bl.booking_id = b.id
-                #{extra_condition}
-                GROUP BY bl.booking_id
-                ORDER BY b.id desc
-                LIMIT #{limit} OFFSET #{offset}
-            SQL
           end
-            
+           
+          # --------- Search customers from reservation -------------
+
           #
           # Reservation customers
           # ---------------------------------------------------------------------------------------------------------

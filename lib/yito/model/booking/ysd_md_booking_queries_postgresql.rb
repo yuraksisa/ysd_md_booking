@@ -10,6 +10,60 @@ module Yito
         def date_diff(from_field, to_field, alias_name)
           "DATE_PART('day', #{to_field} - #{from_field}) as #{alias_name}"
         end
+     
+        # --------- Reservation management optimized queries -------------
+
+        def text_search(search_text, limit, offset) #(search_text, offset_order_query={})
+             total = query_strategy.count_text_search(search_text)
+             extra_condition = <<-CONDITION
+                WHERE b.id = ? or unaccent(customer_name) ilike unaccent(?) or unaccent(customer_surname) ilike unaccent(?) or customer_email = ? or 
+                    customer_phone = ? or customer_mobile_phone = ? or external_invoice_number = ?
+             CONDITION
+             data = repository.adapter.select(query_reservation_search(limit, offset, extra_condition),
+                      search_text.to_i, "%#{search_text}%", "%#{search_text}%", search_text,
+                      search_text, search_text, search_text)
+             [total, data]                      
+        end
+       
+        def text_search_multiple(search_text, limit, offset) #(search_text, offset_order_query={})
+             total = query_strategy.count_text_search(search_text)
+             extra_condition = <<-CONDITION
+                WHERE b.id = ? or unaccent(customer_name) ilike unaccent(?) or unaccent(customer_surname) ilike unaccent(?) or customer_email = ? or 
+                    customer_phone = ? or customer_mobile_phone = ? or external_invoice_number = ?
+             CONDITION
+             data = repository.adapter.select(query_reservation_search_multiple(limit, offset, extra_condition),
+                      search_text.to_i, "%#{search_text}%", "%#{search_text}%", search_text,
+                      search_text, search_text, search_text)
+             [total, data]                      
+        end
+
+        def query_reservation_search(limit, offset, extra_condition='')
+           sql = <<-SQL
+              SELECT b.id as id, customer_id, customer_name, customer_surname, date_from, date_to, CAST(status as INTEGER) as status, 
+                     CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code,
+                     (select array_to_string(array_agg(bl.item_id), ' ') from bookds_bookings_lines bl where bl.booking_id = b.id) as item_id
+              FROM bookds_bookings b
+              #{extra_condition}
+              ORDER BY b.id desc
+              LIMIT #{limit} OFFSET #{offset}
+           SQL
+        end        
+
+        def query_reservation_search_multiple(limit, offset, extra_condition='')
+            sql = <<-SQL
+                SELECT b.id, customer_id, customer_name, customer_surname, date_from, date_to, CAST(status as INTEGER) as status, 
+                       CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code,
+                       (select array_to_string(array_agg(concat(bl.item_id, '(', bl.quantity,' u.)')), ' ') from bookds_bookings_lines bl where bl.booking_id = b.id) as item_id
+                FROM bookds_bookings b
+                JOIN bookds_bookings_lines bl on bl.booking_id = b.id
+                #{extra_condition}
+                GROUP BY bl.booking_id
+                ORDER BY b.id desc
+                LIMIT #{limit} OFFSET #{offset}
+            SQL
+        end        
+
+        # --------- Search customers from reservation -------------
 
         def customer_search(search_text, offset_order_query)
           query = <<-QUERY

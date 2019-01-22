@@ -232,6 +232,7 @@ module BookingDataSystem
                           customer_mobile_phone: shopping_cart.customer_mobile_phone,
                           customer_language: shopping_cart.customer_language,
                           customer_document_id: shopping_cart.customer_document_id,
+                          customer_id: shopping_cart.customer_id,
                           promotion_code: shopping_cart.promotion_code,
                           comments: shopping_cart.comments,
                           number_of_adults: shopping_cart.number_of_adults,

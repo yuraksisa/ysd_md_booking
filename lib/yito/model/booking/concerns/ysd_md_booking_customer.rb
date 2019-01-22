@@ -27,6 +27,9 @@ module Yito
 		          self.customer_language = customer.language         
 		       
 		          # Driver data
+		          self.driver_name = customer.name
+		          self.driver_surname = customer.surname
+		          self.driver_document_id = customer.document_id
 		          self.driver_document_id_date = customer.document_id_date
 		          self.driver_document_id_expiration_date = customer.document_id_expiration_date 
 		          self.driver_origin_country = customer.origin_country

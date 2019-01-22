@@ -70,6 +70,8 @@ module Yito
 		property :rental_location_code, String, length: 50
 
 		property :destination_accommodation, Text
+
+		include Yito::Model::Booking::Concerns::Customer
 		
 		# ----------------- Hooks ----------------------
 		
