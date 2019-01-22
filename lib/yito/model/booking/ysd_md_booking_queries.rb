@@ -140,24 +140,62 @@ module Yito
           end  
 
           def query_reservation_search(limit, offset, extra_condition='')
-              sql = <<-SQL
-                SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as UNSIGNED) as status, 
-                       CAST(payment_status as UNSIGNED) as payment_status, creation_date, created_by_manager, rental_location_code,
-                       GROUP_CONCAT(CONCAT(bl.item_id)) as item_id
-                FROM bookds_bookings b
-                JOIN bookds_bookings_lines bl on bl.booking_id = b.id
-                #{extra_condition}
-                GROUP BY bl.booking_id
-                ORDER BY b.id desc
-                LIMIT #{limit} OFFSET #{offset}
-              SQL
+              if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
+                 sql = <<-SQL
+                    SELECT b.id as id, customer_name, customer_surname, date_from, date_to, CAST(status as INTEGER) as status, 
+                           CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code,
+                           (select array_to_string(array_agg(bl.item_id), ' ') from bookds_bookings_lines bl where bl.booking_id = b.id) as item_id
+                    FROM bookds_bookings b
+                    #{extra_condition}
+                    ORDER BY b.id desc
+                    LIMIT #{limit} OFFSET #{offset}
+                 SQL
+              else
+                sql = <<-SQL
+                  SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as UNSIGNED) as status, 
+                         CAST(payment_status as UNSIGNED) as payment_status, creation_date, created_by_manager, rental_location_code,
+                         GROUP_CONCAT(CONCAT(bl.item_id)) as item_id
+                  FROM bookds_bookings b
+                  JOIN bookds_bookings_lines bl on bl.booking_id = b.id
+                  #{extra_condition}
+                  GROUP BY bl.booking_id
+                  ORDER BY b.id desc
+                  LIMIT #{limit} OFFSET #{offset}
+                SQL
+              end
           end
 
           def query_reservation_search_multiple(limit, offset, extra_condition='')
+            if DataMapper::Adapters.const_defined?(:PostgresAdapter) and repository.adapter.is_a?DataMapper::Adapters::PostgresAdapter
+                sql = <<-SQL
+                    SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as INTEGER) as status, 
+                           CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code,
+                           (select array_to_string(array_agg(concat(bl.item_id, '(', bl.quantity,' u.)')), ' ') from bookds_bookings_lines bl where bl.booking_id = b.id) as item_id
+                    FROM bookds_bookings b
+                    JOIN bookds_bookings_lines bl on bl.booking_id = b.id
+                    #{extra_condition}
+                    GROUP BY bl.booking_id
+                    ORDER BY b.id desc
+                    LIMIT #{limit} OFFSET #{offset}
+                SQL
+
+            else
+                sql = <<-SQL
+                    SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as UNSIGNED) as status, 
+                           CAST(payment_status as UNSIGNED) as payment_status, creation_date, created_by_manager, rental_location_code,
+                           GROUP_CONCAT(CONCAT(bl.item_id, ' (', bl.quantity,' u.)') SEPARATOR ' ') as item_id
+                    FROM bookds_bookings b
+                    JOIN bookds_bookings_lines bl on bl.booking_id = b.id
+                    #{extra_condition}
+                    GROUP BY bl.booking_id
+                    ORDER BY b.id desc
+                    LIMIT #{limit} OFFSET #{offset}
+                SQL
+            end              
             sql = <<-SQL
-                SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as UNSIGNED) as status, 
-                       CAST(payment_status as UNSIGNED) as payment_status, creation_date, created_by_manager, rental_location_code,
-                       GROUP_CONCAT(CONCAT(bl.item_id, ' (', bl.quantity,' u.)') SEPARATOR ' ') as item_id
+                SELECT b.id, customer_name, customer_surname, date_from, date_to, CAST(status as #{cast}) as status, 
+                       CAST(payment_status as #{cast}) as payment_status, creation_date, created_by_manager, rental_location_code,
+                       #{group_concat} as item_id
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines bl on bl.booking_id = b.id
                 #{extra_condition}
