@@ -41,7 +41,7 @@ module Yito
                id = logo.split('/').last
                photo = Media::Photo.get(id)
                logo_path = File.join(base_path, photo.photo_url_full) 
-               pdf.image logo_path, width: 300, at: [0, 730]
+               pdf.image logo_path, width: 320, height: 80, at: [0, 760]
             end
 
             # ---- Company information -----
