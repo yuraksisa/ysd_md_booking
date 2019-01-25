@@ -41,16 +41,16 @@ module Yito
                id = logo.split('/').last
                photo = Media::Photo.get(id)
                logo_path = File.join(base_path, photo.photo_url_full) 
-               pdf.image logo_path, width: 320, height: 80, at: [0, 760]
+               pdf.image logo_path, width: 300, height: 60, at: [0, 750]
             end
 
             # ---- Company information -----
-            pdf.text_box "<b>#{company[:name]}</b>", inline_format: true, at: [400, 735], size: 9
-            pdf.draw_text "#{company[:address_1]}", at: [400,715], size: 9
-            pdf.draw_text "#{company[:zip]} - #{company[:city]} (#{company[:country]})", at:[400, 700], size: 9
-            pdf.draw_text "#{company[:email]}", at: [400, 685], size: 9
-            pdf.draw_text "#{company[:phone_number]}", at: [400, 670], size: 9
-            pdf.draw_text "#{company[:document_id]}", at: [400, 655], size: 9
+            pdf.text_box "<b>#{company[:name]}</b>", inline_format: true, at: [400, 735], size: 9, align: :right, width: 150
+            pdf.text_box "#{company[:address_1]}", at: [400,723], size: 9, align: :right, width: 150
+            pdf.text_box "#{company[:zip]} - #{company[:city]} (#{company[:country]})", at:[400, 711], size: 9, align: :right, width: 150
+            pdf.text_box "#{company[:email]}", at: [400, 699], size: 9, align: :right, width: 150
+            pdf.text_box "#{company[:phone_number]}", at: [400, 687], size: 9, align: :right, width: 150
+            pdf.text_box "#{company[:document_id]}", at: [400, 675], size: 9, align: :right, width: 150
 
             # Contract information =========
             pdf.move_down 50
@@ -381,6 +381,33 @@ module Yito
               end 
               extra_idx += 1
             end       
+
+            # Supplements -----------
+            supplements_position = y_position - 295 - ((extra_idx - 1) * 12)
+            supplement_idx = 1
+            booking.total_summary[:supplements].each do |supplement, amount| 
+              if [:category_supplement_1_cost, :category_supplement_2_cost,
+                  :category_supplement_3_cost, :supplement_1_cost,
+                  :supplement_2_cost, :supplement_3_cost].include?(supplement)
+                  # TODO Refactor category_supplement_X and supplement_X to be able to be user defined
+                  text = BookingDataSystem.r18n.t.booking_business_literals.business_type[@product_family.business_type.to_s]['reservation']['supplements'][supplement.to_s]
+                  amount = amount
+              else
+                  text = BookingDataSystem.r18n.t.booking_business_literals.business_type[@product_family.business_type.to_s]['reservation']['supplements'][supplement.to_s]
+                  amount = amount
+              end    
+              if amount > 0
+                pdf.bounding_box([285, supplements_position - (supplement_idx * 12)], :width => 140, :height => 12) do
+                  # Invoicing column 1
+                  pdf.text text, inline_format: true, size: 9
+                end
+                pdf.bounding_box([470, supplements_position - (supplement_idx * 12)], :width => 70, :height => 12) do
+                  # Invoicing column 4
+                  pdf.text "#{'%.2f' % amount}", inline_format: true, size: 9, align: :right
+                end               
+                supplement_idx += 1
+              end
+            end
 
             # Totals ----------------                    
 

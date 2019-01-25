@@ -20,7 +20,48 @@ booking_business_literals:
       resource_characteristic_4: Color
       category_supplement_1: Combustible
       category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3      
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora entrega
+          time_to_cost: Supl. hora devolución
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Combustible
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3
+    vehicle_rental_resources:
+      category: Vehículos
+      category_singular: Vehículo
+      product: Vehículos
+      product_singular: Referencia
+      stock_model: Modelo
+      stock_reference: Matrícula
+      new_product: Nuevo vehículo
+      detail_page: Página detalle vehículo
+      physical_organization: Almacén/campa
+      logical_organization: Oficina/sucursal      
+      resource_reservations_menu: Reservas por vehículo
+      resource_reservations_title: Listado de reservas por vehículo
+      resource_reservations_search: Matrícula o referencia
+      resource_characteristic_1: Combustible
+      resource_characteristic_2: Transmisión
+      resource_characteristic_3: Número bastidor
+      resource_characteristic_4: Color
+      category_supplement_1: Combustible 
+      category_supplement_2: Suplemento 2
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora entrega
+          time_to_cost: Supl. hora devolución
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Combustible
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3                                                
     accommodation:
       category: Tipos de habitación
       category_singular: Tipo de habitación
@@ -41,7 +82,17 @@ booking_business_literals:
       resource_characteristic_4: Característica 4
       category_supplement_1: Suplemento 1           
       category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3 
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora check-in
+          time_to_cost: Supl. hora check-out
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Suplemento 1
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3        
     ads:
       category: Anuncios
       category_singular: Anuncio
@@ -62,7 +113,17 @@ booking_business_literals:
       resource_characteristic_4: Característica 4
       category_supplement_1: Suplemento 1                
       category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3 
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora entrega
+          time_to_cost: Supl. hora devolución
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Combustible
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3         
     category_resources:
       category: Categorías
       category_singular: Categoría
@@ -83,7 +144,17 @@ booking_business_literals:
       resource_characteristic_4: Característica 4
       category_supplement_1: Suplemento 1               
       category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3 
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora entrega
+          time_to_cost: Supl. hora devolución
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Combustible
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3            
     resources:
       category: Productos
       category_singular: Producto
@@ -104,7 +175,17 @@ booking_business_literals:
       resource_characteristic_4: Característica 4
       category_supplement_1: Suplemento 1               
       category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3 
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora entrega
+          time_to_cost: Supl. hora devolución
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Combustible
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3            
     boat_charter:
       category: Barcos
       category_singular: Barco
@@ -127,28 +208,17 @@ booking_business_literals:
       resource_characteristic_4: Característica 4
       category_supplement_1: Suplemento 1              
       category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3 
-    vehicle_rental_resources:
-      category: Vehículos
-      category_singular: Vehículo
-      product: Vehículos
-      product_singular: Referencia
-      stock_model: Modelo
-      stock_reference: Matrícula
-      new_product: Nuevo vehículo
-      detail_page: Página detalle vehículo
-      physical_organization: Almacén/campa
-      logical_organization: Oficina/sucursal      
-      resource_reservations_menu: Reservas por vehículo
-      resource_reservations_title: Listado de reservas por vehículo
-      resource_reservations_search: Matrícula o referencia
-      resource_characteristic_1: Combustible
-      resource_characteristic_2: Transmisión
-      resource_characteristic_3: Número bastidor
-      resource_characteristic_4: Color
-      category_supplement_1: Combustible 
-      category_supplement_2: Suplemento 2
-      category_supplement_3: Suplemento 3                         
+      category_supplement_3: Suplemento 3
+      reservation:
+        supplements:
+          pick_up_place: Supl. lugar entrega
+          return_place: Supl. lugar devolución
+          time_from_cost: Supl. hora entrega
+          time_to_cost: Supl. hora devolución
+          driver_age_cost: Supl. edad conductor
+          category_supplement_1: Combustible
+          category_supplement_2: Suplemento 2
+          category_supplement_3: Suplemento 3                                      
   starting_date:
     pickup_return_date:
       title: Entrega/Devolución
@@ -286,6 +356,13 @@ booking_category_warnings:
   description_empty: Descripción no informada
   price_definition_empty: No ha definido precios
 booking_activities_warnings:
+booking_summary:
+  supplements:
+    pick_up_place: Supl. lugar entrega
+    return_place: Supl. lugar devolución
+    time_from_cost: Supl. hora entrega
+    time_to_cost: Supl. hora devolución
+    driver_age_cost: Supl. edad conductor
 booking_news_feed:
   created_booking: Creada reserva
   updated_booking: Modificados datos de la reserva

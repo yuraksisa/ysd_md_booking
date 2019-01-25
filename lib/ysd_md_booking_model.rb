@@ -645,6 +645,45 @@ module BookingDataSystem
        
      end
      
+     # --------------------------- SUPPLEMENTS SUMMARY -----------------------------------
+
+     #
+     # Total summary
+     #
+     def total_summary
+
+        products = {}
+        products.store(:item_cost, item_cost)
+        products.store(:extras_cost, extras_cost)
+
+        supplements = {}
+        supplements.store(:pick_up_place, pickup_place_cost)
+        supplements.store(:return_place, return_place_cost)
+        supplements.store(:time_from_cost, time_from_cost)
+        supplements.store(:time_to_cost, time_to_cost)
+        supplements.store(:driver_age_cost, driver_age_cost)
+        supplements.store(:category_supplement_1, category_supplement_1_cost)
+        supplements.store(:category_supplement_2, category_supplement_2_cost)
+        supplements.store(:category_supplement_3, category_supplement_3_cost)
+        supplements.store(:supplement_1, supplement_1_cost)
+        supplements.store(:supplement_2, supplement_2_cost)
+        supplements.store(:supplement_3, supplement_3_cost)
+
+        deposit = {}
+        deposit.store(:product_deposit_cost, product_deposit_cost)
+
+        totals = {}
+        totals.store(:total_cost, total_cost)
+        totals.store(:total_paid, total_paid)
+        totals.store(:total_pending, total_pending)
+
+        summary = {products: products,
+                   supplements: supplements,
+                   deposit: deposit,
+                   totals: totals }
+
+     end 
+
      # --------------------------- BOOKING LINES -----------------------------------------
 
      #
