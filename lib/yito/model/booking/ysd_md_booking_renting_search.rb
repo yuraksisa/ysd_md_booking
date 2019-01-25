@@ -7,7 +7,7 @@ module Yito
   	  class RentingSearch	
 
   		 attr_accessor :code, :name, :short_description, :description, :stock_control, 
-  		 			   :photo, :full_photo,
+  		 			   :photos, :photo, :full_photo,
   		 			   :base_price, :price, :deposit, 
   		 			   :category_supplement_1_cost, :category_supplement_2_cost,
   		 			   :category_supplement_3_cost,
@@ -15,7 +15,7 @@ module Yito
   		 			   :include_stock, :resources
 
   		 def initialize(code, name, short_description, description, stock_control,
-  		 	            photo, full_photo, base_price=0, price=0, deposit=0,
+  		 	            photos, photo, full_photo, base_price=0, price=0, deposit=0,
   		 	            category_supplement_1_cost=0, category_supplement_2_cost=0,
   		 	            category_supplement_3_cost=0,
   		 				availability=false, stock=0, busy=0, available=0, 
@@ -26,6 +26,7 @@ module Yito
   		   @short_description = short_description
   		   @description = description
 		   @stock_control = stock_control
+		   @photos = photos
   		   @photo = photo
   		   @full_photo = full_photo
   		   @base_price = base_price
@@ -51,6 +52,7 @@ module Yito
   		 	      name: @name,
   		 		  short_description: @short_description,
   		 		  description: @description,
+  		 		  photos: @photos,
   		 		  photo: @photo,
   		 		  full_photo: @full_photo,
   		 		  base_price: @base_price,
@@ -189,6 +191,11 @@ module Yito
 						   item = item.translate(locale) if locale 
 
 	  		   	           # Get the photos
+	  		   	           photos = item.album.photos.map do |photo|
+	  		   	           			  {photo_path: (photo.photo_url_medium.match(/^https?:/) ? photo.photo_url_medium : File.join(domain, photo.photo_url_medium)),
+	  		   	           			   full_photo_path: (photo.photo_url_full.match(/^https?:/) ? photo.photo_url_full : File.join(domain, photo.photo_url_full))}
+	  		   	           			end	
+	  		   	           # Get the cover photo			
 	  		   	           photo = item.album ? item.album.thumbnail_medium_url : nil
 	  		   	           full_photo = item.album ? item.album.image_url : nil
 											 photo_path = nil
@@ -241,7 +248,7 @@ module Yito
 	  		   	           payment_available = categories_payment_enabled.include?(item.code)
 
 	  		   	           RentingSearch.new(item.code, item.name, item.short_description, item.description, 
-											 item.stock_control, photo_path, full_photo_path,
+											 item.stock_control, photos, photo_path, full_photo_path,
 											 base_price, price, deposit,
 											 category_supplement_1_cost,
 											 category_supplement_2_cost,
