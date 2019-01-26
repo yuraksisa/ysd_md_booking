@@ -14,7 +14,7 @@ module Yito
         # --------- Reservation management optimized queries -------------
 
         def text_search(search_text, limit, offset) #(search_text, offset_order_query={})
-             total = query_strategy.count_text_search(search_text)
+             total = count_text_search(search_text)
              extra_condition = <<-CONDITION
                 WHERE b.id = ? or unaccent(customer_name) ilike unaccent(?) or unaccent(customer_surname) ilike unaccent(?) or customer_email = ? or 
                     customer_phone = ? or customer_mobile_phone = ? or external_invoice_number = ?
@@ -102,9 +102,9 @@ module Yito
         #
         # Booking text search
         #
-        def text_search(search_text, offset_order_query)
-          BookingDataSystem::Booking.by_sql{ |b| [text_search_query(b,search_text)] }.all(offset_order_query)
-        end
+        #def text_search(search_text, offset_order_query)
+        #  BookingDataSystem::Booking.by_sql{ |b| [text_search_query(b,search_text)] }.all(offset_order_query)
+        #end
 
         def count_text_search(search_text)
           query = <<-QUERY
