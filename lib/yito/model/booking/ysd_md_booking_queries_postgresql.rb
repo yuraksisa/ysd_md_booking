@@ -40,7 +40,7 @@ module Yito
         def query_reservation_search(limit, offset, extra_condition='')
            sql = <<-SQL
               SELECT b.id as id, customer_id, customer_name, customer_surname, date_from, date_to, CAST(status as INTEGER) as status, 
-                     CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code,
+                     CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code, sales_channel_code,
                      (select array_to_string(array_agg(bl.item_id), ' ') from bookds_bookings_lines bl where bl.booking_id = b.id) as item_id
               FROM bookds_bookings b
               #{extra_condition}
@@ -52,7 +52,7 @@ module Yito
         def query_reservation_search_multiple(limit, offset, extra_condition='')
             sql = <<-SQL
                 SELECT b.id, customer_id, customer_name, customer_surname, date_from, date_to, CAST(status as INTEGER) as status, 
-                       CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code,
+                       CAST(payment_status as INTEGER) as payment_status, creation_date, created_by_manager, rental_location_code, sales_channel_code,
                        (select array_to_string(array_agg(concat(bl.item_id, '(', bl.quantity,' u.)')), ' ') from bookds_bookings_lines bl where bl.booking_id = b.id) as item_id
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines bl on bl.booking_id = b.id

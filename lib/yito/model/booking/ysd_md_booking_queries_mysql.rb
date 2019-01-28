@@ -59,7 +59,7 @@ module Yito
               sql = <<-SQL
                 SELECT b.id, customer_id, customer_name, customer_surname, date_from, date_to, CAST(status as UNSIGNED) as status, 
                        CAST(payment_status as UNSIGNED) as payment_status, creation_date, created_by_manager, rental_location_code,
-                       GROUP_CONCAT(CONCAT(bl.item_id)) as item_id
+                       sales_channel_code, GROUP_CONCAT(CONCAT(bl.item_id)) as item_id
                 FROM bookds_bookings b
                 JOIN bookds_bookings_lines bl on bl.booking_id = b.id
                 #{extra_condition}
@@ -73,7 +73,7 @@ module Yito
               sql = <<-SQL
                   SELECT b.id, customer_id, customer_name, customer_surname, date_from, date_to, CAST(status as UNSIGNED) as status, 
                          CAST(payment_status as UNSIGNED) as payment_status, creation_date, created_by_manager, rental_location_code,
-                         GROUP_CONCAT(CONCAT(bl.item_id, ' (', bl.quantity,' u.)') SEPARATOR ' ') as item_id
+                         sales_channel_code, GROUP_CONCAT(CONCAT(bl.item_id, ' (', bl.quantity,' u.)') SEPARATOR ' ') as item_id
                   FROM bookds_bookings b
                   JOIN bookds_bookings_lines bl on bl.booking_id = b.id
                   #{extra_condition}
