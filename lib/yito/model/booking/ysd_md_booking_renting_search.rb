@@ -191,10 +191,14 @@ module Yito
 						   item = item.translate(locale) if locale 
 
 	  		   	           # Get the photos
-	  		   	           photos = item.album.photos.map do |photo|
-	  		   	           			  {photo_path: (photo.photo_url_medium.match(/^https?:/) ? photo.photo_url_medium : File.join(domain, photo.photo_url_medium)),
-	  		   	           			   full_photo_path: (photo.photo_url_full.match(/^https?:/) ? photo.photo_url_full : File.join(domain, photo.photo_url_full))}
-	  		   	           			end	
+	  		   	           photos = if item.album
+		  		   	           			item.album.photos.map do |photo|
+		  		   	           			  {photo_path: (photo.photo_url_medium.match(/^https?:/) ? photo.photo_url_medium : File.join(domain, photo.photo_url_medium)),
+		  		   	           			   full_photo_path: (photo.photo_url_full.match(/^https?:/) ? photo.photo_url_full : File.join(domain, photo.photo_url_full))}
+		  		   	           			end	
+		  		   	           		else
+		  		   	           			[]
+		  		   	           		end		
 	  		   	           # Get the cover photo			
 	  		   	           photo = item.album ? item.album.thumbnail_medium_url : nil
 	  		   	           full_photo = item.album ? item.album.image_url : nil
