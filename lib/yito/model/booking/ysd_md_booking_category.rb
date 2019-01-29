@@ -50,17 +50,31 @@ module Yito
         
         include Yito::Model::Booking::SalesManagement
 
+        # Family and subfamily
+        belongs_to :family, '::Yito::Model::Classifier::ClassifierTerm', child_key: [:family_id], parent_key: [:id], required: false
+        belongs_to :sub_family, '::Yito::Model::Classifier::ClassifierTerm', child_key: [:subfamily_id], parent_key: [:id], required: false
+
+        # Tags (classifiers)
         has n, :category_classifier_terms, 'CategoryClassifierTerm', :child_key => [:category_code], :parent_key => [:code], :constraint => :destroy
         has n, :classifier_terms, '::Yito::Model::Classifier::ClassifierTerm', :through => :category_classifier_terms, :via => :classifier_term
 
+        # Sales channel
         has n, :booking_categories_sales_channels, 'BookingCategoriesSalesChannel', :child_key => [:booking_category_code], :parent_key => [:code], :constraint => :destroy
+        # BUG: It does not work!!
         #has n, :sales_channels, 'Yito::Model::SalesChannel::SalesChannel', :through => :booking_categories_sales_channels, :via => :sales_channel
+                
+        # Supplier
+        belongs_to :supplier, 'Yito::Model::Suppliers::Supplier', child_key: [:supplier_id], parent_id: [:id], required: false
+
+        # Category extras
+        has n, :booking_extra_categories, 'BookingExtraCategory', :child_key => [:booking_category_code], :parent_key => [:code], :constraint => :destroy
+        has n, :extras, 'BookingExtra', :through => :booking_extra_categories, :via => :booking_extra
+
         
         # TODO : Remove the column and the index
         # alter table bookds_categories drop column rental_location_code;
         #belongs_to :rental_location, 'RentalLocation', child_key: [:rental_location_code], parent_key: [:code], required: false 
-        belongs_to :supplier, 'Yito::Model::Suppliers::Supplier', child_key: [:supplier_id], parent_id: [:id], required: false
-          
+
         # -------------------------------- Hooks ----------------------------------------------
 
         #
@@ -76,7 +90,7 @@ module Yito
         before :create do
           # Get the alias
           if self.alias.nil? or self.alias.empty?     
-            self.alias = File.join('/', UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))[0..79]
+            self.alias = File.join('/', UnicodeUtils.nfkd(self.name).gsub(/[^\x00-\x7F]/,'').gsub(/\s/,'-'))[0..79].downcase
           end
           # Setup depending on the type
           if type == :resource
@@ -168,12 +182,16 @@ module Yito
         #   :include_stock -> Include the stock references in the result (if we want to known the free resources)
         #   :ignore_urge -> It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
         #                   pending reservation. It's used when trying to assign resources to this reservation
+        #   :include_album -> Include the album        
         # == Returns:
         # An array of RentingSearch items
         #
         def self.search(rental_location_code, date_from, time_from, date_to, time_to, days, options={})
           
-          RentingSearch.search(rental_location_code, date_from, time_from, date_to, time_to, days, options)
+          p "SEARCH-PRODUCTS-START"
+          result = RentingSearch.search(rental_location_code, date_from, time_from, date_to, time_to, days, options)
+          p "SEARCH-PRODUCTS-END"
+          return result
 
         end
 
@@ -240,6 +258,12 @@ module Yito
         #   :full_information -> Shows the stock information (total and available)
         #   :web_public -> Include only web_public categories
         #   :sales_channel_code -> The sales channel code  
+        #   :promotion_code -> The promotion code
+        #   :apply_promotion_code -> Apply the promotion code
+        #   :include_stock -> Include the stock references in the result (if we want to known the free resources)
+        #   :ignore_urge -> It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
+        #                   pending reservation. It's used when trying to assign resources to this reservation
+        #   :include_album -> Include the album        
         #
         # == Returns:
         # An array of RentingSearch items
@@ -291,6 +315,26 @@ module Yito
         
         end
         
+        #
+        # Calculate the min days
+        #
+        # == Parameters::
+        #
+        # date:: the date from
+        # days:: the number of days
+        #
+        # == Return::
+        # 
+        # The minimum number of days
+        #
+        def min_days(date_from, days)
+          cat_min_days = 0
+          if self.price_definition and season_definition = self.price_definition.season_definition
+            cat_min_days = season_definition.min_days(date_from, days)
+          end
+          return cat_min_days
+        end
+
         #
         # Count the defined (active and assignable) stock 
         #

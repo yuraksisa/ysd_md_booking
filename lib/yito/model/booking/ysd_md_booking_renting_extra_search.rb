@@ -47,7 +47,7 @@ module Yito
   		 #
   		 # Search extras and price
   		 #
-  		 def self.search(from, to, days, locale=nil, extra_code=nil)
+  		 def self.search(from, to, days, locale=nil, extra_code=nil, booking_categories=nil)
 
 				 domain = SystemConfiguration::Variable.get_value('site.domain')
 
@@ -60,14 +60,28 @@ module Yito
 					 result
 				 end
 
-  		   # Query for products
-  		   extra_attributes = [:code, :name, :description, :max_quantity, :stock]
-  		   conditions = {active: true, web_public: true}
-  		   conditions.store(:code, extra_code) unless extra_code.nil?
+  		   # Query for extras
+         extra_attributes = [:code, :name, :description, :max_quantity, :stock, :extra_application]
+         common_conditions = [Conditions::Comparison.new(:active,'$eq', true),
+                              Conditions::Comparison.new(:web_public,'$eq', true)]
+         common_conditions << Conditions::Comparison.new(:code, '$eq', extra_code) unless extra_code.nil?                     
+                                              
+         condition = if booking_categories.nil? or booking_categories.empty?
+                        common_conditions << Conditions::Comparison.new(:extra_application, '$eq', :generic)
+                        Conditions::JoinComparison.new('$and', common_conditions) 
+                     else 
+                        concrete_extras_conditions = Conditions::JoinComparison.new('$or',
+                                                        [Conditions::Comparison.new(:extra_application, '$eq', :generic),
+                                                         Conditions::JoinComparison.new('$and',
+                                                          [Conditions::Comparison.new(:extra_application, '$eq', :category),
+                                                           Conditions::Comparison.new('booking_extra_categories.booking_category.code', '$eq', booking_categories)]) 
+                                                        ])
+                        common_conditions << concrete_extras_conditions
+                        Conditions::JoinComparison.new('$and', common_conditions)
+                     end
 
-  		   result = ::Yito::Model::Booking::BookingExtra.all(fields: extra_attributes,
-  		   			   conditions: conditions, 
-  		   			   order: [:code]).map do |item|
+  		   result = condition.build_datamapper(::Yito::Model::Booking::BookingExtra).all(fields: extra_attributes,
+  		   			                                                                          order: [:code]).map do |item|
 
 					      # Translate the extra
 					      item = item.translate(locale) if locale

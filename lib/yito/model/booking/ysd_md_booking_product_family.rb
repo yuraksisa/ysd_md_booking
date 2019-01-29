@@ -44,18 +44,27 @@ module Yito
         property :product_price_definition_units_management_value, Integer, default: 7
         property :product_price_definition_units_management_value_hours_list, String, length: 200, default: '1' # comma-separated values
         property :product_price_definition_units_management_value_hours_half_day, Integer, default: 4
+        property :product_price_definition_apply_standard_price, Boolean, default: false
+        property :product_price_definition_apply_base_price, Boolean, default: false
+        property :product_price_definition_apply_max_price, Boolean, default: false
+        property :product_price_definition_apply_usage, Boolean, default: false
 
         # Extras price builder
         property :allow_extras, Boolean, default: true
+        belongs_to :extras_price_definition_season_definition, 'Yito::Model::Rates::SeasonDefinition',
+                   :child_key => [:extras_price_definition_season_definition_id], :parent_key => [:id], :required => false
+        belongs_to :extras_price_definition_factor_definition, 'Yito::Model::Rates::FactorDefinition',
+                   :child_key => [:extras_price_definition_factor_definition_id], :parent_key => [:id], :required => false
         property :extras_price_definition_type, Enum[:season, :no_season], default: :no_season
         property :extras_price_definition_units_management, Enum[:unitary, :detailed], default: :unitary
         property :extras_price_definition_units_management_value, Integer, default: 1
         property :extras_price_definition_units_management_value_hours_list, String, length: 200, default: '1' # comma-separated values
         property :extras_price_definition_units_management_value_hours_half_day, Integer, default: 4
-        belongs_to :extras_price_definition_season_definition, 'Yito::Model::Rates::SeasonDefinition',
-                   :child_key => [:extras_price_definition_season_definition_id], :parent_key => [:id], :required => false
-        belongs_to :extras_price_definition_factor_definition, 'Yito::Model::Rates::FactorDefinition',
-                   :child_key => [:extras_price_definition_factor_definition_id], :parent_key => [:id], :required => false
+        property :extras_price_definition_apply_standard_price, Boolean, default: false
+        property :extras_price_definition_apply_base_price, Boolean, default: false
+        property :extras_price_definition_apply_max_price, Boolean, default: false
+        property :extras_price_definition_apply_usage, Boolean, default: false
+
 
         # Rental configuration
         property :driver, Boolean, :field => 'driver', :default => false
@@ -103,7 +112,6 @@ module Yito
         property :usage, Boolean, default: false
         property :maintenance, Boolean, default: false
         property :insurance, Boolean, default: false
-
 
         # ------ Helpers that represents the categories of the business ------------------------------------------
 
@@ -244,7 +252,11 @@ module Yito
                               units_management_value_hours_list: product_price_definition_units_management_value_hours_list,
                               units_management_value_hours_half_day: product_price_definition_units_management_value_hours_half_day,
                               season_definition: season_definition,
-                              factor_definition: factor_definition)
+                              factor_definition: factor_definition,
+                              apply_standard_price: product_price_definition_apply_standard_price,
+                              apply_base_price: product_price_definition_apply_base_price,
+                              apply_max_price: product_price_definition_apply_max_price,
+                              apply_usage: product_price_definition_apply_usage)
 
         end
 
@@ -264,7 +276,11 @@ module Yito
               units_management_value_hours_list: extras_price_definition_units_management_value_hours_list,
               units_management_value_hours_half_day: extras_price_definition_units_management_value_hours_half_day,
               season_definition: (extras_price_definition_type == :season ? extras_price_definition_season_definition : nil),
-              factor_definition: use_factors ? extras_price_definition_factor_definition : nil)
+              factor_definition: use_factors ? extras_price_definition_factor_definition : nil,
+              apply_standard_price: extras_price_definition_apply_standard_price,
+              apply_base_price: extras_price_definition_apply_base_price,
+              apply_max_price: extras_price_definition_apply_max_price,
+              apply_usage: extras_price_definition_apply_usage)
 
         end
 

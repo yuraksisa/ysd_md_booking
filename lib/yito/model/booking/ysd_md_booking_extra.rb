@@ -28,6 +28,11 @@ module Yito
         
         belongs_to :price_definition, 'Yito::Model::Rates::PriceDefinition', :required => false
 
+        property :extra_application, Enum[:generic, :category], default: :generic
+
+        has n, :booking_extra_categories, 'BookingExtraCategory', :child_key => [:booking_extra_code], :parent_key => [:code], :constraint => :destroy
+        has n, :booking_categories, 'BookingCategory', :through => :booking_extra_categories, :via => :booking_category
+
         before :create do
           # Create the rates associated to the extra
           if price_definition.nil?
@@ -53,6 +58,18 @@ module Yito
           else
             return 0
           end
+        end
+
+        def as_json(options={})
+
+          if options.has_key?(:only)
+            super(options)
+          else
+            relationships = options[:relationships] || {}
+            relationships.store(:booking_categories, {})
+            super(options.merge({:relationships => relationships}))
+          end
+
         end
 
         private

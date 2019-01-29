@@ -160,8 +160,11 @@ module Yito
         property :price_3_step_tickets, Integer, :default => 1
         belongs_to :price_definition_3, 'Yito::Model::Rates::PriceDefinition', :required => false
 
-        # --- Classifiers
+        # Family and subfamily
+        belongs_to :family, '::Yito::Model::Classifier::ClassifierTerm', child_key: [:family_id], parent_key: [:id], required: false
+        belongs_to :sub_family, '::Yito::Model::Classifier::ClassifierTerm', child_key: [:subfamily_id], parent_key: [:id], required: false
 
+        # Tags (classifiers)
         has n, :activity_classifier_terms, 'ActivityClassifierTerm', :child_key => [:activity_id], :parent_key => [:id], :constraint => :destroy
         has n, :classifier_terms, '::Yito::Model::Classifier::ClassifierTerm', :through => :activity_classifier_terms, :via => :classifier_term
 

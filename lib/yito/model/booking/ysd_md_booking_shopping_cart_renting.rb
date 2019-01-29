@@ -46,6 +46,7 @@ module Yito
 
 	    property :date_to_price_calculation, Date
 	   	property :days, Integer
+	   	property :hours, Integer, default: 0
 
 	   	property :customer_name, String, :length => 40
      	property :customer_surname, String, :length => 40
@@ -79,7 +80,7 @@ module Yito
           # Calculate the days if not assigned
           if self.days.nil? or self.date_to_price_calculation.nil?
             days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
-			#p "calculating dates. previous: #{self.days} -- now: #{days_calculus[:days]}"
+			#p "calculating dates. #{days_calculus[:days]} #{days_calculus[:total_hours]}"
             self.days = days_calculus[:days]
             self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
           end
@@ -288,8 +289,9 @@ module Yito
 
 		        # Calculate the days
 		        days_calculus = BookingDataSystem::Booking.calculate_days(self.date_from, self.time_from, self.date_to, self.time_to)
-								  self.days = days_calculus[:days]
+				self.days = days_calculus[:days]
 		        self.date_to_price_calculation = days_calculus[:date_to_price_calculation]
+				#p "calculating dates. #{days_calculus[:days]} #{days_calculus[:total_hours]}"
 
 				# Pickup place
 				self.pickup_place = pickup_place

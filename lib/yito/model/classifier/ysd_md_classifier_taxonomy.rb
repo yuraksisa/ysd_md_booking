@@ -13,7 +13,8 @@ module Yito
         property :description, Text
         property :weight, Integer, default: 0
         property :tag_group, String, length: 50 # It allows to define a classifier taxonomy to be used to classify some kind of data
-
+        property :color, String, length: 50
+        
         has n, :classifier_terms, 'ClassifierTerm', :child_key => [:classifier_taxonomy_id], :parent_key => [:id], :constraint => :destroy
       end
     end

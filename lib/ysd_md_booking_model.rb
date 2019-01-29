@@ -93,6 +93,7 @@ module BookingDataSystem
      
      property :date_to_price_calculation, Date, :field => 'date_to_price_calculation'
      property :days, Integer, :field => 'days'
+     property :hours, Integer, default: 0
      
      property :customer_name, String, :field => 'customer_name', :required => true, :length => 40
      property :customer_surname, String, :field => 'customer_surname', :required => true, :length => 40
@@ -206,6 +207,7 @@ module BookingDataSystem
                           date_to: shopping_cart.date_to,
                           time_to: shopping_cart.time_to,
                           days: shopping_cart.days,
+                          hours: shopping_cart.hours,
                           date_to_price_calculation: shopping_cart.date_to_price_calculation,
                           item_cost: shopping_cart.item_cost,
                           extras_cost: shopping_cart.extras_cost,
@@ -544,6 +546,7 @@ module BookingDataSystem
        date_to_price_calculation = date_to
        valid = true
        error = nil
+       total_hours = 0
 
        begin
          _t_from = DateTime.strptime(time_from,"%H:%M")
@@ -561,7 +564,16 @@ module BookingDataSystem
          error = "Time from or time to are not valid #{time_from} #{time_to}"
        end
 
-       return {days: days, date_to_price_calculation: date_to_price_calculation, valid: valid, error: error}
+       begin
+         d1 = DateTime.strptime("#{date_from.strftime('%Y-%m-%d')} #{time_from}","%Y-%m-%d %H:%M")
+         d2 = DateTime.strptime("#{date_to.strftime('%Y-%m-%d')} #{time_to}","%Y-%m-%d %H:%M")
+         total_hours = ((d2 - d1).to_f * 24).floor
+       rescue
+         p "Error preparing hours"
+         valid = false
+       end 
+
+       return {days: days, date_to_price_calculation: date_to_price_calculation, total_hours: total_hours, valid: valid, error: error}
 
      end
 

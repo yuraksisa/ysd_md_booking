@@ -31,6 +31,9 @@ booking_business_literals:
           category_supplement_1: Combustible
           category_supplement_2: Suplemento 2
           category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todos los grupos
+        category: Una o varios grupos            
     vehicle_rental_resources:
       category: Vehículos
       category_singular: Vehículo
@@ -61,7 +64,10 @@ booking_business_literals:
           driver_age_cost: Supl. edad conductor
           category_supplement_1: Combustible
           category_supplement_2: Suplemento 2
-          category_supplement_3: Suplemento 3                                                
+          category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todos los vehículos
+        category: Uno o varios vehículos                                                            
     accommodation:
       category: Tipos de habitación
       category_singular: Tipo de habitación
@@ -92,7 +98,10 @@ booking_business_literals:
           driver_age_cost: Supl. edad conductor
           category_supplement_1: Suplemento 1
           category_supplement_2: Suplemento 2
-          category_supplement_3: Suplemento 3        
+          category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todas las habitaciones
+        category: Una o varias habitaciones                       
     ads:
       category: Anuncios
       category_singular: Anuncio
@@ -123,13 +132,16 @@ booking_business_literals:
           driver_age_cost: Supl. edad conductor
           category_supplement_1: Combustible
           category_supplement_2: Suplemento 2
-          category_supplement_3: Suplemento 3         
+          category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todos los anuncios
+        category: Uno o varios anuncios                        
     category_resources:
       category: Categorías
       category_singular: Categoría
       product: Inventario
-      product_singular: Referencia
-      stock_model: Modelo
+      product_singular: Id
+      stock_model: Marca/Modelo
       stock_reference: Referencia
       new_product: Nuevo anuncio
       detail_page: Página detalle anuncio
@@ -154,7 +166,10 @@ booking_business_literals:
           driver_age_cost: Supl. edad conductor
           category_supplement_1: Combustible
           category_supplement_2: Suplemento 2
-          category_supplement_3: Suplemento 3            
+          category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todas las categorías
+        category: Una o varias categorías                           
     resources:
       category: Productos
       category_singular: Producto
@@ -185,7 +200,10 @@ booking_business_literals:
           driver_age_cost: Supl. edad conductor
           category_supplement_1: Combustible
           category_supplement_2: Suplemento 2
-          category_supplement_3: Suplemento 3            
+          category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todos los productos
+        category: Uno o varios productos                           
     boat_charter:
       category: Barcos
       category_singular: Barco
@@ -218,7 +236,10 @@ booking_business_literals:
           driver_age_cost: Supl. edad conductor
           category_supplement_1: Combustible
           category_supplement_2: Suplemento 2
-          category_supplement_3: Suplemento 3                                      
+          category_supplement_3: Suplemento 3
+      extra_applications:
+        generic: Todos las barcos
+        category: Uno o varios barcos                                                     
   starting_date:
     pickup_return_date:
       title: Entrega/Devolución

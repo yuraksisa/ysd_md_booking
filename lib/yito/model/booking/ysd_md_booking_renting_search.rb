@@ -20,7 +20,7 @@ module Yito
   		 	            category_supplement_3_cost=0,
   		 				availability=false, stock=0, busy=0, available=0, 
 						payment_availibility=false, full_information=false,
-						include_stock=false, resources=nil)
+						include_stock=false, resources=nil, min_days=0)
   		   @code = code
   		   @name = name
   		   @short_description = short_description
@@ -43,6 +43,7 @@ module Yito
 		   @full_information = full_information
 		   @include_stock = include_stock
 		   @resources = resources
+		   @min_days = min_days
   		 end
 
   		 def as_json(options={})
@@ -63,7 +64,8 @@ module Yito
   		 		  payment_availibility: @payment_availibility,
   		 		  category_supplement_1_cost: @category_supplement_1_cost,
   		 		  category_supplement_2_cost: @category_supplement_2_cost,
-  		 		  category_supplement_3_cost: @category_supplement_3_cost
+  		 		  category_supplement_3_cost: @category_supplement_3_cost,
+  		 		  min_days: @min_days
 			}
 
 			result.merge!(stock: @stock, busy: @busy) if @full_information
@@ -105,12 +107,24 @@ module Yito
 		 #   :include_stock -> Include the stock references in the result (if we want to known the free resources)
 		 #   :ignore_urge -> It's a hash with two keys, origin and id. It allows to avoid the pre-assignation of the
 		 #              pending reservation. It's used when trying to assign resources to this reservation
+		 #   :include_album -> Include the album
 		 # == Returns:
 		 # An array of RentingSearch items
 		 #
   		 def self.search(rental_location_code, date_from, time_from, date_to, time_to, days, options={})
 
              product_family = ::Yito::Model::Booking::ProductFamily.get(SystemConfiguration::Variable.get_value('booking.item_family'))
+
+             # The season minimum number of days 'booking.min_days' 'booking.new_season_definition_instance_for_category'
+             min_days_by_product = false
+             min_days = SystemConfiguration::Variable.get_value('booking.min_days', '1').to_i
+             if SystemConfiguration::Variable.get_value('booking.new_season_definition_instance_for_category', 'false').to_bool
+               min_days_by_product = true	
+             else
+               if season_definition = product_family.product_price_definition_season_definition
+               	 min_days = season_definition.min_days(date_from, days)
+               end	
+             end	
 
              # Check if the search is by resource or category
              search_by_resource = false
@@ -128,6 +142,7 @@ module Yito
 			 promotion_code = (options.has_key?(:promotion_code) ? options[:promotion_code] : nil)
 			 include_stock = (options.has_key?(:include_stock) ? options[:include_stock] : false)
 			 ignore_urge = (options.has_key?(:ignore_urge) ? options[:ignore_urge] : nil)
+			 include_album = (options.has_key?(:include_album) ? options[:include_album] : false)
 
 			 # Proceed
 			 domain = SystemConfiguration::Variable.get_value('site.domain')
@@ -135,6 +150,7 @@ module Yito
 		     result = []
 
 			 # Check the 'real' occupation
+			 p "SEARCH-OCCUPATION"
 	         occupation = BookingDataSystem::Booking.categories_availability_summary(rental_location_code,
 	         																		 date_from, time_from,
 																					 date_to, time_to,
@@ -153,10 +169,12 @@ module Yito
 	         end
 
 	         # Check the calendar
+	         p "SEARCH-CALENDAR"
 			 categories_available = Availability.instance.categories_available(date_from, date_to)
 	  		 categories_payment_enabled = Availability.instance.categories_payment_enabled(date_from, date_to)
 
 			 # Promotional code
+			 p "SEARCH-PROMOTION-CODE"
 			 rates_promotion_code = if apply_promotion_code and promotion_code and !promotion_code.nil?
 															  if ::Yito::Model::Rates::PromotionCode.valid_code?(promotion_code, date_from, date_to)
 																  ::Yito::Model::Rates::PromotionCode.first(promotion_code: promotion_code)
@@ -168,6 +186,7 @@ module Yito
 															end
 
 			 # Query for products
+			 p "SEARCH-PRODUCTS"
 	  		 prod_attributes = [:code, :name, :short_description, :description,
 	  		  		            :stock_control, :stock, :album_id, :deposit, 
 	  		  		            :category_supplement_1_cost,
@@ -188,10 +207,12 @@ module Yito
 		     result = ::Yito::Model::Booking::BookingCategory.all(fields: prod_attributes,
 		   			      conditions: conditions, order: [:sort_order, :code]).map do |item|
 						   # Translate the product
+		     			   p "SEARCH-TRANSLATE"		
 						   item = item.translate(locale) if locale 
 
 	  		   	           # Get the photos
-	  		   	           photos = if item.album
+	  		   	           p "SEARCH-PHOTOS"
+	  		   	           photos = if include_album and item.album
 		  		   	           			item.album.photos.map do |photo|
 		  		   	           			  {photo_path: (photo.photo_url_medium.match(/^https?:/) ? photo.photo_url_medium : File.join(domain, photo.photo_url_medium)),
 		  		   	           			   full_photo_path: (photo.photo_url_full.match(/^https?:/) ? photo.photo_url_full : File.join(domain, photo.photo_url_full))}
@@ -199,7 +220,8 @@ module Yito
 		  		   	           		else
 		  		   	           			[]
 		  		   	           		end		
-	  		   	           # Get the cover photo			
+	  		   	           # Get the cover photo
+	  		   	           p "SEARCH-COVER-PHOTO"	  		   	           			
 	  		   	           photo = item.album ? item.album.thumbnail_medium_url : nil
 	  		   	           full_photo = item.album ? item.album.image_url : nil
 											 photo_path = nil
@@ -212,9 +234,18 @@ module Yito
 											 end
 
 	  		   	           # Get the price
+	  		   	           p "SEARCH-PRICE"	
 	  		   	           product_price = item.unit_price(date_from, days, nil, sales_channel_code)
 
+	  		   	           # Get the min days by product
+	  		   	           product_min_days = 0
+	  		   	           if min_days_by_product
+	  		   	           	 p "SEARCH-MIN-DAYS"
+	  		   	           	 product_min_days = item.min_days(date_from, days)
+	  		   	           end	
+
 						   # Apply promotion code or offers
+						   p "SEARCH-APPLY-PROMOTION-CODE-OFFERS"	
 						   discount = ::Yito::Model::Booking::BookingCategory.discount(product_price, item.code, date_from, date_to, rates_promotion_code)
 	  		   	           base_price = product_price.round(0) # Make sure no decimals in prices
 	  		   	           price = (product_price - discount).round(0) # Make sure no decimal in prices
@@ -237,6 +268,7 @@ module Yito
 	  		   	           end	
 
 	  		   	           # Get the availability
+	  		   	           p "SEARCH-BUILD-RESULT"
 	  		   	           stock = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:stock] : 0
 											 resources = occupation_hash.has_key?(item.code) ? occupation_hash[item.code][:resources] : nil
 	  		   	           availability = categories_available.include?(item.code) # Calendar lock
@@ -259,7 +291,7 @@ module Yito
 											 category_supplement_3_cost,
 											 availability, stock, busy, available,
 											 payment_available, full_information, include_stock, 
-											 resources)
+											 resources, [min_days, product_min_days].max)
 		   	          end
 
 			 return product_code.nil? ? result : result.first
